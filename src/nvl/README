@@ -24,3 +24,22 @@ Misc. developer notes
 Required RPMs to build on RHEL6.x:
   glibc-static
   ncurses-devel
+
+To push submodule changes upstream:
+   1. Make changes in submodule checkout and commit
+   2a. For Palacios devel, git magic to repoint local HEAD to latest
+       local change:
+          git branch temp
+          git checkout temp
+          git branch -f devel temp
+          git checkout devel
+          git branch -d temp
+   2b. For Kitten, same as above except use master branch:
+          git branch temp
+          git checkout temp
+          git branch -f master temp
+          git checkout master
+          git branch -d temp
+   3. Push upstream
+          git push ssh://palacios@newskysaw.cs.northwestern.edu//home/palacios/palacios
+          git push ssh://software.sandia.gov/git/kitten
