@@ -1,0 +1,26 @@
+This directory contains the source needed to build the nvl (Node Virtualization
+Layer).  The build system creates a bootable kernel image that is intended to
+be booted on the compute nodes of a massively-parallel distributed memory
+supercomputer.  Each nvl instance manages a single compute node.
+
+The nvl is a virtual machine monitor (VMM) that allows multiple OSR (OS and
+Runtime system) stacks to run simultaneously on a single compute node, where
+each OSR stack runs as a separate "virtual machine" (VM).  The nvl provides
+several types VM abstractions, including a full hardware VM that can run
+unmodified guest OSR stacks, a para-virtualized VM where the guest OSR stack
+cooperates with the nvl, and a "bare metal" lightweight Linux VM that emulates
+a Linux environment for scalable HPC applications.  Unlike traditional VMMs,
+the nvl includes a number of general-purpose mechanisms for composing separate
+OSR stack VMs with one another, selectivly relaxing strict isolation. These
+include a mmap-like interface for mapping memory regions between user-space
+processes running in different VMs, a VMM-level name service and data store,
+and a network-based API (Portals4) for inter-VM communication, both on and off
+node.  
+
+
+==============================================================================
+Misc. developer notes
+
+Required RPMs to build on RHEL6.x:
+  glibc-static
+  ncurses-devel
