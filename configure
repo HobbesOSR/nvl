@@ -1,0 +1,147 @@
+#!/usr/bin/perl -w
+
+$nvl = $ENV{HOBBES_NVL_DIR} or die "Please set the HOBBES_NVL_DIR environment variable.\n";
+
+print "Welcome to Hobbes NVL configuration.  We will ask you\n";
+print "a series of questions to create an initial NVL\n";
+print "configuration and build scripts for you.\n\n";
+
+print "What is your target configuration (Kitten, KittenPalacios, LinuxPalacios) [KittenPalacios] ";
+$tar = get_user("KittenPalacios");
+
+if ($tar eq "Kitten") { 
+  gen_kitten();
+} elsif ($tar eq "KittenPalacios") {
+  gen_kitten_palacios();
+} elsif ($tar eq "LinuxPalacios") {
+  gen_linux_palacios();
+} else {
+  die "Unknown target $tar\n";
+}
+
+sub gen_run_qemu {
+  # assume bzImage, initrd
+  open(R,">$nvl/run") or die "Cannot write run script\n";
+  print R "qemu-system-x86_64 -smp 4 -kernel $nvl/bzImage -append \"console=vga,serial\" -initrd $nvl/initrd.img -serial stdio\n";
+  close (R);
+  system "chmod +x $nvl/run";
+}
+
+sub gen_clean {
+  open(R,">$nvl/clean") or die "Cannot write clean script\n";
+  print R "(cd $nvl/src/nvl/kitten; make clean)\n";
+  print R "(cd $nvl/src/nvl/palacios; make clean)\n";
+  print R "(cd $nvl/src/nvl/palacios/linux_usr; make clean)\n";
+  print R "rm -f bzImage initrd.img v3vee.ko build run clean";
+  close (R);
+  system "chmod +x $nvl/clean";
+}
+
+sub gen_kitten {
+  # use default config
+  system "cp $nvl/configs/kitten_default.config $nvl/src/nvl/kitten/.config";
+  open(B, "> $nvl/build") or die "Cannot write build script\n";
+  print B <<END1;
+cd $nvl/src/nvl/kitten
+make
+cd $nvl
+cp $nvl/src/nvl/kitten/arch/x86_64/boot/bzImage .
+cp $nvl/src/nvl/kitten/init_task initrd.img
+END1
+;
+  close(B);
+  system "chmod +x build";
+  gen_run_qemu();
+  gen_clean();
+  print "Kitten setup completed with default configuration.\n";
+  print "./build will build Kitten for you and leave you\n";
+  print "with a bzImage and an initrd.img in $nvl.  You\n";
+  print "can then run this under QEMU using ./run\n";
+}
+
+sub gen_kitten_palacios {
+  # use default config
+  system "cp $nvl/configs/kitten_palacios_default.config $nvl/src/nvl/kitten/.config";
+  system "cp $nvl/configs/kitten_palacios_palacios_default.config $nvl/src/nvl/palacios/.config";
+  open(B, "> $nvl/build") or die "Cannot write build script\n";
+  print B <<END1;
+cd $nvl/src/nvl/palacios
+make
+cd $nvl/src/nvl/kitten
+make
+cd $nvl
+cp $nvl/src/nvl/kitten/arch/x86_64/boot/bzImage .
+cp $nvl/src/nvl/kitten/init_task initrd.img
+END1
+;
+  close(B);
+  system "chmod +x build";
+  gen_run_qemu();
+  gen_clean();
+  print "KittenPalacios setup completed with default configuration.\n";
+  print "./build will build Kitten for you and leave you\n";
+  print "with a bzImage and an initrd.img in $nvl.  You\n";
+  print "can then run this under QEMU using ./run\n";
+}
+
+sub gen_linux_palacios {
+  # use default config
+  $kern = "/usr/src/kernels/".`uname -r`; chomp($kern);
+  print "You must have a kernel source environment sufficient for building\n";
+  print "a kernel module.  We generally target 2.6.30ish kernels, although later\n";
+  print "or earlier ones may work.\n\n";
+  print "What is your kernel source directory? [$kern] : ";
+  $kern=get_user($kern);
+  
+  open (R, "$nvl/configs/linux_palacios_default.config") or die "Cannot open base config\n";
+  open (W, ">$nvl/src/nvl/palacios/.config") or die "Cannot open target config\n";
+  while (<R>) { 
+    if (/V3_CONFIG_LINUX_KERN/) {
+      print W "V3_CONFIG_LINUX_KERN=\"$kern\"\n";
+    } else {
+      print W ;
+    }
+  }
+  close(W);
+  close(R);
+
+  open(B, "> $nvl/build") or die "Cannot write build script\n";
+#
+# Need to edit kernel src dir...
+#
+#
+  print B <<END1;
+cd $nvl/src/nvl/palacios
+make
+cd $nvl/src/nvl/palacios/linux_usr 
+make
+cd $nvl
+cp $nvl/src/nvl/palacios/v3vee.ko .
+echo You should cd to $nvl/src/nvl and run v3_config_v3vee.pl next
+END1
+;
+  close(B);
+  system "chmod +x $nvl/build";
+  open(R, ">$nvl/run");
+  print R "echo \"Switch to $nvl/src/nvl/palacios and run v3_config_v3vee.pl to continue\"";
+  close(R);
+  system "chmox +x $nvl/run";
+  gen_clean();
+  print "LinuxPalacios setup completed with default configuration.\n";
+  print "./build will build the Palacios Linux kernel module for you\n";
+  print "and leave you with a v3vee.ko file.  cd $nvl/src/nvl/palacios\n";
+  print "and run v3_config_v3vee.pl to continue.\n";
+}
+
+
+sub get_user {
+  my $def = shift;
+  
+  my $inp = <STDIN>; chomp($inp);
+  
+  if ($inp eq "") { 
+    return $def;
+  } else {
+    return $inp;
+  }
+}

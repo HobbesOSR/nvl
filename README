@@ -1,0 +1,23 @@
+Welcome to the NVL
+
+To build the NVL for the first time, it is necessary to
+do the following:
+
+./configure
+   This will ask you questions to determine the
+   appropriate initial configurations for NVL components
+   and will also create an appropriate build script.
+
+./build
+   This will build the NVL components and give you
+   a bzImage and initrd that you can use to boot and
+   run NVL.
+
+./run
+   This will run your build under QEMU (emulation)
+   To run the build on your hardware, you will need
+   to use the process for installing a new kernel
+   or network booting a kernel (e.g. PXE) on it.
+
+./clean
+   This will restore the out-of-the-box experience

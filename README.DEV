@@ -1,0 +1,15 @@
+After a fresh checkout of the NVL repository, two extra steps are required to
+download required external repositories. Do this by running the following git
+commands:
+
+git submodule init
+git submodule update
+
+See README for configure and build instructions.
+
+Directories Layout
+==================
+/src                All Buildable Source
+/src/nvl            Node Virtualization Layer
+/src/nvl/kitten     Kitten Lightweight Kernel         (git submodule)
+/src/nvl/palacios   Palacios Virtual Machine Monitor  (git submodule)
