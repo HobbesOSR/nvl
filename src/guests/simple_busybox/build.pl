@@ -1,7 +1,5 @@
 #!/usr/bin/perl -w
 
-# Test comment
-
 use strict;
 use Getopt::Long;
 use File::Copy;
