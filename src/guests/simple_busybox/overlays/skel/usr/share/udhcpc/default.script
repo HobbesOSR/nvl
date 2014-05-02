@@ -1,0 +1,49 @@
+#!/bin/ash
+
+# The dhcp server may or may not supply a broadcast address.
+# Only pass it to ifconfig if one was supplied.
+[ -n "$broadcast" ] && BROADCAST="broadcast $broadcast"
+
+# The dhcp server may or may not supply a subnet mask.
+# Only pass it to ifconfig if one was supplied.
+[ -n "$subnet" ] && NETMASK="netmask $subnet"
+
+# This script is called with the "deconfig" argument when 
+# dhcpd first starts or when a NAK is received.  When this
+# happens, we put the interface in an up, but deconfigured
+# state.
+if [ "$1" = "deconfig" ]; then
+	ifconfig $interface 0.0.0.0
+	exit 0
+fi
+
+# This script is called with the "bound" argument when the
+# dhcp server has supplied us with an ip and other associated
+# config info.  When this happens, bring the interface up.
+if [ "$1" = "bound" ]; then
+	ifconfig $interface $ip $BROADCAST $NETMASK
+
+	if [ -n "$hostname" ]; then
+		hostname $hostname
+	fi
+
+	if [ -n "$router" ]; then
+		# delete old routes for the interface
+		#while route del default gw 0.0.0.0 dev $interface ; do
+		#	:
+		#done
+
+		# add new routes given to us by the dhcpd server
+		for i in $router ; do
+			route add default gw $i dev $interface
+		done
+	fi
+
+	# For debugging
+	#echo "INTERFACE=$interface"
+	#echo "IPADDR=$ip"
+	#echo "NETMASK=$subnet"
+	#echo "GATEWAY=$router"
+	#echo "HOSTNAME=$hostname"
+	#echo "ROUTER=$router"
+fi

@@ -1,0 +1,13 @@
+root:x:0:
+bin:x:1:daemon
+daemon:x:2:
+sys:x:3:
+tty:x:5:
+disk:x:6:
+kmem:x:9:
+console:x:21:
+uucp:x:14:
+utmp:x:43:
+kvm:x:36:qemu
+qemu:x:107:
+users:x:100:

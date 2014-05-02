@@ -1,0 +1,250 @@
+
+<!-- This defines a PC VM. The class defines the initial cpu/memory state of the VM. This drives the initialization of CPU registers, as well as BIOS memory mappings.-->
+<vm class="PC"> 
+
+	<!-- Memory in MB -->
+	<memory alignment="2MB">256</memory> 
+
+	<!-- Basic VMM system flags -->
+	<telemetry>enable</telemetry>
+	<paging mode="shadow">
+		<strategy>VTLB</strategy>
+		<large_pages>true</large_pages>
+	</paging>
+<!--
+	<paging mode="nested">
+		<large_pages>true<large_pages/>
+	</paging>
+-->
+	<schedule_hz>100</schedule_hz>
+
+	<cores count="1"><core /></cores>
+
+
+	<!-- Memory redirections -->
+	<!-- Redirects a guest's memory region to a host physical address -->
+       <memmap>
+		<!-- This region maps the VGA framebuffer to the host's framebuffer -->
+		<region>
+                       <start>0xa0000</start>
+                       <end>0xc0000</end>
+                       <host_addr>0xa0000</host_addr>
+               </region>
+       </memmap>
+
+
+	<!-- List of binary files to include with configuration -->
+	<!-- This is where you add disk images -->
+	<files>
+		<!-- The file 'id' is used as a reference for other configuration components -->
+		<file id="boot-cd" filename="image.iso" />
+		<!--<file id="harddisk" filename="firefox.img" />-->
+	</files>
+
+
+	<!-- List of devices attached to guest -->
+	<!-- The device 'class' is the device name in the global device registry -->
+	<!-- The device 'id' is the reference to the device instance associated with a VM -->
+	<!--	The name can be used as a reference by other devices -->
+	<devices>
+		<device class="8259A" id="PIC"/>
+		<device class="KEYBOARD" id="keyboard"/>
+		<device class="8254_PIT" id="PIT" />
+		<device class="BOCHS_DEBUG" id="bochs debug"/>
+		<device class="OS_DEBUG" id="os debug" />
+		<device class="MPTABLE" id="mptable"/>
+		<device class="LAPIC" id="apic"/>
+		<device class="IOAPIC" id="ioapic">
+                	<apic>apic</apic>
+		</device>
+<!--
+		<device class="CGA_VIDEO" id="cga" passthrough="enable" />
+		<device class="TELNET_CONSOLE" id="telnet console">
+                       <frontend tag="CGA_VIDEO" />
+                       <port>19997</port>
+		</device>
+-->
+		<device class="PCI" id="pci0" />
+
+		<device class="i440FX" id="northbridge">
+			<bus>pci0</bus>
+		</device>
+
+		<device class="PIIX3" id="southbridge">
+			<bus>pci0</bus>
+		</device>
+
+		<device class="IDE" id="ide">
+			<bus>pci0</bus>
+			<controller>southbridge</controller>
+		</device>
+                 
+
+
+<!--
+		<device class="LNX_VIRTIO_SYM" id="sym_pci">
+			<bus>pci0</bus>
+		</device>
+
+		<device class="LNX_VIRTIO_BLK" id="blk_virtio">
+			<bus>pci0</bus>
+		</device>
+
+		<device class="LNX_VIRTIO_BALLOON" id="balloon">
+			<bus>pci0</bus>
+		</device>
+
+		<device class="PCI_PASSTHROUGH" id="e1000">
+			<bus>pci0</bus>
+			<vendor_id>0x8086</vendor_id>
+			<device_id>0x100e</device_id>
+			<irq>59</irq>
+		</device>
+
+		<device class="PCI_PASSTHROUGH" id="e1000-hw">
+			<bus>pci0</bus>
+			<vendor_id>0x8086</vendor_id>
+			<device_id>0x107c</device_id>
+			<irq>64</irq>
+		</device>
+-->
+
+
+		<!-- This is a Storage Backend that connects to a frontend -->
+		<!-- The frontend section is passed to the frontend when the backend connects -->
+		<!-- The file tag refers to an 'id' already listed in the file list section above -->
+		<device class="RAMDISK" id="CD0">
+			<file>boot-cd</file>
+			<frontend tag="ide">
+				<model>V3Vee CDROM</model>
+				<type>CDROM</type>
+				<bus_num>0</bus_num>
+				<drive_num>0</drive_num>
+			</frontend>
+		</device>
+
+
+<!---
+		<device class="SYM_SWAP" id="sym swap">
+			<frontend tag="blk_virtio" />
+			<size>150</size>
+		</device>
+
+		<device class="RAMDISK" id="HD0">
+			<file>harddisk</file>
+			<frontend tag="blk_virtio" />
+		</device>
+-->
+
+	<!-- Machine-check device -->
+<!--
+        <device class="MCHECK" id="MCHECK" />
+-->
+
+
+		<device class="NVRAM" id="nvram">
+			<storage>ide</storage>
+		</device>
+
+		<device class="GENERIC" id="generic">
+			<ports>
+                               <start>0x00</start>
+                               <end>0x07</end>
+                               <mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<start>0xc0</start>
+				<end>0xc7</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- DMA 1 page registers -->
+				<start>0x81</start>
+				<end>0x87</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- DMA 2 page registers -->
+				<start>0x88</start>
+				<end>0x8f</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- DMA 1 Misc Registers -->
+				<start>0x08</start>
+				<end>0x0f</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- DMA 2 Misc Registers -->
+				<start>0xd0</start>
+				<end>0xde</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- Serial COM 1 -->
+				<start>0x3f8</start>
+				<end>0x3ff</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- Serial COM 2 -->
+				<start>0x2f8</start>
+				<end>0x2ff</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- Serial COM 3 -->
+				<start>0x3e8</start>
+				<end>0x3ef</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- Serial COM 4 -->
+				<start>0x2e8</start>
+				<end>0x2ef</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- Parallel Port -->
+				<start>0x378</start>
+				<end>0x37f</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- Graphics Card modeerations -->
+				<start>0x3b0</start>
+				<end>0x3bb</end>
+				<mode>PRINT_AND_PASSTHROUGH</mode>
+			</ports>
+			<ports>
+				<!-- Graphics Card modeerations -->
+				<start>0x3c0</start>
+				<end>0x3df</end>
+				<mode>PRINT_AND_PASSTHROUGH</mode>
+			</ports>
+			<ports>
+				<!-- ISA PNP -->
+				<start>0x274</start>
+				<end>0x277</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- ISA PNP -->
+				<start>0x279</start>
+				<end>0x279</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- ISA PNP -->
+				<start>0xa79</start>
+				<end>0xa79</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+               </device>
+       </devices>
+
+
+</vm>
+
+

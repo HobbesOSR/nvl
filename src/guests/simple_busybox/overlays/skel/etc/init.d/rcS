@@ -1,0 +1,15 @@
+echo "BEGIN /etc/init.d/rcS"
+
+echo "Starting syslogd..."
+/sbin/syslogd
+
+echo "Starting klogd"
+/sbin/klogd
+
+echo "Starting networking"
+/sbin/ifup -a
+
+echo "Starting dropbear ssh server"
+/sbin/dropbear
+
+echo "END /etc/init.d/rcS"

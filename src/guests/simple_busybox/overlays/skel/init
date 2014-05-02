@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# Mount things needed by this script
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devpts devpts /dev/pts
+mount -t tmpfs tmpfs /dev/shm
+mount -t tmpfs tmpfs /tmp
+#mount -t cgroup -ocpuset cpuset /dev/cgroup
+
+# Generate device files
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+mdev -s
+chmod go+rw /dev/ptmx
+
+# Setup msr and cpuid device files
+msr_major=202
+cpuid_major=203
+n=0
+while [ $n -lt 32 ]; do
+    mkdir -m 0755 -p /dev/cpu/$n
+    mknod /dev/cpu/$n/msr -m 0600 c $msr_major $n
+    mknod /dev/cpu/$n/cpuid -m 0444 c $cpuid_major $n
+    n=`expr $n + 1`
+done
+
+# Setup for infiniband
+mkdir -m 0755 -p /dev/infiniband
+mknod /dev/infiniband/issm0 -m 0600 c 231 64
+mknod /dev/infiniband/issm1 -m 0600 c 231 65
+#mknod /dev/infiniband/rdma_cm -m 0666 c 10 61
+mknod /dev/infiniband/umad0 -m 0600 c 231 0
+mknod /dev/infiniband/umad1 -m 0600 c 231 1
+mknod /dev/infiniband/uverbs0 -m 0666 c 231 192
+
+# Misc. debugging
+#ls -l /dev
+
+# Fire up the console
+exec /sbin/init "$@" < /dev/console > /dev/console 2>&1

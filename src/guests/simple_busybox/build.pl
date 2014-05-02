@@ -40,30 +40,6 @@ $dropbear{tarball}	= "$dropbear{basename}.tar.bz2";
 $dropbear{url}		= "http://matt.ucc.asn.au/dropbear/releases/$dropbear{tarball}";
 push(@packages, \%dropbear);
 
-my %slurm;
-$slurm{package_type}    = "tarball";
-$slurm{version}		= "2.6.7";
-$slurm{basename}	= "slurm-$slurm{version}";
-$slurm{tarball}		= "$slurm{basename}.tar.bz2";
-$slurm{url}		= "http://www.schedmd.com/download/archive/$slurm{tarball}";
-push(@packages, \%slurm);
-
-my %mpich;
-$mpich{package_type}	= "tarball";
-$mpich{version}		= "3.1";
-$mpich{basename}	= "mpich-$mpich{version}";
-$mpich{tarball}		= "$mpich{basename}.tar.gz";
-$mpich{url}		= "http://www.mcs.anl.gov/research/projects/mpich2/downloads/tarballs/$mpich{version}/$mpich{tarball}";
-push(@packages, \%mpich);
-
-my %ompi;
-$ompi{package_type}	= "tarball";
-$ompi{version}		= "1.7.4";
-$ompi{basename}		= "openmpi-$ompi{version}";
-$ompi{tarball}		= "$ompi{basename}.tar.bz2";
-$ompi{url}		= "http://www.open-mpi.org/software/ompi/v1.7/downloads//$ompi{tarball}";
-push(@packages, \%ompi);
-
 my %libhugetlbfs;
 $libhugetlbfs{package_type} = "tarball";
 $libhugetlbfs{version}	= "2.17";
@@ -88,44 +64,16 @@ $hwloc{tarball}		= "$hwloc{basename}.tar.gz";
 $hwloc{url}		= "http://www.open-mpi.org/software/hwloc/v$hwloc{version}/downloads/$hwloc{tarball}";
 push(@packages, \%hwloc);
 
-my %kvm;
-$kvm{package_type}      = "tarball";
-$kvm{version}		= "1.7.0";
-$kvm{basename}		= "qemu-$kvm{version}";
-$kvm{tarball}		= "$kvm{basename}.tar.bz2";
-$kvm{url}		= "http://wiki.qemu-project.org/download/$kvm{tarball}";
-push(@packages, \%kvm);
-
-my %libvirt;
-$libvirt{package_type}  = "tarball";
-$libvirt{version}	= "1.2.2";
-$libvirt{basename}	= "libvirt-$libvirt{version}";
-$libvirt{tarball}	= "$libvirt{basename}.tar.gz";
-$libvirt{url}		= "http://libvirt.org/sources/$libvirt{tarball}";
-push(@packages, \%libvirt);
-
-my %palacios;
-$palacios{package_type} = "git";
-$palacios{basename}	= "palacios";
-$palacios{clone_cmd}	= "git clone ssh://ktpedre\@newskysaw.cs.northwestern.edu//home/palacios/palacios.releases $palacios{basename}";
-$palacios{branch_cmd}	= "git checkout --track -b Release-1.3 origin/Release-1.3";
-push(@packages, \%palacios);
-
-
 my %program_args = (
 	build_kernel		=> 0,
 	build_busybox		=> 0,
 	build_dropbear		=> 0,
-	build_slurm		=> 0,
-	build_mpich		=> 0,
-	build_ompi		=> 0,
 	build_libhugetlbfs	=> 0,
 	build_numactl		=> 0,
 	build_hwloc		=> 0,
-	build_kvm		=> 0,
-	build_libvirt		=> 0,
-	build_palacios		=> 0,
-	build_image		=> 0
+	build_image		=> 0,
+	build_isoimage		=> 0,
+	build_nvl_guest		=> 0
 );
 
 if ($#ARGV == -1) {
@@ -138,16 +86,12 @@ GetOptions(
 	"build-kernel"		=> sub { $program_args{'build_kernel'} = 1; },
 	"build-busybox"		=> sub { $program_args{'build_busybox'} = 1; },
 	"build-dropbear"	=> sub { $program_args{'build_dropbear'} = 1; },
-	"build-slurm"		=> sub { $program_args{'build_slurm'} = 1; },
-	"build-mpich"		=> sub { $program_args{'build_mpich'} = 1; },
-	"build-ompi"		=> sub { $program_args{'build_ompi'} = 1; },
 	"build-libhugetlbfs"	=> sub { $program_args{'build_libhugetlbfs'} = 1; },
 	"build-numactl"		=> sub { $program_args{'build_numactl'} = 1; },
 	"build-hwloc"		=> sub { $program_args{'build_hwloc'} = 1; },
-	"build-kvm"		=> sub { $program_args{'build_kvm'} = 1; },
-	"build-libvirt"		=> sub { $program_args{'build_libvirt'} = 1; },
-	"build-palacios"	=> sub { $program_args{'build_palacios'} = 1; },
 	"build-image"		=> sub { $program_args{'build_image'} = 1; },
+	"build-isoimage"        => sub { $program_args{'build_isoimage'} = 1; },
+	"build-nvl-guest"	=> sub { $program_args{'build_nvl_guest'} = 1; },
 	"<>"			=> sub { usage(); exit(1); }
 );
 
@@ -288,37 +232,6 @@ if ($program_args{build_dropbear}) {
 	chdir "$BASEDIR" or die;
 }
 
-# Build SLURM
-if ($program_args{build_slurm}) {
-	print "CNL: Building SLURM $slurm{basename}\n";
-	chdir "$SRCDIR/$slurm{basename}" or die;
-	system "./configure --enable-debug --with-ssl --prefix=$BASEDIR/$SRCDIR/slurm-install";
-	system "make";
-	system "make install";
-	system "cp -R $BASEDIR/$CONFIGDIR/slurm_config/etc $BASEDIR/$SRCDIR/slurm-install/";
-	chdir "$BASEDIR" or die;
-}
-
-# Build MPICH2
-if ($program_args{build_mpich}) {
-	print "CNL: Building MPICH2 $mpich{basename}\n";
-	chdir "$SRCDIR/$mpich{basename}" or die;
-	system "LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --enable-fast --with-pmi=slurm --with-pm=no --with-slurm=$BASEDIR/$SRCDIR/slurm-install/ --prefix=$BASEDIR/$SRCDIR/$mpich{basename}-install";
-	system "make";
-	system "make install";
-	chdir "$BASEDIR" or die;
-}
-
-# Build OpenMPI
-if ($program_args{build_ompi}) {
-	print "CNL: Building OpenMPI $ompi{basename}\n";
-	chdir "$SRCDIR/$ompi{basename}" or die;
-	system "LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --with-slurm=$BASEDIR/$SRCDIR/slurm-install/ --with-pmi=$BASEDIR/$SRCDIR/slurm-install/ --prefix=$BASEDIR/$SRCDIR/$ompi{basename}-install --with-xpmem=/cluster_tools/lw_linux_standalone/src/xpmem-install";
-	system "make";
-	system "make install";
-	chdir "$BASEDIR" or die;
-}
-
 # Build libhugetlbfs
 if ($program_args{build_libhugetlbfs}) {
 	print "CNL: Building libhugetlbfs $libhugetlbfs{basename}\n";
@@ -353,58 +266,6 @@ if ($program_args{build_hwloc}) {
 	system "./configure --prefix=/usr";
 	system "make";
 	system "make install DESTDIR=$BASEDIR/$SRCDIR/$hwloc{basename}/_install";
-	chdir "$BASEDIR" or die;
-}
-
-# Build KVM
-if ($program_args{build_kvm}) {
-	print "CNL: Building kvm $kvm{basename}\n";
-	chdir "$SRCDIR/$kvm{basename}" or die;
-	system "rm -rf ./_install";
-	system "./configure --prefix=/usr";
-	system "make";
-	system "make install DESTDIR=$BASEDIR/$SRCDIR/$kvm{basename}/_install";
-	system "cp -R $BASEDIR/$CONFIGDIR/kvm_config/etc $BASEDIR/$SRCDIR/$kvm{basename}/_install/";
-	chdir "$BASEDIR" or die;
-}
-
-# Build libvirt
-if ($program_args{build_libvirt}) {
-	print "CNL: Building libvirt $libvirt{basename}\n";
-	chdir "$SRCDIR/$libvirt{basename}" or die;
-	system "rm -rf ./_install";
-	system "./configure --prefix=/usr --disable-static --without-selinux --without-python --without-lxc --without-openvz --without-uml";
-	system "make";
-	system "make install DESTDIR=$BASEDIR/$SRCDIR/$libvirt{basename}/_install";
-	system "rm -rf ./_install/share"; # don't need manpages
-	system "rm ./_install/etc/libvirt/qemu/networks/autostart/default.xml"; # don't start virbr0 interface automatically
-	chdir "$BASEDIR" or die;
-}
-
-# Build Palacios
-if ($program_args{build_palacios}) {
-	print "CNL: Building $palacios{basename}\n";
-	chdir "$SRCDIR/$palacios{basename}" or die;
-	if (-e ".config") {
-		print "CNL: Aready configured, skipping copy of default .config\n";
-	} else {
-		print "CNL: Using default .config\n";
-		copy "$BASEDIR/$CONFIGDIR/palacios_config", ".config" or die;
-		my $kernel_path = "\"$BASEDIR/$SRCDIR/$kernel{basename}\"";
-		# perl foo to set the correct linux kernel path in the palacios config file
-		system "/usr/bin/perl -p -i -e \"s/#LINUX_KERNEL_PATH#/\Q$kernel_path\E/g\" .config";
-		system "make oldconfig";
-	}
-
-	# Build palacios library and linux modules
-	system "make clean";
-	system "make";
-
-	# Build palacios linux user-level utilities
-	chdir "linux_usr" or die;
-	system "make clean";
-	system "make";
-
 	chdir "$BASEDIR" or die;
 }
 
@@ -447,10 +308,6 @@ if ($program_args{build_image}) {
 	system("rsync -a $OVERLAYDIR/skel/\* $IMAGEDIR/") == 0
 		or die "Failed to rsync skeleton directory to $IMAGEDIR";	
 
-	# Use rsync to merge in gato overlay
-	system("rsync -a $OVERLAYDIR/gato/\* $IMAGEDIR/") == 0
-		or die "Failed to rsync gato directory to $IMAGEDIR";	
-
 	# Install numactl into image
 	system("rsync -a $SRCDIR/$numactl{basename}/_install/\* $IMAGEDIR/") == 0
 		or die "Failed to rsync numactl to $IMAGEDIR";
@@ -471,46 +328,6 @@ if ($program_args{build_image}) {
 	# Find and copy all shared library dependencies
 	copy_libs($IMAGEDIR);
 
-	# Build the guest initramfs image, initramfs_guest.gz
-	# Fixup permissions, need to copy everything to a tmp directory
-	system "cp -R $IMAGEDIR $IMAGEDIR\_tmp";
-	system "sudo chown -R root.root $IMAGEDIR\_tmp";
-	system "sudo chmod +s $IMAGEDIR\_tmp/bin/busybox_root";
-	system "sudo chmod 777 $IMAGEDIR\_tmp/tmp";
-	system "sudo chmod +t $IMAGEDIR\_tmp/tmp";
-	chdir  "$IMAGEDIR\_tmp" or die;
-	system "sudo find . | sudo cpio -H newc -o > $BASEDIR/initramfs_guest.cpio";
-	chdir  "$BASEDIR" or die;
-	system "cat initramfs_guest.cpio | gzip > initramfs_guest.gz";
-	system "rm initramfs_guest.cpio";
-	system "sudo rm -rf $IMAGEDIR\_tmp";
-
-	# Install KVM and related files to image
-	system("rsync -a $SRCDIR/$kvm{basename}/_install/\* $IMAGEDIR/") == 0
-		or die "Failed to rsync KVM to $IMAGEDIR";
-
-	# Install libvirt and related files to image
-	system("rsync -a $SRCDIR/$libvirt{basename}/_install/\* $IMAGEDIR/") == 0
-		or die "Failed to rsync libvirt to $IMAGEDIR";
-
-#	# Install palacios kernel module and related utilities to image
-#	system "cp $SRCDIR/$palacios{basename}/v3vee.ko $IMAGEDIR/";
-#	foreach my $file (<$BASEDIR/$SRCDIR/$palacios{basename}/linux_usr/*>) {
-#		if (-X $file) {
-#			system "cp $file $IMAGEDIR/usr/bin";
-#		}
-#	}
-
-	# Copy mirror of host boot image to image,
-	# can be used to start a vm that is a mirror of the host
-	system "mkdir -p $IMAGEDIR/opt/vms/host_mirror";
-	system "cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage $IMAGEDIR/opt/vms/host_mirror";
-	system "cp initramfs_guest.gz $IMAGEDIR/opt/vms/host_mirror/initramfs.gz";
-	system "cp $CONFIGDIR/host_mirror/* $IMAGEDIR/opt/vms/host_mirror/";
-
-	# Find and copy all shared library dependencies
-	copy_libs($IMAGEDIR);
-
 	# Build the guest initramfs image
 	# Fixup permissions, need to copy everything to a tmp directory
 	system "cp -R $IMAGEDIR $IMAGEDIR\_tmp";
@@ -524,4 +341,27 @@ if ($program_args{build_image}) {
 	system "cat initramfs.cpio | gzip > initramfs.gz";
 	system "rm initramfs.cpio";
 	system "sudo rm -rf $IMAGEDIR\_tmp";
+}
+
+
+##############################################################################
+# Build an ISO Image
+##############################################################################
+if ($program_args{build_isoimage}) {
+	system "mkdir -p isoimage";
+	system "cp /usr/share/syslinux/isolinux.bin isoimage";
+	system "cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage";
+	system "cp initramfs.gz isoimage/initrd.img";
+	system "echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg";
+#	system "echo 'default bzImage initrd=initrd.img console=hvc0' > isoimage/isolinux.cfg";
+#	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
+	system "mkisofs -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage";
+}
+
+
+##############################################################################
+# Build a Palacios Guest Image for the NVL (xml config file + isoimage)
+##############################################################################
+if ($program_args{build_nvl_guest}) {
+        system "../../nvl/palacios/utils/guest_creator/build_vm config/nvl_guest.xml -o image.img"
 }
