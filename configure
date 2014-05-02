@@ -22,7 +22,7 @@ if ($tar eq "Kitten") {
 sub gen_run_qemu {
   # assume bzImage, initrd
   open(R,">$nvl/run") or die "Cannot write run script\n";
-  print R "qemu-system-x86_64 -smp 4 -kernel $nvl/bzImage -append \"console=vga,serial\" -initrd $nvl/initrd.img -serial stdio\n";
+  print R "qemu-system-x86_64 -m 1024 -smp 4 -kernel $nvl/bzImage -append \"console=serial\" -initrd $nvl/initrd.img -serial stdio\n";
   close (R);
   system "chmod +x $nvl/run";
 }
