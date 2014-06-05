@@ -1,5 +1,10 @@
 Welcome to the NVL
 
+To complete your checkout, first run either 
+scripts/devel_checkout.sh or scripts/full_devel_checkout.sh.
+The former is the default.   If you need more information
+look at README.DEV.
+
 To build the NVL for the first time, it is necessary to
 do the following:
 

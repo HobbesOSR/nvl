@@ -1,15 +1,63 @@
-After a fresh checkout of the NVL repository, two extra steps are required to
-download required external repositories. Do this by running the following git
-commands:
+After you have cloned the NVL repository, you are one step away from
+being able to do development.
 
-git submodule init
-git submodule update
+Devel vs. Full Devel Checkouts
+==============================
 
-See README for configure and build instructions.
+The NVL includes various submodules (currently, Kitten and Palacios)
+that are maintained in repositories separate from the NVL repository.
+In a "devel" checkout of the NVL, these submodules will reflect what
+their developers currently consider to be ready for general use in the
+NVL.  In contrast, in a "full devel" checkout, these submodules will
+reflect their latest versions (their main development branch heads).
 
-Directories Layout
-==================
+Generally, you will only want the "full devel" checkout if you intend
+to make changes to a submodule that you want to be able to easily
+propagate back to its repository, for example, via a push.  
+
+To do a regular "devel" checkout, run:
+
+cd $NVL  # NVL top level directory
+scripts/devel_checkout.sh
+
+To do a "full devel" checkout, run:
+
+cd $NVL  # NVL top level directory
+scripts/full_devel_checkout.sh
+
+
+Version Control Scripts
+=======================
+
+All source is managed using git.   For convenience, we provide several
+scripts automate some of the more complex operations, particularly 
+in regard to submodules.
+
+scripts/update.sh              - update the NVL (pull)
+scripts/full_update.sh         - update the NVL and submodules 
+scripts/release_submodule.pl   - make submodule devel head become 
+                                 default for NVL users
+                                 (should be used only be submodule devels)
+
+These scripts should be run from the NVL root directory.
+
+
+Configuring, Building and Running
+=================================
+
+See README for these instructions.
+
+
+Directory Layout
+================
+/                   Top-level documentation and scripts
 /src                All Buildable Source
 /src/nvl            Node Virtualization Layer
 /src/nvl/kitten     Kitten Lightweight Kernel         (git submodule)
 /src/nvl/palacios   Palacios Virtual Machine Monitor  (git submodule)
+/src/guests         Source for building test guests
+/scripts            Development / Source control scripts
+/configs            Default configurations
+/guests             Sample guests for virtualization
+
+
