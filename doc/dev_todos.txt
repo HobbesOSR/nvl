@@ -1,0 +1,28 @@
+Things we need to do, possibly focus upcoming hackfest
+on some of these items:
+
+1. Kitten integration between Palacios and Kitten.
+   Jack's Palacios tree has a module that creates
+   Kitten kfs files to control/configure/manage
+   Palacios VMs running on Pisces.  Kitten user-space
+   can use these files to configure Palacios VMs.
+   Port the kfs module to NVL tree.
+
+2. Job launch.  Need a way to scalably launch app
+   images and guest images on Titan.
+
+3. Commit Jorge's I/O forwarding layer to Kitten.
+   Currently this intercepts I/O related calls from
+   Kitten user-space app, then forwards to a user-space
+   daemon.  Daemon uses Portals4 to forward I/O request
+   to Linux side.  Linux side uses Portals4 put/get directly
+   to/from Kitten user-process.  On Pisces the daemon
+   can probably be avoided and forward directly from Kitten
+   kernel-space to Linux side.
+
+4. Support for uGNI in Kitten user-level apps and Palacios
+   guests.  Since we are using Pisces we can forward uGNI
+   IOCTLs to Cray Linux.  This should minimize changes to
+   uGNI driver.  Alternatively, we can mod uGNI driver to
+   operate in "co-driver" mode, where it runs in each enclave
+   and they know how to coordinate with each other.
