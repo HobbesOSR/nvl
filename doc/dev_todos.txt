@@ -26,3 +26,10 @@ on some of these items:
    uGNI driver.  Alternatively, we can mod uGNI driver to
    operate in "co-driver" mode, where it runs in each enclave
    and they know how to coordinate with each other.
+
+5. Determine whether we want to merge the Palacios trees
+   and when, who, and how this will happen.   There is enough
+   divergence between the trees to make this quite painful.
+   If we don't have buy-in from all of us to make this happen,
+   it is probably pointless to pursue it.  
+
