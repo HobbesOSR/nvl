@@ -1,0 +1,58 @@
+Steps for building Pisces
+
+1. Configure and build Kitten
+     cp nvl/configs/pisces/kitten.config .config
+     make
+
+2. Configure and build Palacios
+     cp nvl/configs/pisces/palacios.config .config
+     make
+
+3. Rebuild Kitten to statically link in Palacios library
+     cd kitten
+     make
+
+4. Configure and build Pisces
+     # Edit Pisces top-level Makefile, set KERN_PATH to point to
+     # your kernel build tree
+     KERN_PATH = /home/ktpedre/working/cray_linux/PrgEnv-4.2.34/kernel-source-2.6.32.59
+     make
+
+5. Pisces host-OS tools are build in pisces/linux_usr
+   Put the tools in your host OS image.
+   
+
+6. Boot your host OS, load Pisces module, use Pisces tools to create envlaves
+     insmod pisces.ko
+     pisces_load vmlwk.bin pisces_init_task "console=pisces"
+     pisces_launch /dev/pisces-enclave0
+
+     # After enclave is launched, add CPU and memory to it
+
+     # Add one block of memory. By default each block is 128 MB
+     pisces_ctrl --mem=1 /dev/pisces-enclave0
+
+     # Add a block of memory from NUMA zone 1 to enclave.
+     # NUMA zone IDs correspond to OS logical NUMA zone IDs.
+     pisces_ctrl --mem=1 --numa=1
+
+     # Add three CPU cores, explicitly specify cores 1, 4, and 2.
+     # CPU core numbers correspond to OS logical core IDs.
+     pisces_ctrl -e --cpu=1,4,2 /dev/pisces-enclave0
+
+     # Add any three CPU cores to enclave.
+     pisces_ctrl --cpu=3 /dev/pisces-enclave0
+
+
+==========================================================================
+
+Cray XE/XK Notes
+----------------
+Pisces depends on having a Linux kernel with CPU hotremove and memory
+hotremove enabled.  Cray's compute node Linux kernel does not have
+CPU hotremove enabled so it needs to be recompiled.  Turning on CPU
+hotremove changes the kernel percpu ABI so anything that depends on 
+percpu variables needs to be recompiled.  Lustre uses percpu variables
+so it needs to be recompiled, which is a royal pain.  Cray's Gemini
+kGNI driver also needs to be recompiled.  Recompiling Lustre and Gemini
+kernel modules appears to be enough to get a compute node to boot.
