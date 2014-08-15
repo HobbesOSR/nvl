@@ -4,3 +4,12 @@
 [submodule "src/nvl/palacios"]
 	path = src/nvl/palacios
 	url = http://v3vee.org/palacios/palacios.web/palacios.git
+[submodule "src/nvl/pisces/palacios"]
+	path = src/nvl/pisces/palacios
+	url = http://essex.cs.pitt.edu/git/palacios.git
+[submodule "src/nvl/pisces/pisces"]
+	path = src/nvl/pisces/pisces
+	url = http://essex.cs.pitt.edu/git/pisces.git
+[submodule "src/nvl/pisces/petlib"]
+	path = src/nvl/pisces/petlib
+	url = http://essex.cs.pitt.edu/git/petlib.git
