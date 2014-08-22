@@ -1,0 +1,6 @@
+menuconfig KGNI
+	tristate "Fake KGNI support"
+	depends on PCI 
+	---help---
+	  gemini in Guest Environment. 
+

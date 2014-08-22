@@ -1,0 +1,34 @@
+Note: This code will not build automatically. So please read on.
+
+step1:  
+
+Under guest directory there is  simple kgni stub driver. Please add this to <LINUX_KERNEL_SRC>/drivers. one
+might need to add "+kgni" in Makefile chain as needed.
+
+step 2: Above module will be built-in inside guest linux image. Once guest VM is up and connected to console
+via STREAM  check and create the /dev entry. i.e:
+
+/ # dmesg | grep kgni
+
+fake kgni init called
+guest kgni : major number of our device is 252
+guest kgni : to use mknod /dev/kgni c 252 0
+ kgni init succesful 252
+/ # 
+/ # mknod /dev/kgni0 c 252 0
+/ # chmod 777 /dev/kgni0
+
+Step 2: 
+
+Look at simple test case under guest/sample-apps. This will simple do a open() and issue an ioctl() to above fake kgni
+driver.
+
+
+Step 3: 
+
+Under host/palacios-changes  I have modified os_debug device, which registers two extra Hypercall 
+and have associated handler. Above ioctl() on step2  from guest kernel will pass few parameters to Palacios VMM.
+
+... more to be added
+
+ 
