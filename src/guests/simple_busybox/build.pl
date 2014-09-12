@@ -64,6 +64,14 @@ $hwloc{tarball}		= "$hwloc{basename}.tar.gz";
 $hwloc{url}		= "http://www.open-mpi.org/software/hwloc/v$hwloc{version}/downloads/$hwloc{tarball}";
 push(@packages, \%hwloc);
 
+my %ompi;
+$ompi{package_type}	= "tarball";
+$ompi{version}		= "1.8.2";
+$ompi{basename}		= "openmpi-$ompi{version}";
+$ompi{tarball}		= "$ompi{basename}.tar.bz2";
+$ompi{url}		= "http://www.open-mpi.org/software/ompi/v1.8/downloads//$ompi{tarball}";
+push(@packages, \%ompi);
+
 my %program_args = (
 	build_kernel		=> 0,
 	build_busybox		=> 0,
@@ -71,6 +79,8 @@ my %program_args = (
 	build_libhugetlbfs	=> 0,
 	build_numactl		=> 0,
 	build_hwloc		=> 0,
+	build_ompi		=> 0,
+
 	build_image		=> 0,
 	build_isoimage		=> 0,
 	build_nvl_guest		=> 0
@@ -89,6 +99,7 @@ GetOptions(
 	"build-libhugetlbfs"	=> sub { $program_args{'build_libhugetlbfs'} = 1; },
 	"build-numactl"		=> sub { $program_args{'build_numactl'} = 1; },
 	"build-hwloc"		=> sub { $program_args{'build_hwloc'} = 1; },
+	"build-ompi"		=> sub { $program_args{'build_ompi'} = 1; },
 	"build-image"		=> sub { $program_args{'build_image'} = 1; },
 	"build-isoimage"        => sub { $program_args{'build_isoimage'} = 1; },
 	"build-nvl-guest"	=> sub { $program_args{'build_nvl_guest'} = 1; },
@@ -269,11 +280,22 @@ if ($program_args{build_hwloc}) {
 	chdir "$BASEDIR" or die;
 }
 
+# Build OpenMPI
+if ($program_args{build_ompi}) {
+	print "CNL: Building OpenMPI $ompi{basename}\n";
+	chdir "$SRCDIR/$ompi{basename}" or die;
+	system "LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=$BASEDIR/$SRCDIR/$ompi{basename}/_install";
+	system "make";
+	system "make install";
+	chdir "$BASEDIR" or die;
+}
+
+
 ##############################################################################
 # Build Initramfs Image
 ##############################################################################
 if ($program_args{build_image}) {
-	system "rm -rf $IMAGEDIR/*";
+	#system "rm -rf $IMAGEDIR/*";
 
 	# Create some directories needed for stuff
 	system "mkdir -p $IMAGEDIR/etc";
@@ -320,6 +342,10 @@ if ($program_args{build_image}) {
 	system("rsync -a $SRCDIR/$libhugetlbfs{basename}/_install/\* $IMAGEDIR/") == 0
 		or die "Failed to rsync libhugetlbfs to $IMAGEDIR";
 
+	# Install OpenMPI into image
+	system("rsync -a $SRCDIR/$ompi{basename}/_install/\* $IMAGEDIR/") == 0
+		or die "Failed to rsync OpenMPI to $IMAGEDIR";
+
 	# Files copied from build host
 	system "cp /etc/localtime $IMAGEDIR/etc";
 	system "cp /lib/libnss_files.so.* $IMAGEDIR/lib";
@@ -352,7 +378,7 @@ if ($program_args{build_isoimage}) {
 	system "cp /usr/share/syslinux/isolinux.bin isoimage";
 	system "cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage";
 	system "cp initramfs.gz isoimage/initrd.img";
-	system "echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg";
+	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
 #	system "echo 'default bzImage initrd=initrd.img console=hvc0' > isoimage/isolinux.cfg";
 #	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
 	system "mkisofs -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage";
