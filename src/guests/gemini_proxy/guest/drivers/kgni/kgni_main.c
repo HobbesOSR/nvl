@@ -1,3 +1,11 @@
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/version.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/errno.h>
+#include <asm/uaccess.h>
 #include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -17,73 +25,30 @@
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <linux/interrupt.h>
+ 
 #include "kgni.h"
-#include "gni_pub.h"
-
-
-char kgni_driver_name[] = "kgni";
-static int      kgni_driver_numdev = 1;
-static dev_t    kgni_dev_id;
-static int      kgni_major = 0;
-struct cdev *kgni_cdev;
-
-#define SEND_RECV_ARGS  10
-
-int kgni_open(struct inode *inode, struct file *filp)
+ 
+#define FIRST_MINOR 0
+#define MINOR_CNT 1
+ 
+static dev_t dev;
+static struct cdev c_dev;
+static struct class *cl;
+static int cookie = 1, ptag = 3, instance = 10;
+ 
+static int kgni_open(struct inode *i, struct file *f)
 {
-        kgni_file_t     *file_inst;
-
-	printk(KERN_DEBUG "fake kgni open called");
-
-        file_inst = kmalloc(sizeof(kgni_file_t), GFP_KERNEL);
-        if (file_inst == NULL) {
-                return (-ENOMEM);
-        }
-
-        filp->private_data = file_inst;
-        return 0;
-
+    return 0;
 }
-
-/**
- * kgni_close - File close
- **/
-int kgni_close(struct inode *inode, struct file *filp)
+static int kgni_close(struct inode *i, struct file *f)
 {
-        kgni_file_t     *file_inst;
-        kgni_device_t   *kgni_dev;
-
-        kgni_dev = container_of(inode->i_cdev, kgni_device_t, cdev);
-
-        file_inst = filp->private_data;
-	filp->private_data = NULL;
-
-        kfree(file_inst);
-
-        return 0;
-}
-
-
-
-/**
- * kgni_exit - driver cleanup routine
- *
- * Called before the driver is removed from the memory
- **/
-static void __exit kgni_exit(void)
-{
-	cdev_del(kgni_cdev); /*removing the structure that we added previously*/
-    printk(KERN_INFO " kgni : removed the gni from kernel\n");
-
-    unregister_chrdev_region(kgni_dev_id,1);
-    printk(KERN_INFO "kgni: unregistered the device numbers\n");
-
+    return 0;
 }
 
 static __inline__ unsigned long hcall3(unsigned long result,  unsigned long hcall_id, unsigned long param1, void * param2, unsigned long param3, void * param4)
 {
                 __asm__ volatile ("movq %1, %%rax;"
-                "movq %2, %%rcx;" 
+                "movq %2, %%rcx;"
                 "movq %3, %%rbx;"
                 "movq %4, %%rdx;"
                 "movq %5, %%rsi;"
@@ -95,97 +60,114 @@ static __inline__ unsigned long hcall3(unsigned long result,  unsigned long hcal
         return result;
 }
 
-
-/**
- * kgni_ioctl - The ioctl() implementation
- **/
-static long kgni_ioctl(struct file *filp,
-                        unsigned int cmd, unsigned long arg)
+static long kgni_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
+    kgni_arg_t q, q_dest;
 	long retval = 0;
-	unsigned long hcall=0xc0c2;
+        unsigned long hcall=0xc0c2;   /* handle cdm_attach case os_debug.c*/
         unsigned long    trial=0;
-        unsigned long len= 8000 * 3000;
         unsigned long buf_is_va=1;
-	kgni_file_t                     *file_inst = filp->private_data;
-        kgni_device_t                   *kgni_dev;
-        struct inode                    *inode = filp->f_dentry->d_inode;
-	/* have send_hcalls */
 
-	switch (cmd) {
-	case SEND_RECV_ARGS:
-
+ 
+    switch (cmd)
+    {
+        case KGNI_GET_VARIABLES:
+            q.cookie = cookie;
+            q.ptag = ptag;
+            q.instance = instance;
+            if (copy_to_user((kgni_arg_t *)arg, &q, sizeof(kgni_arg_t)))
+            {
+                return -EACCES;
+            }
+            break;
+        case KGNI_CLR_VARIABLES:
+            cookie = 0;
+            ptag = 0;
+            instance = 0;
+            break;
+        case KGNI_SET_VARIABLES:
+            if (copy_from_user(&q, (kgni_arg_t *)arg, sizeof(kgni_arg_t)))
+            {
+                return -EACCES;
+            }
+            cookie = q.cookie;
+            ptag = q.ptag;
+            instance = q.instance;
+            break;
+	case KGNI_SEND_BUF:
 		printk(KERN_INFO, "Shyamali simple arg pass ioctl from guest\n");
-		void *kbuf_src = kmalloc(len, GFP_KERNEL); 
-		void *kbuf_dest = kmalloc(len, GFP_KERNEL); 
-		if (copy_from_user(kbuf_src, (void *)arg, len)) {
-                        retval = -1;
-                        break;
-                }
-		unsigned long result =  hcall3(trial, hcall, len, &kbuf_src, buf_is_va, &kbuf_dest);
-		break;
 /*
-	case GNI_IOC_NIC_SETATTR:
-                if (_IOC_SIZE(cmd) != sizeof(nic_attr)) {
-                        GPRINTK_RL(1, KERN_INFO, "Bad ioctl argument size for cmd = %d", _IOC_NR(cmd));
-                        retval = -1;
-                        break;
-                }
-                GPRINTK_RL(0, KERN_INFO, "Shyamali aprun command from host to node 47");
-                if (copy_from_user(&nic_attr, (void *)arg, sizeof(nic_attr))) {
-                        retval = -1;
-                        break;
-                }
-
-                retval = send_hcall(&nic_attr, sizeof(nic_attr));
-                if (retval) {
-                        break;
-                }
+                void *kbuf_src = kmalloc(len, GFP_KERNEL);
+                void *kbuf_dest = kmalloc(len, GFP_KERNEL);
 */
-	}
-	return 0;
-
+                if (copy_from_user(&q, (kgni_arg_t  *)arg, sizeof(kgni_arg_t))) {
+                        retval = -1;
+                        break;
+                }
+		unsigned long result =  hcall3(trial, hcall, sizeof(kgni_arg_t), &q, buf_is_va, &q_dest);
+                printk(KERN_INFO, "called hypercall from guest stub driver\n");
+                break;
+        default:
+            return -EINVAL;
+    }
+ 
+    return 0;
 }
-
-
-struct file_operations kgni_fops = {
-        .owner          = THIS_MODULE,
-        .unlocked_ioctl = kgni_ioctl,
-        .open           = kgni_open,
-        .release        = kgni_close,
+ 
+static struct file_operations kgni_fops =
+{
+    .owner = THIS_MODULE,
+    .open = kgni_open,
+    .release = kgni_close,
+    .unlocked_ioctl = kgni_ioctl
 };
-
-/*
-**
- * kgni_init - driver registration routine
- *
- * Returns 0 if registered successfully.
- **/
+ 
 static int __init kgni_init(void)
 {
-	int err;
-	/* Register char driver */
-	printk(KERN_DEBUG "fake kgni init called");
-	err = alloc_chrdev_region(&kgni_dev_id, 0, kgni_driver_numdev, kgni_driver_name);
-        if (err) {
-		printk(KERN_ALERT " guest kgni: failed to allocate major number\n");
-                return err;
-        }
-	kgni_major = MAJOR(kgni_dev_id);
-	printk(KERN_INFO "guest kgni : major number of our device is %d\n",kgni_major);
-    	printk(KERN_INFO "guest kgni : to use mknod /dev/%s c %d 0\n",kgni_driver_name, kgni_major);
-	kgni_cdev= cdev_alloc(); // Get an allocated cdev structure 
-	kgni_cdev->owner=THIS_MODULE; 
-	kgni_cdev->ops= &kgni_fops;
-	err = cdev_add(kgni_cdev,kgni_dev_id,1);
-    if(err < 0) {
-        printk(KERN_ALERT "kgni: device adding to the kerknel failed\n");
-        return err;
+    int ret;
+    struct device *dev_ret;
+ 
+ 
+    if ((ret = alloc_chrdev_region(&dev, FIRST_MINOR, MINOR_CNT, "kgni")) < 0)
+    {
+        return ret;
     }
-    else
-	printk(KERN_DEBUG " kgni init succesful %d\n", kgni_major);
-	return 0;
+ 
+    cdev_init(&c_dev, &kgni_fops);
+ 
+    if ((ret = cdev_add(&c_dev, dev, MINOR_CNT)) < 0)
+    {
+        return ret;
+    }
+     
+    if (IS_ERR(cl = class_create(THIS_MODULE, "char")))
+    {
+        cdev_del(&c_dev);
+        unregister_chrdev_region(dev, MINOR_CNT);
+        return PTR_ERR(cl);
+    }
+    if (IS_ERR(dev_ret = device_create(cl, NULL, dev, NULL, "kgni0")))
+    {
+        class_destroy(cl);
+        cdev_del(&c_dev);
+        unregister_chrdev_region(dev, MINOR_CNT);
+        return PTR_ERR(dev_ret);
+    }
+ 
+    return 0;
 }
-
+ 
+static void __exit kgni_exit(void)
+{
+    device_destroy(cl, dev);
+    class_destroy(cl);
+    cdev_del(&c_dev);
+    unregister_chrdev_region(dev, MINOR_CNT);
+}
+ 
 module_init(kgni_init);
 module_exit(kgni_exit);
+ 
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Shyamali Mukherjee <email_at_smukher-sandia_dot_gov>");
+MODULE_DESCRIPTION("kgni ioctl() Char Driver");

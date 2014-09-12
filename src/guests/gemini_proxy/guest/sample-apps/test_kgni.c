@@ -1,45 +1,146 @@
-#define _GNU_SOURCE
-#include <sched.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <errno.h>
+#include <stdlib.h>
+#include <sys/types.h>
 #include <fcntl.h>
-#include <sys/poll.h>
-#include <sched.h>
-
-#define SEND_RECV_ARGS 10
-int main (int argc, char *argv[])
+#include <unistd.h>
+#include <string.h>
+#include <sys/ioctl.h>
+ 
+#include "kgni.h"
+ 
+void get_vars(int fd)
 {
-
-
-    int rc;
-    int retval;
-    int kgni_fd;
-    unsigned long len = 8000 * 3000;
-     char *cmd_arg = (char *)malloc(len);
-
-    printf("open /dev/kgni0\n");
-
-    kgni_fd = open("/dev/kgni0", O_RDONLY);
-
-
-    if (kgni_fd == -1) {
-	perror("Could not open input file");
-        printf("Error opening kgni device: \n");
-        return -1;
+    kgni_arg_t q;
+ 
+    if (ioctl(fd, KGNI_GET_VARIABLES, &q) == -1)
+    {
+        perror("kgni ioctl get");
     }
-
-    int err = ioctl(kgni_fd, SEND_RECV_ARGS, &cmd_arg);
-
-    if (err < 0) {
-        printf("Error write iocrl to kgni\n");
-        return -1;
+    else
+    {
+        printf("cookie : %d\n", q.cookie);
+        printf("ptag: %d\n", q.ptag);
+        printf("instance    : %d\n", q.instance);
     }
-
-        printf("succes sending ioctl from guest app to guest  kernel\n");
-    close(kgni_fd);
-
+}
+void clr_vars(int fd)
+{
+    if (ioctl(fd, KGNI_CLR_VARIABLES) == -1)
+    {
+        perror("kgni ioctl clr cookies");
+    }
+}
+void send_buf(fd)
+{
+	kgni_arg_t q;
+	
+ 	q.cookie = 3000;
+	q.ptag = 5000;
+	q.instance = 20000;
+	
+	if (ioctl(fd, KGNI_SEND_BUF, &q) == -1)
+	{
+		perror("kgni ioctl send buf");
+	}
+	else {
+		printf("sucessfully sent buffer \n");
+	}
+}	
+void set_vars(int fd)
+{
+    int v;
+    kgni_arg_t q;
+ 
+    printf("Enter cookie: ");
+    scanf("%d", &v);
+    getchar();
+    q.cookie = v;
+    printf("Enter ptag: ");
+    scanf("%d", &v);
+    getchar();
+    q.ptag = v;
+    printf("Enter instance: ");
+    scanf("%d", &v);
+    getchar();
+    q.instance = v;
+ 
+    if (ioctl(fd, KGNI_SET_VARIABLES, &q) == -1)
+    {
+        perror("kgni ioctl set cookies");
+    }
+}
+ 
+int main(int argc, char *argv[])
+{
+    char *file_name = "/dev/kgni0";
+    int fd;
+    enum
+    {
+        e_get,
+        e_clr,
+        e_set,
+        b_set
+    } option;
+ 
+    if (argc == 1)
+    {
+        option = e_get;
+    }
+    else if (argc == 2)
+    {
+        if (strcmp(argv[1], "-g") == 0)
+        {
+            option = e_get;
+        }
+        else if (strcmp(argv[1], "-c") == 0)
+        {
+            option = e_clr;
+        }
+        else if (strcmp(argv[1], "-s") == 0)
+        {
+            option = e_set;
+        }
+        else if (strcmp(argv[1], "-b") == 0)
+        {
+            option = b_set;
+        }
+        else
+        {
+            fprintf(stderr, "Usage: %s [-g | -c | -s | -b]\n", argv[0]);
+            return 1;
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Usage: %s [-g | -c | -s | -b]\n", argv[0]);
+        return 1;
+    }
+    fd = open(file_name, O_RDWR);
+    if (fd == -1)
+    {
+        perror("/dev/kgni0 open");
+        return 2;
+    }
+ 
+    switch (option)
+    {
+        case e_get:
+            get_vars(fd);
+            break;
+        case e_clr:
+            clr_vars(fd);
+            break;
+        case e_set:
+            set_vars(fd);
+            break;
+        case b_set:
+            send_buf(fd);
+            break;
+        default:
+            break;
+    }
+ 
+    close (fd);
+ 
+    return 0;
 }

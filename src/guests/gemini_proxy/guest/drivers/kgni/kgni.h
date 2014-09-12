@@ -1,14 +1,15 @@
-
-struct kgni_device {
-        uint32_t                devnum;         /* device minor number */
-        struct device           *class_dev;
-        struct pci_dev          *pdev;
-        struct cdev             cdev;
-        uint32_t                ref_num;        /* number of references */
-};
-typedef struct kgni_device kgni_device_t;
-/* Private state associated with an open file. */
-typedef struct kgni_file {
-    kgni_device_t       *device;
-    uint64_t            app_data;
-} kgni_file_t;
+#ifndef QUERY_IOCTL_H
+#define QUERY_IOCTL_H
+#include <linux/ioctl.h>
+ 
+typedef struct
+{
+    int cookie, ptag, instance;
+} kgni_arg_t;
+ 
+#define KGNI_GET_VARIABLES _IOR('k', 1, kgni_arg_t *)
+#define KGNI_CLR_VARIABLES _IO('k', 2)
+#define KGNI_SET_VARIABLES _IOW('k', 3, kgni_arg_t *)
+#define KGNI_SEND_BUF _IOWR('k', 4, kgni_arg_t  *)
+ 
+#endif

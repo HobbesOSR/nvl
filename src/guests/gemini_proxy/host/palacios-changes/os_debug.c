@@ -188,10 +188,10 @@ static int handle_cdmattach(struct guest_info * info, uint_t hcall_id, void * pr
 
      host_src_va = (addr_t *)V3_Malloc(count);
     if (buf_is_va == 1) {
-        if (v3_read_gva_memory(info, src_va, count, (uchar_t *)host_src_va) != 0) {
+        if (v3_read_gva_memory(info, src_va, count, (uchar_t *)host_src_va) == 0) {
             PrintDebug(info->vm_info, info, "failed copy from user  GVA(%p)\n", (void *)src_va);
         }
-        if (v3_write_gva_memory(info, dest_va, count, (uchar_t *)host_src_va) != 0) {
+        if (v3_write_gva_memory(info, dest_va, count, (uchar_t *)host_src_va) == 0) {
             PrintDebug(info->vm_info, info, "failed copy to user back  GVA(%p)\n", (void *)dest_va);
         }
 
