@@ -215,6 +215,7 @@ if ($program_args{build_kernel}) {
 		system "make oldconfig";
 	}
 	system "make -j 4 bzImage";
+	system "INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -284,9 +285,12 @@ if ($program_args{build_hwloc}) {
 if ($program_args{build_ompi}) {
 	print "CNL: Building OpenMPI $ompi{basename}\n";
 	chdir "$SRCDIR/$ompi{basename}" or die;
-	system "LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=$BASEDIR/$SRCDIR/$ompi{basename}/_install";
+	# This is a horrible hack. We're installing OpenMPI into /opt on the host.
+	# This means we need to be root to do a make install and will possibly screw up the host.
+	# We should really be using chroot or something better.
+	system "LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename}";
 	system "make";
-	system "make install";
+	system "sudo make install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -330,6 +334,10 @@ if ($program_args{build_image}) {
 	system("rsync -a $OVERLAYDIR/skel/\* $IMAGEDIR/") == 0
 		or die "Failed to rsync skeleton directory to $IMAGEDIR";	
 
+	# Instal linux kernel modules
+	system("rsync -a $SRCDIR/$kernel{basename}/_install/\* $IMAGEDIR/") == 0
+		or die "Failed to rsync linux modules to $IMAGEDIR";
+
 	# Install numactl into image
 	system("rsync -a $SRCDIR/$numactl{basename}/_install/\* $IMAGEDIR/") == 0
 		or die "Failed to rsync numactl to $IMAGEDIR";
@@ -343,13 +351,15 @@ if ($program_args{build_image}) {
 		or die "Failed to rsync libhugetlbfs to $IMAGEDIR";
 
 	# Install OpenMPI into image
-	system("rsync -a $SRCDIR/$ompi{basename}/_install/\* $IMAGEDIR/") == 0
+	system("cp -R /opt/$ompi{basename} $IMAGEDIR/opt") == 0
 		or die "Failed to rsync OpenMPI to $IMAGEDIR";
 
 	# Files copied from build host
 	system "cp /etc/localtime $IMAGEDIR/etc";
 	system "cp /lib/libnss_files.so.* $IMAGEDIR/lib";
 	system "cp /lib64/libnss_files.so.* $IMAGEDIR/lib64";
+	system "cp /usr/bin/ldd $IMAGEDIR/usr/bin";
+	system "cp /usr/bin/strace $IMAGEDIR/usr/bin";
 
 	# Find and copy all shared library dependencies
 	copy_libs($IMAGEDIR);

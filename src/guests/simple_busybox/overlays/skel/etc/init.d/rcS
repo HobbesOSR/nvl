@@ -12,4 +12,32 @@ echo "Starting networking"
 echo "Starting dropbear ssh server"
 /sbin/dropbear
 
+echo "Loading Infiniband Modules"
+/sbin/modprobe ib_core
+/sbin/modprobe ib_mad
+/sbin/modprobe ib_sa
+/sbin/modprobe ib_cm
+/sbin/modprobe ib_ipoib
+/sbin/modprobe ib_umad
+/sbin/modprobe ib_addr
+/sbin/modprobe iw_cm
+/sbin/modprobe rdma_cm
+/sbin/modprobe ib_uverbs
+/sbin/modprobe rdma_ucm
+/sbin/modprobe mlx4_core
+/sbin/modprobe mlx4_ib
+/sbin/modprobe ib_ucm
+
+echo "Sleeping for 10 seconds to let Infiniband initialize"
+sleep 10
+
+echo "Setting Infiniband /dev/* permissions to 0666"
+chmod 0777 /dev/infiniband
+chmod 0666 /dev/infiniband/*
+
+echo "Starting up IPoIB ib0"
+ip=`/sbin/ifconfig eth0 | grep "inet addr" | cut -d ':' -f 2 | cut -d ' ' -f 1`
+node=`echo $ip | cut -d '.' -f 4`
+ifconfig ib0 172.30.0.$node netmask 255.255.255.0
+
 echo "END /etc/init.d/rcS"
