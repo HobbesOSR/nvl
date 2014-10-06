@@ -38,7 +38,7 @@ Steps for building Pisces
 
      # Add three CPU cores, explicitly specify cores 1, 4, and 2.
      # CPU core numbers correspond to OS logical core IDs.
-     pisces_ctrl -e --cpu=1,4,2 /dev/pisces-enclave0
+     pisces_ctrl --e --cpu=1,4,2 /dev/pisces-enclave0
 
      # Add any three CPU cores to enclave.
      pisces_ctrl --cpu=3 /dev/pisces-enclave0
