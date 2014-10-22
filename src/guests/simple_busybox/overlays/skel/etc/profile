@@ -1,0 +1,7 @@
+ulimit -l unlimited
+ulimit -s unlimited
+ulimit -n 65536
+ulimit -p 65536
+ulimit -Sc 0
+
+export PATH=$PATH:/opt/pisces

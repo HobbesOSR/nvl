@@ -18,7 +18,7 @@ my @packages;
 
 my %kernel;
 $kernel{package_type}   = "tarball";
-$kernel{version}	= "3.13.6";
+$kernel{version}	= "3.12.29";
 $kernel{basename}	= "linux-$kernel{version}";
 $kernel{tarball}	= "$kernel{basename}.tar.gz";
 $kernel{url}		= "http://www.kernel.org/pub/linux/kernel/v3.x/$kernel{tarball}";
@@ -64,9 +64,17 @@ $hwloc{tarball}		= "$hwloc{basename}.tar.gz";
 $hwloc{url}		= "http://www.open-mpi.org/software/hwloc/v$hwloc{version}/downloads/$hwloc{tarball}";
 push(@packages, \%hwloc);
 
+my %ofed;
+$ofed{package_type}	= "tarball";
+$ofed{version}		= "3.12-1";
+$ofed{basename}		= "OFED-$ofed{version}-rc2";
+$ofed{tarball}		= "$ofed{basename}.tgz";
+$ofed{url}		= "http://downloads.openfabrics.org/downloads/OFED/ofed-$ofed{version}/$ofed{tarball}";
+push(@packages, \%ofed);
+
 my %ompi;
 $ompi{package_type}	= "tarball";
-$ompi{version}		= "1.8.2";
+$ompi{version}		= "1.8.3";
 $ompi{basename}		= "openmpi-$ompi{version}";
 $ompi{tarball}		= "$ompi{basename}.tar.bz2";
 $ompi{url}		= "http://www.open-mpi.org/software/ompi/v1.8/downloads//$ompi{tarball}";
@@ -79,6 +87,7 @@ my %program_args = (
 	build_libhugetlbfs	=> 0,
 	build_numactl		=> 0,
 	build_hwloc		=> 0,
+	build_ofed		=> 0,
 	build_ompi		=> 0,
 
 	build_image		=> 0,
@@ -99,6 +108,7 @@ GetOptions(
 	"build-libhugetlbfs"	=> sub { $program_args{'build_libhugetlbfs'} = 1; },
 	"build-numactl"		=> sub { $program_args{'build_numactl'} = 1; },
 	"build-hwloc"		=> sub { $program_args{'build_hwloc'} = 1; },
+	"build-ofed"		=> sub { $program_args{'build_ofed'} = 1; },
 	"build-ompi"		=> sub { $program_args{'build_ompi'} = 1; },
 	"build-image"		=> sub { $program_args{'build_image'} = 1; },
 	"build-isoimage"        => sub { $program_args{'build_isoimage'} = 1; },
@@ -197,6 +207,8 @@ for (my $i=0; $i < @packages; $i++) {
 			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball}");
 		} elsif ($pkg{tarball} =~ m/tar\.bz2/) {
 			system ("tar --directory $SRCDIR -jxvf $SRCDIR/$pkg{tarball}");
+		} elsif ($pkg{tarball} =~ m/tgz/) {
+			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball}");
 		} else {
 			die "Unknown tarball type: $pkg{basename}";
 		}
@@ -214,8 +226,9 @@ if ($program_args{build_kernel}) {
 		copy "$BASEDIR/$CONFIGDIR/linux_config", ".config" or die;
 		system "make oldconfig";
 	}
-	system "make -j 4 bzImage";
-	system "INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install";
+	system "make -j 4 bzImage modules";
+#	system "INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install";
+	system "sudo make modules_install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -281,6 +294,14 @@ if ($program_args{build_hwloc}) {
 	chdir "$BASEDIR" or die;
 }
 
+# Build OFED
+if ($program_args{build_ofed}) {
+	print "CNL: Building OFED $ofed{basename}\n";
+	chdir "$SRCDIR/$ofed{basename}" or die;
+	system "sudo ./install.pl --basic --without-depcheck --kernel-sources $BASEDIR/$SRCDIR/$kernel{basename} --kernel $kernel{version}";
+	chdir "$BASEDIR" or die;
+}
+
 # Build OpenMPI
 if ($program_args{build_ompi}) {
 	print "CNL: Building OpenMPI $ompi{basename}\n";
@@ -288,8 +309,8 @@ if ($program_args{build_ompi}) {
 	# This is a horrible hack. We're installing OpenMPI into /opt on the host.
 	# This means we need to be root to do a make install and will possibly screw up the host.
 	# We should really be using chroot or something better.
-	system "LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename}";
-	system "make";
+	system "LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static --with-openib";
+	system "make -j 2";
 	system "sudo make install";
 	chdir "$BASEDIR" or die;
 }
@@ -322,8 +343,9 @@ if ($program_args{build_image}) {
 	chdir  "$BASEDIR/$IMAGEDIR/bin" or die;
 	system "ln -s dropbearmulti dropbearconvert";
 	system "ln -s dropbearmulti dropbearkey";
-	system "ln -s dropbearmulti scp";
-	system "ln -s dropbearmulti ssh";
+	# Use OpenSSH clients, rather than dropbear clients so that OpenSSH generated keys work.
+	system "ln -s /usr/bin/scp scp";
+	system "ln -s /usr/bin/ssh ssh";
 	chdir  "$BASEDIR/$IMAGEDIR/sbin" or die;
 	system "ln -s ../bin/dropbearmulti dropbear";
 	chdir  "$BASEDIR/$IMAGEDIR/usr/bin" or die;
@@ -335,7 +357,8 @@ if ($program_args{build_image}) {
 		or die "Failed to rsync skeleton directory to $IMAGEDIR";	
 
 	# Instal linux kernel modules
-	system("rsync -a $SRCDIR/$kernel{basename}/_install/\* $IMAGEDIR/") == 0
+	#system("rsync -a $SRCDIR/$kernel{basename}/_install/\* $IMAGEDIR/") == 0
+	system("rsync -a /lib/modules/$kernel{version} $IMAGEDIR/lib/modules/") == 0
 		or die "Failed to rsync linux modules to $IMAGEDIR";
 
 	# Install numactl into image
@@ -354,12 +377,41 @@ if ($program_args{build_image}) {
 	system("cp -R /opt/$ompi{basename} $IMAGEDIR/opt") == 0
 		or die "Failed to rsync OpenMPI to $IMAGEDIR";
 
+	# Install Pisces into image
+	system "mkdir -p $IMAGEDIR/opt/pisces";
+	system "mkdir -p $IMAGEDIR/opt/pisces_guest";
+	system("cp $SRCDIR/pisces/nvl/src/nvl/pisces/xpmem/mod/xpmem.ko $IMAGEDIR/lib/modules") == 0
+		or die "Failed to copy xpmem.ko to $IMAGEDIR/lib/modules";
+	system("cp $SRCDIR/pisces/nvl/src/nvl/pisces/pisces/pisces.ko $IMAGEDIR/lib/modules") == 0
+		or die "Failed to copy pisces.ko to $IMAGEDIR/lib/modules";
+	system("rsync -a $SRCDIR/pisces/nvl/src/nvl/pisces/pisces/linux_usr/ $IMAGEDIR/opt/pisces") == 0
+		or die "Failed to copy Pisces linux_usr to $IMAGEDIR/opt/pisces";
+	system("cp $SRCDIR/pisces/nvl/src/nvl/kitten/vmlwk.bin $IMAGEDIR/opt/pisces_guest") == 0
+		or die "Failed to copy Kitten vmlwk.bin to $IMAGEDIR/opt/pisces_guest";
+	system("cp $SRCDIR/pisces/nvl/src/nvl/kitten/user/pisces/pisces $IMAGEDIR/opt/pisces_guest") == 0
+		or die "Failed to copy Kitten pisces init_task to $IMAGEDIR/opt/pisces_guest";
+
 	# Files copied from build host
 	system "cp /etc/localtime $IMAGEDIR/etc";
 	system "cp /lib/libnss_files.so.* $IMAGEDIR/lib";
 	system "cp /lib64/libnss_files.so.* $IMAGEDIR/lib64";
 	system "cp /usr/bin/ldd $IMAGEDIR/usr/bin";
 	system "cp /usr/bin/strace $IMAGEDIR/usr/bin";
+	system "cp /usr/bin/ssh $IMAGEDIR/usr/bin";
+	system "cp /usr/bin/scp $IMAGEDIR/usr/bin";
+
+	# Infiniband files copied from build host
+	system "cp -R /etc/libibverbs.d $IMAGEDIR/etc";
+	system "cp /usr/lib64/libcxgb4-rdmav2.so $IMAGEDIR/usr/lib64";
+	system "cp /usr/lib64/libocrdma-rdmav2.so $IMAGEDIR/usr/lib64";
+	system "cp /usr/lib64/libcxgb3-rdmav2.so $IMAGEDIR/usr/lib64";
+	system "cp /usr/lib64/libnes-rdmav2.so $IMAGEDIR/usr/lib64";
+	system "cp /usr/lib64/libmthca-rdmav2.so $IMAGEDIR/usr/lib64";
+	system "cp /usr/lib64/libmlx4-rdmav2.so $IMAGEDIR/usr/lib64";
+	system "cp /usr/lib64/libmlx5-rdmav2.so $IMAGEDIR/usr/lib64";
+	system "cp /usr/bin/ibv_devices $IMAGEDIR/usr/bin";
+	system "cp /usr/bin/ibv_devinfo $IMAGEDIR/usr/bin";
+	system "cp /usr/bin/ibv_rc_pingpong $IMAGEDIR/usr/bin";
 
 	# Find and copy all shared library dependencies
 	copy_libs($IMAGEDIR);
@@ -390,7 +442,6 @@ if ($program_args{build_isoimage}) {
 	system "cp initramfs.gz isoimage/initrd.img";
 	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
 #	system "echo 'default bzImage initrd=initrd.img console=hvc0' > isoimage/isolinux.cfg";
-#	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
 	system "mkisofs -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage";
 }
 

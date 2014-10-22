@@ -1,0 +1,202 @@
+<vm class="PC"> 
+	<memory>1024</memory>
+
+	<telemetry>disable</telemetry>
+	
+        <paging mode="nested">
+		<large_pages>true</large_pages>	
+        </paging>
+
+	<schedule_hz>100</schedule_hz>
+
+
+<!--        <mem_layout vnodes="1">
+                <region start_addr="0" end_addr="0x40000000" node="0" vnode="0"/>
+        </mem_layout>
+-->
+
+        <cores count="1">
+		<core target_cpu="1"/>
+	</cores>
+
+<!--
+       <memmap>
+		<region>
+                       <start>0xa0000</start>
+                       <end>0xc0000</end>
+                       <host_addr>0xa0000</host_addr>
+               </region>
+       </memmap>
+-->
+
+
+
+        <files>
+<!--
+                <file id="System.map" filename="/home/jarusl/fedora-test/System.map-2.6.40.6-0.v3vee.x86_64.debug"></file>
+-->
+        </files>
+
+	<extensions>
+		<extension name="VMWARE_IFACE" />
+	</extensions>
+
+	<devices>
+		<device class="8259A" id="PIC"></device>
+		<device class="KEYBOARD" id="keyboard"></device>
+		<device class="8254_PIT" id="PIT"></device>
+		<device class="BOCHS_DEBUG" id="bochs debug"></device>
+
+		<device class="OS_DEBUG" id="os debug"></device>
+		<device class="LAPIC" id="apic"></device>
+		<device class="IOAPIC" id="ioapic">
+                       <apic>apic</apic>
+		</device>
+
+		<device class="PCI" id="pci0"></device>
+
+		<device class="i440FX" id="northbridge">
+			<bus>pci0</bus>
+		</device>
+
+		<device class="PIIX4" id="southbridge">
+			<bus>pci0</bus>
+		</device>
+
+		<device class="IDE" id="ide">
+			<bus>pci0</bus>
+			<controller>southbridge</controller>
+		</device>
+		
+<!--
+		<device class="HOST_PCI" id="nic_1">
+			<bus>pci0</bus>
+			<url>nic_1</url>
+		</device>
+-->
+
+		<device class="FILEDISK" id="CD0" writable="0">
+			<path>/opt/pisces_guest/image.iso</path>
+			<frontend tag="ide">
+				<model>V3Vee CDROM</model>
+				<type>CDROM</type>
+				<bus_num>0</bus_num>
+				<drive_num>0</drive_num>
+			</frontend>
+		</device>
+<!--
+		<device class="FILEDISK" id="CD0" writable="0">
+			<path>/home/jarusl/fedora-test/guest_os.iso</path>
+			<frontend tag="ide">
+				<model>V3Vee CDROM</model>
+				<type>CDROM</type>
+				<bus_num>0</bus_num>
+				<drive_num>0</drive_num>
+			</frontend>
+		</device>
+
+-->
+<!--
+		<device class="LNX_VIRTIO_BLK" id="virtio-blk">
+			<bus>pci0</bus>
+		</device>
+
+		<device class="TMPDISK" id="tmpdisk1">
+			<size>128</size>
+			<frontend tag="virtio-blk" />
+		</device>
+-->	
+
+
+		<device class="CGA_VIDEO" id="cga" passthrough="disable" />
+		<device class="CURSES_CONSOLE" id="curses">
+			<frontend tag="cga">
+
+			</frontend>
+		</device>
+
+
+<!--
+                <device class="SERIAL" id="serial" />
+
+		<device class="CHAR_STREAM" id="com1">
+		 	<name>com1</name>
+			<frontend tag="serial">
+				<com_port>1</com_port>
+			</frontend>
+		</device>
+-->
+
+
+
+
+		<device class="NVRAM" id="nvram">
+			<storage>ide</storage>
+		</device>
+
+		<device class="GENERIC" id="generic">
+			<ports>
+                               <start>0x00</start>
+                               <end>0x07</end>
+                               <mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<start>0xc0</start>
+				<end>0xc7</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- DMA 1 page registers -->
+				<start>0x81</start>
+				<end>0x87</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- DMA 2 page registers -->
+				<start>0x88</start>
+				<end>0x8f</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- DMA 1 Misc Registers -->
+				<start>0x08</start>
+				<end>0x0f</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- DMA 2 Misc Registers -->
+				<start>0xd0</start>
+				<end>0xde</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+
+			<ports>
+				<!-- Parallel Port -->
+				<start>0x378</start>
+				<end>0x37f</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+
+			<ports>
+				<!-- ISA PNP -->
+				<start>0x274</start>
+				<end>0x277</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- ISA PNP -->
+				<start>0x279</start>
+				<end>0x279</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+			<ports>
+				<!-- ISA PNP -->
+				<start>0xa79</start>
+				<end>0xa79</end>
+				<mode>PRINT_AND_IGNORE</mode>
+			</ports>
+                  </device>
+       </devices>
+
+
+</vm>

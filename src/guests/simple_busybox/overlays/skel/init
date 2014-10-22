@@ -33,6 +33,10 @@ mknod /dev/infiniband/umad0 -m 0600 c 231 0
 mknod /dev/infiniband/umad1 -m 0600 c 231 1
 mknod /dev/infiniband/uverbs0 -m 0666 c 231 192
 
+# Setup the 'user' user's home directory
+chown -R user.users /home/user
+chmod 755 /home/user/.ssh
+
 # Misc. debugging
 #ls -l /dev
 
