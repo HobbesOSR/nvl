@@ -80,6 +80,17 @@ $ompi{tarball}		= "$ompi{basename}.tar.bz2";
 $ompi{url}		= "http://www.open-mpi.org/software/ompi/v1.8/downloads//$ompi{tarball}";
 push(@packages, \%ompi);
 
+my %pisces;
+$pisces{package_type}	= "git";
+$pisces{basename}	= "pisces";
+$pisces{src_subdir}	= "pisces";
+$pisces{clone_cmd}[0]	= "git clone http://essex.cs.pitt.edu/git/pisces.git";
+$pisces{clone_cmd}[1]	= "git clone http://essex.cs.pitt.edu/git/petlib.git";
+$pisces{clone_cmd}[2]	= "git clone http://essex.cs.pitt.edu/git/xpmem.git";
+$pisces{clone_cmd}[3]	= "git clone https://software.sandia.gov/git/kitten";
+$pisces{clone_cmd}[4]	= "git clone http://essex.cs.pitt.edu/git/palacios.git";
+push(@packages, \%pisces);
+
 my %program_args = (
 	build_kernel		=> 0,
 	build_busybox		=> 0,
@@ -89,6 +100,7 @@ my %program_args = (
 	build_hwloc		=> 0,
 	build_ofed		=> 0,
 	build_ompi		=> 0,
+	build_pisces		=> 0,
 
 	build_image		=> 0,
 	build_isoimage		=> 0,
@@ -110,6 +122,7 @@ GetOptions(
 	"build-hwloc"		=> sub { $program_args{'build_hwloc'} = 1; },
 	"build-ofed"		=> sub { $program_args{'build_ofed'} = 1; },
 	"build-ompi"		=> sub { $program_args{'build_ompi'} = 1; },
+	"build-pisces"		=> sub { $program_args{'build_pisces'} = 1; },
 	"build-image"		=> sub { $program_args{'build_image'} = 1; },
 	"build-isoimage"        => sub { $program_args{'build_isoimage'} = 1; },
 	"build-nvl-guest"	=> sub { $program_args{'build_nvl_guest'} = 1; },
@@ -181,13 +194,16 @@ for (my $i=0; $i < @packages; $i++) {
 		}
 	} elsif ($pkg{package_type} eq "git") {
 		chdir "$SRCDIR" or die;
+		if ($pkg{src_subdir}) {
+			if (! -e "$pkg{src_subdir}") {
+				mkdir $pkg{src_subdir} or die;
+			}
+			chdir $pkg{src_subdir} or die;
+		}
 		if (! -e "$pkg{basename}") {
-			system ($pkg{clone_cmd});
-			if ($pkg{branch_cmd}) {
-				print "got here";
-				chdir "$pkg{basename}" or die;
-				system ($pkg{branch_cmd});
-				chdir "..";
+			for (my $j=0; $j < @{$pkg{clone_cmd}}; $j++) {
+				print "CNL: Running command '$pkg{clone_cmd}[$j]'\n";
+				system ($pkg{clone_cmd}[$j]);
 			}
 		}
 		chdir "$BASEDIR" or die;
@@ -315,6 +331,83 @@ if ($program_args{build_ompi}) {
 	chdir "$BASEDIR" or die;
 }
 
+# Build Pisces
+if ($program_args{build_pisces}) {
+	print "CNL: Building Pisces\n";
+
+	# STEP 1: Configure and build Kitten... this will fail because
+	# Palacios has not been built yet, but Palacios can't be built
+	# until Kitten is configured in built. TODO: FIXME
+	print "CNL: STEP 1: Building pisces/kitten stage 1\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/kitten" or die;
+	if (-e ".config") {
+		print "CNL: pisces/kitten aready configured, skipping copy of default .config\n";
+	} else {
+		print "CNL: pisces/kitten using default .config\n";
+		copy "$BASEDIR/$CONFIGDIR/pisces/kitten_config", ".config" or die;
+		system "make oldconfig";
+	}
+	system "make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 1: Done building pisces/kitten stage 1\n";
+
+	# STEP 2: configure and build Palacios
+	print "CNL: STEP 2: Building pisces/palacios\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/palacios" or die;
+	if (-e ".config") {
+		print "CNL: pisces/palacios aready configured, skipping copy of default .config\n";
+	} else {
+		print "CNL: pisces/palacios using default .config\n";
+		copy "$BASEDIR/$CONFIGDIR/pisces/palacios_config", ".config" or die;
+		system "make oldconfig";
+	}
+	system "make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 2: Done building pisces/palacios\n";
+
+	# STEP 3: Rebuild Kitten... this will now succeed since Palacios has been built.
+	print "CNL: STEP 3: Building pisces/kitten stage 2\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/kitten" or die;
+	system "make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 3: Done building pisces/kitten stage 2\n";
+
+	# STEP 4: Build petlib. Pisces depends on this.
+	print "CNL: STEP 4: Building pisces/petlib\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/petlib" or die;
+	system "make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 4: Done building pisces/petlib\n";
+
+	# STEP 5: Build XPMEM for host Linux. Pisces depends on this.
+	print "CNL: STEP 5: Building pisces/xpmem\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/xpmem/mod" or die;
+	if (-e ".default_makefile_copied") {
+		print "CNL: pisces/xpmem aready configured, skipping copy of default Makefile\n";
+	} else {
+		print "CNL: pisces/xpmem using default Makefile\n";
+		copy "$BASEDIR/$CONFIGDIR/pisces/xpmem_makefile", "Makefile" or die;
+		system "touch .default_makefile_copied";
+	}
+	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod make NS=y";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 5: Done building pisces/xpmem\n";
+
+	# Step 6: Build Pisces
+	print "CNL: STEP 6: Building pisces/pisces\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/pisces" or die;
+	if (-e ".default_makefile_copied") {
+		print "CNL: pisces/pisces aready configured, skipping copy of default Makefile\n";
+	} else {
+		print "CNL: pisces/pisces using default Makefile\n";
+		copy "$BASEDIR/$CONFIGDIR/pisces/pisces_makefile", "Makefile" or die;
+		system "touch .default_makefile_copied";
+	}
+	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces make XPMEM=y";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 6: Done building pisces/pisces\n";
+}
+
 
 ##############################################################################
 # Build Initramfs Image
@@ -380,20 +473,19 @@ if ($program_args{build_image}) {
 	# Install Pisces into image
 	system "mkdir -p $IMAGEDIR/opt/pisces";
 	system "mkdir -p $IMAGEDIR/opt/pisces_guest";
-	system("cp $SRCDIR/pisces/nvl/src/nvl/pisces/xpmem/mod/xpmem.ko $IMAGEDIR/lib/modules") == 0
+	system("cp $SRCDIR/pisces/xpmem/mod/xpmem.ko $IMAGEDIR/lib/modules") == 0
 		or die "Failed to copy xpmem.ko to $IMAGEDIR/lib/modules";
-	system("cp $SRCDIR/pisces/nvl/src/nvl/pisces/pisces/pisces.ko $IMAGEDIR/lib/modules") == 0
+	system("cp $SRCDIR/pisces/pisces/pisces.ko $IMAGEDIR/lib/modules") == 0
 		or die "Failed to copy pisces.ko to $IMAGEDIR/lib/modules";
-	system("rsync -a $SRCDIR/pisces/nvl/src/nvl/pisces/pisces/linux_usr/ $IMAGEDIR/opt/pisces") == 0
+	system("rsync -a $SRCDIR/pisces/pisces/linux_usr/ $IMAGEDIR/opt/pisces") == 0
 		or die "Failed to copy Pisces linux_usr to $IMAGEDIR/opt/pisces";
-	system("cp $SRCDIR/pisces/nvl/src/nvl/kitten/vmlwk.bin $IMAGEDIR/opt/pisces_guest") == 0
+	system("cp $SRCDIR/pisces/kitten/vmlwk.bin $IMAGEDIR/opt/pisces_guest") == 0
 		or die "Failed to copy Kitten vmlwk.bin to $IMAGEDIR/opt/pisces_guest";
-	system("cp $SRCDIR/pisces/nvl/src/nvl/kitten/user/pisces/pisces $IMAGEDIR/opt/pisces_guest") == 0
+	system("cp $SRCDIR/pisces/kitten/user/pisces/pisces $IMAGEDIR/opt/pisces_guest") == 0
 		or die "Failed to copy Kitten pisces init_task to $IMAGEDIR/opt/pisces_guest";
 
 	# Files copied from build host
 	system "cp /etc/localtime $IMAGEDIR/etc";
-	system "cp /lib/libnss_files.so.* $IMAGEDIR/lib";
 	system "cp /lib64/libnss_files.so.* $IMAGEDIR/lib64";
 	system "cp /usr/bin/ldd $IMAGEDIR/usr/bin";
 	system "cp /usr/bin/strace $IMAGEDIR/usr/bin";
