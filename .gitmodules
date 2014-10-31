@@ -13,3 +13,6 @@
 [submodule "src/nvl/pisces/petlib"]
 	path = src/nvl/pisces/petlib
 	url = http://essex.cs.pitt.edu/git/petlib.git
+[submodule "src/nvl/pisces/xpmem"]
+	path = src/nvl/pisces/xpmem
+	url = http://essex.cs.pitt.edu/git/xpmem.git

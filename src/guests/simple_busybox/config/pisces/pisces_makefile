@@ -1,7 +1,15 @@
+#KERN_PATH=/usr/src/kernels/`uname -r`
+#KERN_PATH=../linux/
+#KERN_PATH=/home/jarusl/linux-3.11.8-200.fc19.x86_64.debug
+
+#BUILD_DIR=$(PWD)
+
+#XPMEM_KERN_PATH=$(BUILD_DIR)/../xpmem/
+
 KERN_PATH=/home/hobbes/hobbes/nvl/src/guests/simple_busybox/src/linux-3.12.29
 XPMEM_KERN_PATH=/home/hobbes/hobbes/nvl/src/guests/simple_busybox/src/pisces/xpmem
-
 PETLIB_PATH=../../petlib
+
 
 VERSION_CMD=$(PWD)/version
 
@@ -65,11 +73,11 @@ all: version_exec
 version_exec: version.c $(VERSION_CMD)
 	gcc -I$(KERN_PATH)/include version.c -o $(VERSION_CMD)
 
-clean:
+clean: 
 	make -C $(KERN_PATH) M=$(PWD) clean
 	make -C linux_usr/ clean
-	rm $(VERSION_CMD)
-
+	rm -f $(shell find src/ -name "*.o")
+	rm -f  $(VERSION_CMD)
 
 .PHONY: tags
 tags:

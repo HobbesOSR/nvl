@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 #Palacios: 
-# Wed Oct 22 17:00:32 2014
+# Thu Oct 30 17:37:09 2014
 #
 
 #
@@ -48,7 +48,7 @@ V3_CONFIG_HOST_XPMEM=y
 # V3_CONFIG_EXT_MTRRS is not set
 # V3_CONFIG_EXT_MACH_CHECK is not set
 # V3_CONFIG_EXT_INSPECTOR is not set
-# V3_CONFIG_EXT_VMWARE is not set
+V3_CONFIG_EXT_VMWARE=y
 V3_CONFIG_TELEMETRY=y
 # V3_CONFIG_SHADOW_PAGING_TELEMETRY is not set
 V3_CONFIG_EXPERIMENTAL=y
