@@ -389,7 +389,7 @@ if ($program_args{build_pisces}) {
 		copy "$BASEDIR/$CONFIGDIR/pisces/xpmem_makefile", "Makefile" or die;
 		system "touch .default_makefile_copied";
 	}
-	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod make NS=y";
+	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 5: Done building pisces/xpmem\n";
 
