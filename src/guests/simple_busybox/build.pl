@@ -491,6 +491,7 @@ if ($program_args{build_image}) {
 	system "cp /usr/bin/strace $IMAGEDIR/usr/bin";
 	system "cp /usr/bin/ssh $IMAGEDIR/usr/bin";
 	system "cp /usr/bin/scp $IMAGEDIR/usr/bin";
+	system "cp -R /usr/share/terminfo $IMAGEDIR/usr/share";
 
 	# Infiniband files copied from build host
 	system "cp -R /etc/libibverbs.d $IMAGEDIR/etc";
