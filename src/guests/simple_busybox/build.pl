@@ -522,6 +522,9 @@ if ($program_args{build_image}) {
 	system "cat initramfs.cpio | gzip > initramfs.gz";
 	system "rm initramfs.cpio";
 	system "sudo rm -rf $IMAGEDIR\_tmp";
+
+	# As a convenience, copy Linux bzImage to top level
+	system "cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage bzImage";
 }
 
 

@@ -24,6 +24,7 @@ pisces-objs :=  src/main.o             \
 		src/pisces_xbuf.o      \
 		src/enclave_fs.o       \
 		src/ipi.o              \
+		src/idt.o              \
 		src/enclave.o          \
 		src/pisces_lock.o      \
 		src/pisces_ringbuf.o   \
