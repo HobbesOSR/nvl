@@ -27,3 +27,8 @@ cd ../../../../
 cd src/nvl/pisces/petlib
 git checkout master
 cd ../../../../
+
+# Change from free-floating branch to devel branch
+cd src/nvl/pisces/xpmem
+git checkout master
+cd ../../../../
