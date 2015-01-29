@@ -25,7 +25,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <linux/kernel.h>
+/* #include <linux/pid.h> */
 
 
 #define BUF_SIZE 20
@@ -33,7 +33,6 @@
 #define DEBUG_PORT1 0xc0c0
 #define HEARTBEAT_PORT 0x99
 
-#define GNI_ALPS_FILE "/scratch1/smukher/alps-info"
 
 struct debug_state {
     char debug_buf[BUF_SIZE];
@@ -103,100 +102,65 @@ static int handle_hcall(struct guest_info * info, uint_t hcall_id, void * priv_d
 
     return 0;
 }
-
-static int handle_cdmcreate(struct guest_info * info, uint_t hcall_id, void * priv_data)
+/*
+static inline struct task_struct *kgni_task_from_pid(pid_t pid)
 {
-	uint8_t ptag = info->gni_alps.ptag;
-     uint32_t  instance = info->gni_alps.instance;
-    uint32_t   cookie = info->gni_alps.cookie;
-    gni_cdm_handle_t    cdm_hndl;
-    gni_nic_handle_t    nic_hndl;
-    gni_cq_handle_t    cq_hndl;
-    uint32_t            devid_val = 0, local_addr = 0;
-    uint32_t  device_id;
-   gni_return_t        gni_error= 0; 
-   
-    int msg_len = info->vm_regs.rcx;
-    addr_t src_va = info->vm_regs.rbx;
-    addr_t host_src_va = 0;
-    int buf_is_va = info->vm_regs.rdx;
-
-    PrintDebug(info->vm_info, info, "buf_is va value %d msg_len %d\n", buf_is_va, msg_len);
-
-    if (buf_is_va == 1) {
-        if (v3_gva_to_hva(info, src_va, &host_src_va) != 0) {
-            PrintDebug(info->vm_info, info, "Invalid GVA(%p)->HVA lookup\n", (void *)src_va);
-        }
-
-     }
- 
-    
-    PrintDebug(info->vm_info, info, "OS debug hypercall cdmcreate called here : \n");
-    PrintDebug(info->vm_info, info, "CDM create cookie %u ptag %d instance %u\n", info->gni_alps.cookie, info->gni_alps.ptag, info->gni_alps.instance);
-
-
-
+        struct task_struct *task;
+        task = pid_task(find_vpid(pid), PIDTYPE_PID);
+        return task;
+}
+*/
+static int handle_kgniopen(struct guest_info * info, uint_t hcall_id, void * priv_data)
+{
+    int gpid = info->vm_regs.rcx;
+    addr_t dest_va = info->vm_regs.rbx;
     addr_t host_dest_va = 0;
-        if (v3_gva_to_hva(info, src_va, &host_src_va) != 0) {
-            PrintDebug(info->vm_info, info, "Invalid GVA(%p)->HVA lookup\n", (void *)src_va);
+    int buf_is_va = info->vm_regs.rdx;
+    struct file *file=NULL;
+    int fd;
+
+
+        if (v3_gva_to_hva(info, dest_va, &host_dest_va) != 0) {
+            PrintDebug(info->vm_info, info, "Invalid GVA(%p)->HVA lookup\n", (void *)dest_va);
         }
 
-        PrintDebug(info->vm_info, info, "BEFORE  CDM create\n");
-        gni_error = gni_cdm_create(
-                              instance,
-                              ptag,
-                            cookie,
-                           GNI_CDM_MODE_ERR_NO_KILL,
-                	  &cdm_hndl
-                );
-          if (gni_error != GNI_RC_SUCCESS){
-        	return -1;
-    		}
-            PrintDebug(info->vm_info, info, "After  CDM create\n");
-
- 	/*Attach to Gemini*/
-    gni_error = gni_cdm_attach(&cdm_hndl, devid_val,
-                    &local_addr, &nic_hndl);
-    if (gni_error != GNI_RC_SUCCESS){
-            PrintDebug(info->vm_info, info, " CDM attach failed  status %d\n", gni_error);
-	return -1;
-    }
-
-    /*Completion Queue setup*/
-    gni_error = gni_cq_create(&nic_hndl, 64, 0,
-                    NULL, 0, &cq_hndl);
-    if (gni_error != GNI_RC_SUCCESS){
-            PrintDebug(info->vm_info, info, " CQ create  failed error  value %d\n",  gni_error);
-	return -1;
-    }
-	
+        PrintDebug(info->vm_info, info, "Before calling kgni open\n");
+	fd = sys_open_from_kernel("/dev/kgni0", O_RDWR, 0, &file);
+        PrintDebug(info->vm_info, info, " after open /dev/kgni0 fd we got %d\n", fd);
         return 0;
 }
-
 /* Use this IOCTL to show copy-from-user and copy to user */
-
-static int handle_cdmattach(struct guest_info * info, uint_t hcall_id, void * priv_data)
+#define   IOCTL_CMD_PALACIOS  -1000000000
+ 
+static int handle_kgniioctl(struct guest_info * info, uint_t hcall_id, void * priv_data)
 {
 
-  int count= info->vm_regs.rcx;
+    int count= info->vm_regs.rcx;
     addr_t src_va = info->vm_regs.rbx;
     addr_t dest_va = info->vm_regs.rsi;
     addr_t *host_src_va;
     addr_t *host_dest_va;
-    int buf_is_va = info->vm_regs.rdx;
+    int cmd = info->vm_regs.rdx;
+    int fd;
+    struct file *file = NULL;
 
 
+     PrintDebug(info->vm_info, info, " handle_cdmattach  hypercall %d src %p dest %p cmd %d\n", count, (void *)src_va, (void *)dest_va, cmd);
      host_src_va = (addr_t *)V3_Malloc(count);
-    if (buf_is_va == 1) {
         if (v3_read_gva_memory(info, src_va, count, (uchar_t *)host_src_va) == 0) {
             PrintDebug(info->vm_info, info, "failed copy from user  GVA(%p)\n", (void *)src_va);
         }
+	fd = sys_open_from_kernel("/dev/kgni0", O_RDWR, 0, &file);
+        PrintDebug(info->vm_info, info, " after open /dev/kgni0 fd we got %d\n", fd);
+	cmd = cmd + IOCTL_CMD_PALACIOS; /* add a constant value to ioctl cmd, deduct isnide kgni driver */
+	kgni_ioctl(file, cmd, (unsigned long)host_src_va);
+        PrintDebug(info->vm_info, info, " after calling kgni ioctl \n");
+/*
         if (v3_write_gva_memory(info, dest_va, count, (uchar_t *)host_src_va) == 0) {
             PrintDebug(info->vm_info, info, "failed copy to user back  GVA(%p)\n", (void *)dest_va);
         }
-
-     }
-
+*/
+	sys_close(fd);
     PrintDebug(info->vm_info, info, "VM_CONSOLE OS debug test copy to and from user \n");
   return 0;
 }
@@ -293,9 +257,20 @@ static int debug_init(struct v3_vm_info * vm, v3_cfg_tree_t * cfg) {
 	return -1;
     }
 
+/* include palacios/vmm_hypercall.h  
+	typedef enum {
+    SYMMOD_SYMS_HCALL =    0x0600,
+.....
+    GUEST_INFO_HCALL =     0x3000,         // no args
+    OS_DEBUG_HCALL =       0xc0c0,          // RBX: msg_gpa, RCX: msg_len, RDX: buf_is_va (flag)
+    GNI_CDMCREATE =       0xc0c1,          // RBX:instance, RCX: ptag, RDX: cookie, RDI: modes, RSI: return hdl 
+    GNI_CDMATTACH =       0xc0c2,          // RBX: cdm_hdl, RCX: device, RDX: *local_addr, RDI: *nic_hdl
+    GNI_MEMREGISTER =       0xc0c3,        // RBX: nic_hdl, RCX: address, RDX: length, RDI: dst_cq_hdl, RSI: flags 
+} hcall_id_t;
+       */
     v3_register_hypercall(vm, OS_DEBUG_HCALL, handle_hcall, state);
-    v3_register_hypercall(vm, GNI_CDMCREATE, handle_cdmcreate, state);
-    v3_register_hypercall(vm, GNI_CDMATTACH, handle_cdmattach, state);
+    v3_register_hypercall(vm, GUEST_KGNI_OPEN, handle_kgniopen, state);
+    v3_register_hypercall(vm, GUEST_KGNI_IOCTL, handle_kgniioctl, state);
     v3_register_hypercall(vm, GNI_MEMREGISTER, handle_memregister, state);
     state->debug_offset = 0;
     memset(state->debug_buf, 0, BUF_SIZE);
