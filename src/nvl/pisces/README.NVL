@@ -56,3 +56,10 @@ percpu variables needs to be recompiled.  Lustre uses percpu variables
 so it needs to be recompiled, which is a royal pain.  Cray's Gemini
 kGNI driver also needs to be recompiled.  Recompiling Lustre and Gemini
 kernel modules appears to be enough to get a compute node to boot.
+
+
+==========================================================================
+To push palacios changes to Pitt tree on essex, must have a valid ssh key
+installed on essex and push as palacios user:
+
+    git push ssh://palacios@essex.cs.pitt.edu//palacios
