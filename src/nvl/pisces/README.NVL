@@ -13,18 +13,29 @@ Steps for building Pisces
      make
 
 4. Configure and build Pisces
-     # Edit Pisces top-level Makefile, set KERN_PATH to point to
-     # your kernel build tree
-     KERN_PATH = /home/ktpedre/working/cray_linux/PrgEnv-4.2.34/kernel-source-2.6.32.59
+     # Edit Makefile, set KERN_PATH to point to your kernel build tree.
+     # Be sure to add XPMEM=y to make line.
+     KERN_PATH = /home/hobbes/hobbes/cray_kernel
+     make XPMEM=y
+
+5. Configure and build host XPMEM module
+     # Edit mod/Makefile, set KERN_PATH to point to your kernel build tree.
+     KERN_PATH = /home/hobbes/hobbes/cray_kernel
      make
 
-5. Pisces host-OS tools are build in pisces/linux_usr
-   Put the tools in your host OS image.
-   
+6. Copy everything to your host image, or somewhere accessible from your host:
 
-6. Boot your host OS, load Pisces module, use Pisces tools to create envlaves
+     scp pisces/xpmem/mod/xpmem.ko ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
+     scp pisces/xpmem/test/*       ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
+     scp pisces/pisces/pisces.ko   ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
+     scp pisces/pisces/linux_usr/* ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
+     scp kitten/vmlwk.bin          ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
+     scp kitten/user/pisces/pisces ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
+
+7. Boot your host OS, load Pisces module, use Pisces tools to create envlaves
+     insmod xpmem.ko
      insmod pisces.ko
-     pisces_load vmlwk.bin pisces_init_task "console=pisces"
+     pisces_load vmlwk.bin pisces "console=pisces"
      pisces_launch /dev/pisces-enclave0
 
      # After enclave is launched, add CPU and memory to it
@@ -63,3 +74,7 @@ To push palacios changes to Pitt tree on essex, must have a valid ssh key
 installed on essex and push as palacios user:
 
     git push ssh://palacios@essex.cs.pitt.edu//palacios
+
+Ditto for pisces:
+
+    git push petos@essex.cs.pitt.edu:./pisces/pisces
