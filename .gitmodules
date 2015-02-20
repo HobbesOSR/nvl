@@ -1,6 +1,6 @@
 [submodule "src/nvl/kitten"]
 	path = src/nvl/kitten
-	url = https://software.sandia.gov/git/kitten
+	url = https://github.com/ktpedre/kitten
 [submodule "src/nvl/palacios"]
 	path = src/nvl/palacios
 	url = http://v3vee.org/palacios/palacios.web/palacios.git
