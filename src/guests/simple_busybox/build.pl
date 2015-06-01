@@ -410,6 +410,29 @@ if ($program_args{build_pisces}) {
 	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces KERN_PATH=$BASEDIR/$SRCDIR/$kernel{basename} make XPMEM=y";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 6: Done building pisces/pisces\n";
+
+	# Step 7: Build WhiteDB
+	print "CNL: STEP 7: Building pisces/hobbes/whitedb-0.7.3\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/whitedb-0.7.3" or die;
+	system "autoreconf -fvi";
+	system "./configure --enable-locking=wpspin";
+	system "make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 7: Done building pisces/hobbes/whitedb-0.7.3\n";
+
+	# Step 8: Build libhobbes.a
+	print "CNL: STEP 8: Building pisces/hobbes/libhobbes\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/libhobbes" or die;
+	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 8: Done building pisces/hobbes/libhobbes\n";
+
+	# Step 9: Build libhobbes master_init
+	print "CNL: STEP 9: Building pisces/hobbes/master_init\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/master_init" or die;
+	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 9: Done building pisces/hobbes/master_init\n";
 }
 
 
