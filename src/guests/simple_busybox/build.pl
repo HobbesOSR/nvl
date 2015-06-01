@@ -433,6 +433,13 @@ if ($program_args{build_pisces}) {
 	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 9: Done building pisces/hobbes/master_init\n";
+
+	# Step 10: Build libhobbes shell
+	print "CNL: STEP 10: Building pisces/hobbes/shell\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/shell" or die;
+	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 10: Done building pisces/hobbes/shell\n";
 }
 
 
