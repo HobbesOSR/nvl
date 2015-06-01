@@ -1,4 +1,4 @@
-/sbin/insmod /lib/modules/xpmem.ko ns=1
+/sbin/insmod /lib/modules/xpmem.ko
 /sbin/insmod /lib/modules/pisces.ko
 sleep 5
 

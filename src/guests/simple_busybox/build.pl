@@ -87,8 +87,9 @@ $pisces{src_subdir}	= "pisces";
 $pisces{clone_cmd}[0]	= "git clone http://essex.cs.pitt.edu/git/pisces.git";
 $pisces{clone_cmd}[1]	= "git clone http://essex.cs.pitt.edu/git/petlib.git";
 $pisces{clone_cmd}[2]	= "git clone http://essex.cs.pitt.edu/git/xpmem.git";
-$pisces{clone_cmd}[3]	= "git clone https://software.sandia.gov/git/kitten";
+$pisces{clone_cmd}[3]	= "git clone https://github.com/ktpedre/kitten";
 $pisces{clone_cmd}[4]	= "git clone http://essex.cs.pitt.edu/git/palacios.git";
+$pisces{clone_cmd}[5]	= "git clone http://essex.cs.pitt.edu/git/hobbes.git";
 push(@packages, \%pisces);
 
 my %program_args = (
@@ -389,7 +390,10 @@ if ($program_args{build_pisces}) {
 		copy "$BASEDIR/$CONFIGDIR/pisces/xpmem_makefile", "Makefile" or die;
 		system "touch .default_makefile_copied";
 	}
-	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod make";
+	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod LINUX_KERN=$BASEDIR/$SRCDIR/$kernel{basename} make";
+	chdir "$BASEDIR" or die;
+	chdir "$SRCDIR/$pisces{src_subdir}/xpmem/lib" or die;
+	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/lib make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 5: Done building pisces/xpmem\n";
 
@@ -403,7 +407,7 @@ if ($program_args{build_pisces}) {
 		copy "$BASEDIR/$CONFIGDIR/pisces/pisces_makefile", "Makefile" or die;
 		system "touch .default_makefile_copied";
 	}
-	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces make XPMEM=y";
+	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces KERN_PATH=$BASEDIR/$SRCDIR/$kernel{basename} make XPMEM=y";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 6: Done building pisces/pisces\n";
 }
