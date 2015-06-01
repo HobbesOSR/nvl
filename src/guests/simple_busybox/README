@@ -1,0 +1,7 @@
+Usage example to build linux kernel, mpi, pisces, and other tools:
+
+WARNING: This will install some files under /opt on the build host
+         as root, use with caution. The safest option is to run build.pl
+         from within a disposable VM host, such as the hobbes_build_appliance.
+
+./build.pl --build-kernel --build-busybox --build-dropbear --build-libhugetlbfs --build-numactl --build-hwloc --build-ofed --build-ompi --build-pisces --build-image --build-isoimage
