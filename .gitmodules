@@ -16,3 +16,6 @@
 [submodule "src/nvl/pisces/xpmem"]
 	path = src/nvl/pisces/xpmem
 	url = http://essex.cs.pitt.edu/git/xpmem.git
+[submodule "src/nvl/pisces/hobbes"]
+	path = src/nvl/pisces/hobbes
+	url = http://essex.cs.pitt.edu/git/hobbes.git
