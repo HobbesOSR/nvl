@@ -1,0 +1,21 @@
+To Run:
+
+Load xpmem.ko, restart master.
+a. cd /scratch1/smukher/libhoobes-dev-may26/hobbes/master_init
+./doit.sh
+
+On login node:
+
+b. cd /scratch1/smukher/KGNI_DRIVER_TEST/xpmem_chnl_test/src
+
+aprun -L 47 ./xpmem_chnl_serv
+
+Take note of the segment listed for command queue
+
+c. Login to nid 47
+#  cd /scratch1/smukher/KGNI_DRIVER_TEST/xpmem_chnl_test/src
+
+<Run client with segment from server>
+e.g:
+ 
+# ./xpmem_chnl_client 19396072308775
