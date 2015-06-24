@@ -1,13 +1,19 @@
+/*
+ * Copyright 2011 Cray Inc.  All Rights Reserved.
+ */
+
 /* User level test procedures */
 #define _GNU_SOURCE
 #include <sched.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "gni_priv.h"
 #include "gni_pub.h"
@@ -19,6 +25,8 @@
 #include <hobbes_cmd_queue.h>
 #include <xemem.h>
 #include <hobbes_enclave.h>
+#include <dlfcn.h>		/* For dlsym */
+
 
 #define PAGE_SHIFT	12
 #define PAGE_SIZE (0x1UL << PAGE_SHIFT)
@@ -36,6 +44,68 @@
 #define THREAD_NUM_MASK  0x7
 
 #define FMA_WINDOW_SIZE    (1024 * 1024 * 1024L)
+
+
+typedef int (*orig_open_f_type) (const char *pathname, int flags);
+
+int
+kgni_open (const char *pathname, int flags)
+{
+  printf
+    (" gemini proxy client  called open: will foward to xpmem server '%s'!!!\n",
+     pathname);
+  return 0;
+}
+
+int
+open (const char *pathname, int flags, ...)
+{
+  /* Some evil injected code goes here. */
+  printf ("xpmem open wrapper open(...) to access '%s'!!!\n", pathname);
+  orig_open_f_type orig_open;
+  orig_open = (orig_open_f_type) dlsym (RTLD_NEXT, "open");
+  if (strncmp (pathname, "/dev/kgni0", 10) == 0)
+    {
+      kgni_open (pathname, flags);
+    }
+  else
+    {
+      return orig_open (pathname, flags);
+    }
+}
+
+typedef int (*next_ioctl_f_type) (int fd, int request, void *data);
+
+int
+ioctl (int fd, unsigned long int request, ...)
+{
+  char *msg;
+  va_list args;
+  void *argp;
+
+  /* extract argp from varargs */
+  va_start (args, request);
+  argp = va_arg (args, void *);
+  va_end (args);
+
+  fprintf (stderr, "ioctl : wrapping ioctl\n");
+  fflush (stderr);
+  next_ioctl_f_type next_ioctl;
+  next_ioctl = dlsym (RTLD_NEXT, "ioctl");
+  fprintf (stderr, "next_ioctl = %p\n", next_ioctl);
+  fflush (stderr);
+  if ((msg = dlerror ()) != NULL)
+    {
+      fprintf (stderr, "ioctl: dlopen failed : %s\n", msg);
+      fflush (stderr);
+      exit (1);
+    }
+  else
+    fprintf (stderr, "ioctl: wrapping done\n");
+  fflush (stderr);
+  return next_ioctl (fd, request, argp);
+}
+
 
 int
 main (int argc, char *argv[])

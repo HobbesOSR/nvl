@@ -1,0 +1,35 @@
+
+Now client side is built as dynamic syscall interception librray which will intercept 
+kgni open and ioctl() calls made by GNI_* functions from unmodified libugni.so 
+
+
+Please see "examples" directory for a build in examples based on libugni calls:
+
+e.g: "mem_reg"   below is an executable built from memory registration validation code in "examples" directory.
+
+
+=========== This is to run a ugni example from after login to compute node: ==================================
+
+$ pwd
+/scratch1/smukher/FAKE_GNI_REPO/guest_code/guest-apps/HOST_RUN_RESULT
+
+$ LD_PRELOAD=/scratch1/smukher/KGNI_DRIVER_TEST/xpmem_chnl_test/extra/xpmem_chnl_client.so LD_LIBRARY_PATH=/scratch1/smukher/libhoobes-dev-may26/petlib:/scratch1/smukher/libhoobes-dev-may26/hobbes/whitedb-0.7.3/Main/.libs:/scratch1/smukher/libhoobes-dev-may26/hobbes/libhobbes:/scratch1/smukher/libhoobes-dev-may26/xpmem/lib:/scratch1/smukher/FAKE_GNI_REPO/host_code/apps/libs ./mem_reg
+Hobbes: Initializing
+
+Error> hobbes.c(55): Hobbes is not available
+Instance -136414029 reporting...
+Enter cookie: 100
+Enter ptag: 200
+Enter instance: 20
+Enter host pid: 100
+after arg processing...
+Rank -136414029: created CDM
+after cdm create ...
+xpmem open wrapper open(...) to access '/dev/kgni0'!!!
+ gemini proxy client  called open: will foward to xpmem server '/dev/kgni0'!!!
+ioctl : wrapping ioctl
+next_ioctl = 0x7ffff74d0fa0
+ioctl: wrapping done
+Fatal Error: GNI_CdmAttach: ioctl(GNI_IOC_NIC_SETATTR) error(9) Bad file descriptor at line 353 in file cdm.c
+Aborted
+

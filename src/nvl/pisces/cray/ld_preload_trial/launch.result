@@ -1,0 +1,13 @@
+
+#invoke open wrapper:
+$    LD_PRELOAD=./inspect_open.so ./test
+
+
+#invoke ioctl wrapper
+
+$    LD_PRELOAD=./libwrap_ioctl.so ./test_ioctl
+ioctl : wrapping ioctl
+next_ioctl = 0x7f37e97fcfa0
+ioctl: wrapping done
+ failed to GETD on /dev/kgni0
+

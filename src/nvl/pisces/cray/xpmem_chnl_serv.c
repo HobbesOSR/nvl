@@ -1,3 +1,7 @@
+/*
+ * Copyright 2011 Cray Inc.  All Rights Reserved.
+ */
+
 /* User level test procedures */
 #define _GNU_SOURCE
 #include <sched.h>
@@ -225,13 +229,14 @@ main (int argc, char *argv[])
 
 
   get_alps_info (&alps_info);
-  fprintf (stderr, "after alps info get\n");
 
   rc = GNI_CdmGetNicAddress (alps_info.device_id, &nic_addr, &gni_cpu_id);
 
   cpu_num = get_cpunum ();
 
   instance = GNI_INSTID (nic_addr, cpu_num, thread_num);
+  fprintf (stderr, "after alps info get cookie %lu  ptag %lu  instance %d\n",
+	   alps_info.cookie, alps_info.ptag, instance);
 
   device = open ("/dev/kgni0", O_RDWR);
   if (device < 0)
