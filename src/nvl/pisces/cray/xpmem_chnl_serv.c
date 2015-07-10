@@ -165,7 +165,7 @@ main (int argc, char *argv[])
   gni_ep_postdata_args_t ep_post_attr;
   gni_ep_postdata_test_args_t ep_posttest_attr;
   gni_ep_postdata_term_args_t ep_postterm_attr;
-  gni_mem_register_args_t mem_reg_attr;
+  gni_mem_register_args_t *mem_reg_attr;
   gni_mem_deregister_args_t mem_dereg_attr;
   gni_cq_create_args_t cq_create_attr;
   gni_cq_wait_event_args_t cq_wait_attr;
@@ -342,6 +342,46 @@ main (int argc, char *argv[])
 		       "created xemem segment for FMA ctrl segid %llu\n",
 		       fma_ctrl);
 	      break;
+	    case GNI_IOC_MEM_REGISTER:
+	      xemem_segid_t reg_mem_seg;
+	      void *reg_addr;
+	      struct xemem_addr r_addr;
+	      mem_register_attr = (gni_mem_register_args_t *) data_buf;
+	      xemem_apid_t apid;
+	      gni_mem_segment_t *segment;
+	      int i;
+	      if (mem_register_attr->segments_cnt == 1)
+		{		/* one segment to be registered */
+		  apid = xemem_get (mem_register_attr->address, XEMEM_RDWR);
+		  if (apid <= 0)
+		    {
+		      printf ("could not attach user provided memreg \n");
+		      return HCQ_INVALID_HANDLE;
+		    }
+
+		  r_addr.apid = apid;
+		  r_addr.offset = 0;
+
+		  reg_addr =
+		    xemem_attach (r_addr, mem_register_attr->length, NULL);
+		  mem_register_attr->address = (uint64_t) reg_addr;
+		}
+	      else
+		{
+		  segment = mem_register_attr->mem_segments;
+		}
+
+/*
+        mem_register_args.kern_cq_descr =
+            (dst_cq_hndl ==
+             NULL) ? GNI_INVALID_CQ_DESCR : dst_cq_hndl->kern_cq_descr;
+        mem_register_args.flags = flags;
+        mem_register_args.vmdh_index = vmdh_index;
+        mem_register_args.mem_hndl = *mem_hndl;
+*/
+
+	      rc = ioctl (device, GNI_IOC_MEM_REGISTER, &mem_register_attr);
+
 	    default:
 	      break;
 	    }
