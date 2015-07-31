@@ -119,11 +119,14 @@ ioctl (int fd, unsigned long int request, ...)
       fprintf (stderr, "ioctl: on kgni device\n");
       fflush (stderr);
       handle_ioctl (client_fd, request, argp);
+      return 0;
     }
   else
-    fprintf (stderr, "ioctl: call actual ioctl\n");
-  fflush (stderr);
-  return next_ioctl (fd, request, argp);
+    {
+      fprintf (stderr, "ioctl: call actual ioctl\n");
+      fflush (stderr);
+      return next_ioctl (fd, request, argp);
+    }
 }
 
 int
@@ -133,6 +136,10 @@ pack_args (int request, void *args)
   gni_mem_register_args_t *mem_reg_attr;
   void *reg_buf;
   hcq_cmd_t cmd = HCQ_INVALID_CMD;
+  xemem_segid_t reg_mem_seg;
+  gni_mem_segment_t *segment;	/*comes from gni_pub.h */
+  int i;
+  uint32_t seg_cnt;
 
 
   switch (request)
@@ -141,31 +148,26 @@ pack_args (int request, void *args)
       /* IOCTL  1. handle NIC_SETATTR ioctl for client */
       nic_set_attr1 = (gni_nic_setattr_args_t *) args;
       cmd =
-	hcq_cmd_issue (hcq, GNI_IOC_NIC_SETATTR, sizeof (nic_set_attr),
+	hcq_cmd_issue (hcq, GNI_IOC_NIC_SETATTR, sizeof (nic_set_attr1),
 		       nic_set_attr1);
 
-      printf ("cmd = %llu data size %d\n", cmd, sizeof (nic_set_attr));
+      printf ("cmd = %llu data size %d\n", cmd, sizeof (nic_set_attr1));
       uint32_t len = 0;
       nic_set_attr1 = hcq_get_ret_data (hcq, cmd, &len);
-      printf ("old client fake cookie : %d ptag :%d  rank :%d\n",
-	      nic_set_attr.cookie, nic_set_attr.ptag, nic_set_attr.rank);
       printf ("from server return cookie : %d ptag :%d  rank :%d\n",
 	      nic_set_attr1->cookie, nic_set_attr1->ptag,
 	      nic_set_attr1->rank);
       hcq_cmd_complete (hcq, cmd);
-      memcpy (args, (void *) nic_set_attr1, sizeof (nic_set_attr));
+      memcpy (args, (void *) nic_set_attr1, sizeof (nic_set_attr1));
+      break;
 
     case GNI_IOC_MEM_REGISTER:
-      xemem_segid_t reg_mem_seg;
-      gni_mem_segment_t *segment;	/*comes from gni_pub.h */
-      int i;
       /* If memory is segmented we just loop through the list 
          segments[0].address && segments[0].length
        */
-      uint32_t seg_cnt;
       mem_reg_attr = (gni_mem_register_args_t *) args;
       // check to see if memory is segmented
-      if (mem_reg_attr_ptr->mem_segments == NULL)
+      if (mem_reg_attr->mem_segments == NULL)
 	{
 	  reg_mem_seg =
 	    xemem_make (mem_reg_attr->address, mem_reg_attr->length, "");
@@ -179,14 +181,16 @@ pack_args (int request, void *args)
 	  for (i = 0; i < seg_cnt; i++)
 	    {
 	      reg_mem_seg =
-		xemem_make (segment[i]->address, segment[0]->length, "");
-	      segment[i]->address = reg_mem_seg;
+		xemem_make (segment[i].address, segment[0].length, "");
+	      segment[i].address = reg_mem_seg;
 	    }
 
 	}
+      cmd =
+	hcq_cmd_issue (hcq, GNI_IOC_MEM_REGISTER, sizeof (mem_reg_attr),
+		       mem_reg_attr);
 
       break;
-    case GNI_IOC_MEM_REGISTER:
     default:
       break;
     }
@@ -197,7 +201,6 @@ int
 handle_ioctl (int device, int request, void *arg)
 {
 
-  int device;
   int status;
   gni_nic_fmaconfig_args_t fma_attr;
   gni_mem_register_args_t mem_reg_attr;
@@ -229,134 +232,134 @@ unpack_args (int request, void *args)
 {
   gni_nic_setattr_args_t *nic_set_attr;
 
-  swtch (request)
-  {
-case GNI_IOC_NIC_SETATTR:
-    nic_set_attr = args;
+  switch (request)
+    {
+    case GNI_IOC_NIC_SETATTR:
+      nic_set_attr = args;
 
-    struct xemem_addr win_addr;
-    struct xemem_addr put_addr;
-    struct xemem_addr get_addr;
-    struct xemem_addr ctrl_addr;
-
-
-    void *fma_win = NULL;
-    void *fma_put = NULL;
-    void *fma_get = NULL;
-    void *fma_ctrl = NULL;
-    void *fma_nc = NULL;
-
-    xemem_apid_t apid;
-
-    xemem_segid_t fma_win_seg;
-    xemem_segid_t fma_put_seg;
-    xemem_segid_t fma_get_seg;
-    xemem_segid_t fma_ctrl_seg;
-    hcq_cmd_t cmd = HCQ_INVALID_CMD;
+      struct xemem_addr win_addr;
+      struct xemem_addr put_addr;
+      struct xemem_addr get_addr;
+      struct xemem_addr ctrl_addr;
 
 
-    fma_win_seg = xemem_lookup_segid ("fma_win_seg");
-    apid = xemem_get (fma_win_seg, XEMEM_RDWR);
-    if (apid <= 0)
-      {
-	xemem_remove (fma_win_seg);
-	return HCQ_INVALID_HANDLE;
-      }
+      void *fma_win = NULL;
+      void *fma_put = NULL;
+      void *fma_get = NULL;
+      void *fma_ctrl = NULL;
+      void *fma_nc = NULL;
 
-    win_addr.apid = apid;
-    win_addr.offset = 0;
-    printf ("apid = %llu window segid for FMA from server %llu\n",
-	    win_addr.apid, fma_win_seg);
+      xemem_apid_t apid;
 
-    fma_win = xemem_attach (win_addr, FMA_WINDOW_SIZE, NULL);
+      xemem_segid_t fma_win_seg;
+      xemem_segid_t fma_put_seg;
+      xemem_segid_t fma_get_seg;
+      xemem_segid_t fma_ctrl_seg;
+      hcq_cmd_t cmd = HCQ_INVALID_CMD;
 
-    if (fma_win == NULL)
-      {
-	xemem_release (apid);
-	xemem_remove (fma_win_seg);
-	return HCQ_INVALID_HANDLE;
-      }
-    printf ("after xemem attch of fma window %llu\n", fma_win);
+
+      fma_win_seg = xemem_lookup_segid ("fma_win_seg");
+      apid = xemem_get (fma_win_seg, XEMEM_RDWR);
+      if (apid <= 0)
+	{
+	  xemem_remove (fma_win_seg);
+	  return HCQ_INVALID_HANDLE;
+	}
+
+      win_addr.apid = apid;
+      win_addr.offset = 0;
+      printf ("apid = %llu window segid for FMA from server %llu\n",
+	      win_addr.apid, fma_win_seg);
+
+      fma_win = xemem_attach (win_addr, FMA_WINDOW_SIZE, NULL);
+
+      if (fma_win == NULL)
+	{
+	  xemem_release (apid);
+	  xemem_remove (fma_win_seg);
+	  return HCQ_INVALID_HANDLE;
+	}
+      printf ("after xemem attch of fma window %llu\n", fma_win);
 /*********************************/
 
-    fma_put_seg = xemem_lookup_segid ("fma_win_put");
-    apid = xemem_get (fma_put_seg, XEMEM_RDWR);
-    if (apid <= 0)
-      {
-	xemem_remove (fma_put_seg);
-	return HCQ_INVALID_HANDLE;
-      }
+      fma_put_seg = xemem_lookup_segid ("fma_win_put");
+      apid = xemem_get (fma_put_seg, XEMEM_RDWR);
+      if (apid <= 0)
+	{
+	  xemem_remove (fma_put_seg);
+	  return HCQ_INVALID_HANDLE;
+	}
 
-    put_addr.apid = apid;
-    put_addr.offset = 0;
-    printf ("apid = %llu put segid for FMA from server %llu\n", put_addr.apid,
-	    fma_put_seg);
+      put_addr.apid = apid;
+      put_addr.offset = 0;
+      printf ("apid = %llu put segid for FMA from server %llu\n",
+	      put_addr.apid, fma_put_seg);
 
-    fma_put = xemem_attach (put_addr, FMA_WINDOW_SIZE, NULL);
+      fma_put = xemem_attach (put_addr, FMA_WINDOW_SIZE, NULL);
 
-    if (fma_put == NULL)
-      {
-	xemem_release (apid);
-	xemem_remove (fma_win_seg);
-	return HCQ_INVALID_HANDLE;
-      }
-    printf ("after xemem attach of fma PUT window %llu\n", fma_put);
+      if (fma_put == NULL)
+	{
+	  xemem_release (apid);
+	  xemem_remove (fma_win_seg);
+	  return HCQ_INVALID_HANDLE;
+	}
+      printf ("after xemem attach of fma PUT window %llu\n", fma_put);
 /***************************/
-    fma_get_seg = xemem_lookup_segid ("fma_win_get");
-    apid = xemem_get (fma_get_seg, XEMEM_RDWR);
-    if (apid <= 0)
-      {
-	xemem_remove (fma_get_seg);
-	return HCQ_INVALID_HANDLE;
-      }
+      fma_get_seg = xemem_lookup_segid ("fma_win_get");
+      apid = xemem_get (fma_get_seg, XEMEM_RDWR);
+      if (apid <= 0)
+	{
+	  xemem_remove (fma_get_seg);
+	  return HCQ_INVALID_HANDLE;
+	}
 
-    get_addr.apid = apid;
-    get_addr.offset = 0;
-    printf ("apid = %llu GET segid for FMA from server %llu\n", get_addr.apid,
-	    fma_get_seg);
+      get_addr.apid = apid;
+      get_addr.offset = 0;
+      printf ("apid = %llu GET segid for FMA from server %llu\n",
+	      get_addr.apid, fma_get_seg);
 
-    fma_get = xemem_attach (get_addr, FMA_WINDOW_SIZE, NULL);
+      fma_get = xemem_attach (get_addr, FMA_WINDOW_SIZE, NULL);
 
-    if (fma_get == NULL)
-      {
-	xemem_release (apid);
-	xemem_remove (fma_get_seg);
-	return HCQ_INVALID_HANDLE;
-      }
-    printf ("after xemem attach of fma GET window %llu\n", fma_get);
-    fma_ctrl_seg = xemem_lookup_segid ("fma_win_ctrl");
-    apid = xemem_get (fma_ctrl_seg, XEMEM_RDWR);
-    if (apid <= 0)
-      {
-	xemem_remove (fma_ctrl_seg);
-	return HCQ_INVALID_HANDLE;
-      }
+      if (fma_get == NULL)
+	{
+	  xemem_release (apid);
+	  xemem_remove (fma_get_seg);
+	  return HCQ_INVALID_HANDLE;
+	}
+      printf ("after xemem attach of fma GET window %llu\n", fma_get);
+      fma_ctrl_seg = xemem_lookup_segid ("fma_win_ctrl");
+      apid = xemem_get (fma_ctrl_seg, XEMEM_RDWR);
+      if (apid <= 0)
+	{
+	  xemem_remove (fma_ctrl_seg);
+	  return HCQ_INVALID_HANDLE;
+	}
 
-    ctrl_addr.apid = apid;
-    ctrl_addr.offset = 0;
-    printf ("apid = %llu CTRL segid for FMA from server %llu\n",
-	    ctrl_addr.apid, fma_ctrl_seg);
+      ctrl_addr.apid = apid;
+      ctrl_addr.offset = 0;
+      printf ("apid = %llu CTRL segid for FMA from server %llu\n",
+	      ctrl_addr.apid, fma_ctrl_seg);
 
-    fma_ctrl = xemem_attach (ctrl_addr, FMA_WINDOW_SIZE, NULL);
+      fma_ctrl = xemem_attach (ctrl_addr, FMA_WINDOW_SIZE, NULL);
 
-    if (fma_ctrl == NULL)
-      {
-	xemem_release (apid);
-	xemem_remove (fma_ctrl_seg);
-	return HCQ_INVALID_HANDLE;
-      }
-    printf ("after xemem attach of fma CTRL window %llu\n", fma_ctrl);
+      if (fma_ctrl == NULL)
+	{
+	  xemem_release (apid);
+	  xemem_remove (fma_ctrl_seg);
+	  return HCQ_INVALID_HANDLE;
+	}
+      printf ("after xemem attach of fma CTRL window %llu\n", fma_ctrl);
 
-    nic_set_attr->fma_window = fma_win;
-    nic_set_attr->fma_window_nwc = fma_put;
-    nic_set_attr->fma_window_get = fma_get;
-    nic_set_attr->fma_ctrl = fma_ctrl;
-    break;
-default:
-    hcq_disconnect (hcq);
-    hobbes_client_deinit ();
-    break;
-  }
+      nic_set_attr->fma_window = fma_win;
+      nic_set_attr->fma_window_nwc = fma_put;
+      nic_set_attr->fma_window_get = fma_get;
+      nic_set_attr->fma_ctrl = fma_ctrl;
+      break;
+    default:
+      hcq_disconnect (hcq);
+      hobbes_client_deinit ();
+      break;
+    }
   //let's print something what we got back in nic_set_attr struct 
   /* End of NIC SET ATTR */
   return 0;

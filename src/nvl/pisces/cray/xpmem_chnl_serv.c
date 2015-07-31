@@ -165,7 +165,7 @@ main (int argc, char *argv[])
   gni_ep_postdata_args_t ep_post_attr;
   gni_ep_postdata_test_args_t ep_posttest_attr;
   gni_ep_postdata_term_args_t ep_postterm_attr;
-  gni_mem_register_args_t *mem_reg_attr;
+  gni_mem_register_args_t *mem_register_attr;
   gni_mem_deregister_args_t mem_dereg_attr;
   gni_cq_create_args_t cq_create_attr;
   gni_cq_wait_event_args_t cq_wait_attr;
@@ -183,6 +183,7 @@ main (int argc, char *argv[])
   char send_buff[256];
   char rcv_buff[256];
   void *fma_window;
+  void *reg_addr;
   uint64_t *get_window;
   uint64_t gcw, get_window_offset;
   int i, max_rank, j;
@@ -208,8 +209,8 @@ main (int argc, char *argv[])
   int fd_cnt = 0;
   int ret = -1;
   xemem_segid_t fma_win, fma_put, fma_nc, fma_get, fma_ctrl;
-  xemem_segid_t clean_seg;
-
+  xemem_segid_t clean_seg, reg_mem_seg;
+  struct xemem_addr r_addr;
 
   hobbes_client_init ();
 
@@ -343,9 +344,7 @@ main (int argc, char *argv[])
 		       fma_ctrl);
 	      break;
 	    case GNI_IOC_MEM_REGISTER:
-	      xemem_segid_t reg_mem_seg;
-	      void *reg_addr;
-	      struct xemem_addr r_addr;
+
 	      mem_register_attr = (gni_mem_register_args_t *) data_buf;
 	      xemem_apid_t apid;
 	      gni_mem_segment_t *segment;
@@ -371,16 +370,8 @@ main (int argc, char *argv[])
 		  segment = mem_register_attr->mem_segments;
 		}
 
-/*
-        mem_register_args.kern_cq_descr =
-            (dst_cq_hndl ==
-             NULL) ? GNI_INVALID_CQ_DESCR : dst_cq_hndl->kern_cq_descr;
-        mem_register_args.flags = flags;
-        mem_register_args.vmdh_index = vmdh_index;
-        mem_register_args.mem_hndl = *mem_hndl;
-*/
-
 	      rc = ioctl (device, GNI_IOC_MEM_REGISTER, &mem_register_attr);
+	      break;
 
 	    default:
 	      break;
