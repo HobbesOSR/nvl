@@ -1,0 +1,40 @@
+<pisces>
+    <kernel>/opt/hobbes/vmlwk.bin</kernel>
+    <init_task>/opt/hobbes/lwk_init</init_task>
+    <cmd_line>console=pisces</cmd_line>
+
+<!--    
+    <boot_env numa="1">
+       <cpu>2</cpu>
+       <memory size="512"></memory>
+    </boot_env>
+   
+
+
+    <memory>
+        <blocks numa="1" contig="0">2</blocks>
+        <block>4</block>
+        <block>2</block>
+        <node>1</node>
+    </memory>
+    
+    <cpus>
+        <cores numa="1">4</cores>
+        <core>2</core>
+    </cpus>
+
+-->
+<!--
+    <files>
+
+    </files>
+-->
+
+
+    <devices>
+      <vpci name="nic_1" bus="0" dev="1" fn="0" />
+
+    </devices>
+
+
+</pisces>

@@ -383,13 +383,6 @@ if ($program_args{build_pisces}) {
 	# STEP 5: Build XPMEM for host Linux. Pisces depends on this.
 	print "CNL: STEP 5: Building pisces/xpmem\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/xpmem/mod" or die;
-	if (-e ".default_makefile_copied") {
-		print "CNL: pisces/xpmem aready configured, skipping copy of default Makefile\n";
-	} else {
-		print "CNL: pisces/xpmem using default Makefile\n";
-		copy "$BASEDIR/$CONFIGDIR/pisces/xpmem_makefile", "Makefile" or die;
-		system "touch .default_makefile_copied";
-	}
 	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod LINUX_KERN=$BASEDIR/$SRCDIR/$kernel{basename} make";
 	chdir "$BASEDIR" or die;
 	chdir "$SRCDIR/$pisces{src_subdir}/xpmem/lib" or die;
@@ -400,13 +393,6 @@ if ($program_args{build_pisces}) {
 	# Step 6: Build Pisces
 	print "CNL: STEP 6: Building pisces/pisces\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/pisces" or die;
-	if (-e ".default_makefile_copied") {
-		print "CNL: pisces/pisces aready configured, skipping copy of default Makefile\n";
-	} else {
-		print "CNL: pisces/pisces using default Makefile\n";
-		copy "$BASEDIR/$CONFIGDIR/pisces/pisces_makefile", "Makefile" or die;
-		system "touch .default_makefile_copied";
-	}
 	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces KERN_PATH=$BASEDIR/$SRCDIR/$kernel{basename} make XPMEM=y";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 6: Done building pisces/pisces\n";
@@ -504,19 +490,21 @@ if ($program_args{build_image}) {
 	system("cp -R /opt/$ompi{basename} $IMAGEDIR/opt") == 0
 		or die "Failed to rsync OpenMPI to $IMAGEDIR";
 
-	# Install Pisces into image
-	system "mkdir -p $IMAGEDIR/opt/pisces";
-	system "mkdir -p $IMAGEDIR/opt/pisces_guest";
-	system("cp $SRCDIR/pisces/xpmem/mod/xpmem.ko $IMAGEDIR/lib/modules") == 0
-		or die "Failed to copy xpmem.ko to $IMAGEDIR/lib/modules";
-	system("cp $SRCDIR/pisces/pisces/pisces.ko $IMAGEDIR/lib/modules") == 0
-		or die "Failed to copy pisces.ko to $IMAGEDIR/lib/modules";
-	system("rsync -a $SRCDIR/pisces/pisces/linux_usr/ $IMAGEDIR/opt/pisces") == 0
-		or die "Failed to copy Pisces linux_usr to $IMAGEDIR/opt/pisces";
-	system("cp $SRCDIR/pisces/kitten/vmlwk.bin $IMAGEDIR/opt/pisces_guest") == 0
-		or die "Failed to copy Kitten vmlwk.bin to $IMAGEDIR/opt/pisces_guest";
-	system("cp $SRCDIR/pisces/kitten/user/pisces/pisces $IMAGEDIR/opt/pisces_guest") == 0
-		or die "Failed to copy Kitten pisces init_task to $IMAGEDIR/opt/pisces_guest";
+	# Install Pisces / Hobbes / Leviathan into image
+	system("cp -R $SRCDIR/pisces/xpmem/mod/xpmem.ko $IMAGEDIR/opt/hobbes") == 0
+		or die "error 1";
+	system("cp -R $SRCDIR/pisces/pisces/pisces.ko $IMAGEDIR/opt/hobbes") == 0
+		or die "error 2";
+	system("cp -R $SRCDIR/pisces/hobbes/master_init/master $IMAGEDIR/opt/hobbes") == 0
+		or die "error 4";
+	system("cp -R $SRCDIR/pisces/hobbes/shell/hobbes $IMAGEDIR/opt/hobbes") == 0
+		or die "error 5";
+	system("cp -R $SRCDIR/pisces/kitten/vmlwk.bin $IMAGEDIR/opt/hobbes") == 0
+		or die "error 6";
+	system("cp -R $SRCDIR/pisces/hobbes/lwk_inittask/lwk_init $IMAGEDIR/opt/hobbes") == 0
+		or die "error 7";
+	system("cp -R $SRCDIR/pisces/pisces/linux_usr/pisces_cons $IMAGEDIR/opt/hobbes") == 0
+		or die "error 8";
 
 	# Files copied from build host
 	system "cp /etc/localtime $IMAGEDIR/etc";
