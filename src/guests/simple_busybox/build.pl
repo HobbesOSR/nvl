@@ -390,7 +390,7 @@ if ($program_args{build_pisces}) {
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 5: Done building pisces/xpmem\n";
 
-	# Step 6: Build Pisces
+	# Step 6: Build Pisces for Kitten
 	print "CNL: STEP 6: Building pisces/pisces\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/pisces" or die;
 	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces KERN_PATH=$BASEDIR/$SRCDIR/$kernel{basename} make XPMEM=y";
@@ -426,6 +426,13 @@ if ($program_args{build_pisces}) {
 	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 10: Done building pisces/hobbes/shell\n";
+
+	# Step 11: Build Hobbes Kitten init_task
+	print "CNL: STEP 11: Building pisces/hobbes/lwk_inittask\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/lwk_inittask" or die;
+	system "KITTEN_PATH=../../kitten XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 11: Done building pisces/hobbes/lwk_inittask\n";
 }
 
 
