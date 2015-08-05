@@ -26,6 +26,7 @@
 #include <xemem.h>
 #include <hobbes_enclave.h>
 #include <dlfcn.h>		/* For dlsym */
+#include "xmem_list.h"
 
 
 #define PAGE_SHIFT	12
@@ -48,7 +49,7 @@
 int client_fd;
 xemem_segid_t cmdq_segid;
 hcq_handle_t hcq = HCQ_INVALID_HANDLE;
-
+struct memseg_list *mt = NULL;
 
 typedef int (*orig_open_f_type) (const char *pathname, int flags);
 
@@ -58,6 +59,7 @@ kgni_open (const char *pathname, int flags)
 
   hcq_cmd_t cmd = HCQ_INVALID_CMD;
 
+  mt = list_new ();
   hobbes_client_init ();
   cmdq_segid = xemem_lookup_segid ("GEMINI-NEW");
 
@@ -134,12 +136,17 @@ pack_args (int request, void *args)
 {
   gni_nic_setattr_args_t *nic_set_attr1;
   gni_mem_register_args_t *mem_reg_attr;
+  gni_cq_destroy_args_t *cq_destroy_args;
+  gni_cq_create_args_t *cq_create_args;
+  gni_cq_wait_event_args_t *cq_wait_event_args;
   void *reg_buf;
   hcq_cmd_t cmd = HCQ_INVALID_CMD;
   xemem_segid_t reg_mem_seg;
+  xemem_segid_t *cq_seg;
   gni_mem_segment_t *segment;	/*comes from gni_pub.h */
   int i;
   uint32_t seg_cnt;
+  xemem_segid_t *cq_index_seg;
 
 
   switch (request)
@@ -160,6 +167,26 @@ pack_args (int request, void *args)
       hcq_cmd_complete (hcq, cmd);
       memcpy (args, (void *) nic_set_attr1, sizeof (nic_set_attr1));
       break;
+    case GNI_IOC_CQ_CREATE:
+      cq_create_args = args;	/* create xememseg of queue */
+      /* Following is what we get in args for this ioctl from client side 
+         cq_create_args.queue = (gni_cq_entry_t *) cq->queue;
+         cq_create_args.entry_count = entry_count;
+         cq_create_args.mem_hndl = cq->mem_hndl;
+         cq_create_args.mode = mode;
+         cq_create_args.delay_count = delay_count;
+         cq_create_args.kern_cq_descr = GNI_INVALID_CQ_DESCR;
+         cq_create_args.interrupt_mask = NULL;
+       */
+      cq_seg = list_find (mt, cq_create_args->queue);
+      cq_create_args->queue = (gni_cq_entry_t *) cq_seg;
+      cmd =
+	hcq_cmd_issue (hcq, GNI_IOC_CQ_CREATE, sizeof (cq_create_args),
+		       cq_create_args);
+      cq_create_args = hcq_get_ret_data (hcq, cmd, &len);
+      hcq_cmd_complete (hcq, cmd);
+      memcpy (args, (void *) cq_create_args, sizeof (cq_create_args));
+      break;
 
     case GNI_IOC_MEM_REGISTER:
       /* If memory is segmented we just loop through the list 
@@ -172,6 +199,8 @@ pack_args (int request, void *args)
 	  reg_mem_seg =
 	    xemem_make (mem_reg_attr->address, mem_reg_attr->length, "");
 	  // Now segid actually is 64 bit so push it there
+	  list_add_element (mt, (uint64_t) reg_mem_seg, mem_reg_attr->address,
+			    mem_reg_attr->length);
 	  mem_reg_attr->address = (uint64_t) reg_mem_seg;
 	}
       else
@@ -181,7 +210,9 @@ pack_args (int request, void *args)
 	  for (i = 0; i < seg_cnt; i++)
 	    {
 	      reg_mem_seg =
-		xemem_make (segment[i].address, segment[0].length, "");
+		xemem_make (segment[i].address, segment[i].length, "");
+	      list_add_element (mt, (uint64_t) reg_mem_seg,
+				segment[i].address, segment[i].length);
 	      segment[i].address = reg_mem_seg;
 	    }
 
@@ -190,7 +221,39 @@ pack_args (int request, void *args)
 	hcq_cmd_issue (hcq, GNI_IOC_MEM_REGISTER, sizeof (mem_reg_attr),
 		       mem_reg_attr);
 
+      mem_reg_attr = hcq_get_ret_data (hcq, cmd, &len);
+      hcq_cmd_complete (hcq, cmd);
+      memcpy (args, (void *) mem_reg_attr, sizeof (mem_reg_attr));
       break;
+    case GNI_IOC_CQ_WAIT_EVENT:
+      /*  cq_hndl->queue is a user /client address space area. i.e 
+         During cq_create iocti, one needs to create a xemem seg of 4KB size
+         cq_idx = GNII_CQ_REMAP_INDEX(cq_hndl, cq_hndl->read_index);
+
+         cq_wait_event_args.kern_cq_descr =
+         (uint64_t *)cq_hndl->kern_cq_descr;
+         cq_wait_event_args.next_event_ptr =
+         (uint64_t **)&cq_hndl->queue[cq_idx];
+         cq_wait_event_args.num_cqs = 0;
+       */
+      cq_wait_event_args = args;
+      cq_index_seg = list_find (mt, cq_wait_event_args->next_event_ptr);
+      cq_wait_event_args->next_event_ptr = cq_index_seg;
+      cmd =
+	hcq_cmd_issue (hcq, GNI_IOC_CQ_WAIT_EVENT,
+		       sizeof (gni_cq_wait_event_args_t), cq_wait_event_args);
+      cq_wait_event_args = hcq_get_ret_data (hcq, cmd, &len);
+      hcq_cmd_complete (hcq, cmd);
+      memcpy (args, (void *) cq_wait_event_args, sizeof (cq_wait_event_args));
+      break;
+    case GNI_IOC_CQ_DESTROY:
+      cq_destroy_args = args;	/* ONLY need cq_destroy_args.kern_cq_descr, a opaque pointer */
+      cmd =
+	hcq_cmd_issue (hcq, GNI_IOC_CQ_DESTROY,
+		       sizeof (gni_cq_destroy_args_t), cq_destroy_args);
+      cq_destroy_args = hcq_get_ret_data (hcq, cmd, &len);
+      hcq_cmd_complete (hcq, cmd);
+      memcpy (args, (void *) cq_destroy_args, sizeof (cq_destroy_args));
     default:
       break;
     }
@@ -231,7 +294,7 @@ int
 unpack_args (int request, void *args)
 {
   gni_nic_setattr_args_t *nic_set_attr;
-
+  gni_cq_wait_event_args_t *cq_wait_event_args;
   switch (request)
     {
     case GNI_IOC_NIC_SETATTR:
@@ -280,6 +343,7 @@ unpack_args (int request, void *args)
 	  return HCQ_INVALID_HANDLE;
 	}
       printf ("after xemem attch of fma window %llu\n", fma_win);
+      list_add_element (mt, (uint64_t) fma_win_seg, fma_win, FMA_WINDOW_SIZE);
 /*********************************/
 
       fma_put_seg = xemem_lookup_segid ("fma_win_put");
@@ -305,6 +369,7 @@ unpack_args (int request, void *args)
 	}
       printf ("after xemem attach of fma PUT window %llu\n", fma_put);
 /***************************/
+      list_add_element (mt, (uint64_t) fma_put_seg, fma_put, FMA_WINDOW_SIZE);
       fma_get_seg = xemem_lookup_segid ("fma_win_get");
       apid = xemem_get (fma_get_seg, XEMEM_RDWR);
       if (apid <= 0)
@@ -327,6 +392,7 @@ unpack_args (int request, void *args)
 	  return HCQ_INVALID_HANDLE;
 	}
       printf ("after xemem attach of fma GET window %llu\n", fma_get);
+      list_add_element (mt, (uint64_t) fma_get_seg, fma_get, FMA_WINDOW_SIZE);
       fma_ctrl_seg = xemem_lookup_segid ("fma_win_ctrl");
       apid = xemem_get (fma_ctrl_seg, XEMEM_RDWR);
       if (apid <= 0)
@@ -349,6 +415,8 @@ unpack_args (int request, void *args)
 	  return HCQ_INVALID_HANDLE;
 	}
       printf ("after xemem attach of fma CTRL window %llu\n", fma_ctrl);
+      list_add_element (mt, (uint64_t) fma_ctrl_seg, fma_ctrl,
+			FMA_WINDOW_SIZE);
 
       nic_set_attr->fma_window = fma_win;
       nic_set_attr->fma_window_nwc = fma_put;
