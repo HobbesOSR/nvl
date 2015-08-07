@@ -53,7 +53,7 @@ struct memseg_list *mt = NULL;
 
 typedef int (*orig_open_f_type) (const char *pathname, int flags);
 
-int
+void
 kgni_open (const char *pathname, int flags)
 {
 
@@ -70,13 +70,6 @@ kgni_open (const char *pathname, int flags)
       printf ("connect failed\n");
       return -1;
     }
-  printf
-    (" gemini proxy client  called open: will foward to xpmem server '%s'!!!\n",
-     pathname);
-  orig_open_f_type orig_open;
-  orig_open = (orig_open_f_type) dlsym (RTLD_NEXT, "open");
-  client_fd = orig_open ("/tmp/temp", O_RDWR);
-  return client_fd;
 }
 
 int
@@ -88,7 +81,11 @@ open (const char *pathname, int flags, ...)
   orig_open = (orig_open_f_type) dlsym (RTLD_NEXT, "open");
   if (strncmp (pathname, "/dev/kgni0", 10) == 0)
     {
+      client_fd = orig_open ("/home/smukher/temp", flags);
+      printf
+	(" gemini proxy client  called open: fd is = %d!!!\n", client_fd);
       kgni_open (pathname, flags);
+      return client_fd;
     }
   else
     {
@@ -110,12 +107,8 @@ ioctl (int fd, unsigned long int request, ...)
   argp = va_arg (args, void *);
   va_end (args);
 
-  fprintf (stderr, "ioctl : wrapping ioctl\n");
-  fflush (stderr);
   next_ioctl_f_type next_ioctl;
   next_ioctl = dlsym (RTLD_NEXT, "ioctl");
-  fprintf (stderr, "next_ioctl = %p\n", next_ioctl);
-  fflush (stderr);
   if (fd == client_fd)
     {
       fprintf (stderr, "ioctl: on kgni device\n");
@@ -125,8 +118,6 @@ ioctl (int fd, unsigned long int request, ...)
     }
   else
     {
-      fprintf (stderr, "ioctl: call actual ioctl\n");
-      fflush (stderr);
       return next_ioctl (fd, request, argp);
     }
 }
@@ -155,10 +146,10 @@ pack_args (int request, void *args)
       /* IOCTL  1. handle NIC_SETATTR ioctl for client */
       nic_set_attr1 = (gni_nic_setattr_args_t *) args;
       cmd =
-	hcq_cmd_issue (hcq, GNI_IOC_NIC_SETATTR, sizeof (nic_set_attr1),
-		       nic_set_attr1);
+	hcq_cmd_issue (hcq, GNI_IOC_NIC_SETATTR,
+		       sizeof (gni_nic_setattr_args_t), nic_set_attr1);
 
-      printf ("cmd = %llu data size %d\n", cmd, sizeof (nic_set_attr1));
+      //printf ("cmd = %llu data size %d\n", cmd, sizeof (nic_set_attr1));
       uint32_t len = 0;
       nic_set_attr1 = hcq_get_ret_data (hcq, cmd, &len);
       printf ("from server return cookie : %d ptag :%d  rank :%d\n",
@@ -193,11 +184,22 @@ pack_args (int request, void *args)
          segments[0].address && segments[0].length
        */
       mem_reg_attr = (gni_mem_register_args_t *) args;
+      printf ("In mem register attr address %llu, len %d\n",
+	      mem_reg_attr->address, mem_reg_attr->length);
       // check to see if memory is segmented
       if (mem_reg_attr->mem_segments == NULL)
 	{
 	  reg_mem_seg =
 	    xemem_make (mem_reg_attr->address, mem_reg_attr->length, "");
+	  if (reg_mem_seg == NULL)
+	    {
+	      printf ("clinet could not create a segment for registering\n");
+	    }
+	  else
+	    {
+
+	      printf ("sucessfully created xemem segid %llu\n", reg_mem_seg);
+	    }
 	  // Now segid actually is 64 bit so push it there
 	  list_add_element (mt, (uint64_t) reg_mem_seg, mem_reg_attr->address,
 			    mem_reg_attr->length);
@@ -218,12 +220,13 @@ pack_args (int request, void *args)
 
 	}
       cmd =
-	hcq_cmd_issue (hcq, GNI_IOC_MEM_REGISTER, sizeof (mem_reg_attr),
-		       mem_reg_attr);
+	hcq_cmd_issue (hcq, GNI_IOC_MEM_REGISTER,
+		       sizeof (gni_mem_register_args_t),
+		       (char *) mem_reg_attr);
 
       mem_reg_attr = hcq_get_ret_data (hcq, cmd, &len);
       hcq_cmd_complete (hcq, cmd);
-      memcpy (args, (void *) mem_reg_attr, sizeof (mem_reg_attr));
+      memcpy (args, (void *) mem_reg_attr, sizeof (gni_mem_register_args_t));
       break;
     case GNI_IOC_CQ_WAIT_EVENT:
       /*  cq_hndl->queue is a user /client address space area. i.e 
@@ -331,8 +334,6 @@ unpack_args (int request, void *args)
 
       win_addr.apid = apid;
       win_addr.offset = 0;
-      printf ("apid = %llu window segid for FMA from server %llu\n",
-	      win_addr.apid, fma_win_seg);
 
       fma_win = xemem_attach (win_addr, FMA_WINDOW_SIZE, NULL);
 
@@ -342,7 +343,7 @@ unpack_args (int request, void *args)
 	  xemem_remove (fma_win_seg);
 	  return HCQ_INVALID_HANDLE;
 	}
-      printf ("after xemem attch of fma window %llu\n", fma_win);
+      //printf ("after xemem attch of fma window %llu\n", fma_win);
       list_add_element (mt, (uint64_t) fma_win_seg, fma_win, FMA_WINDOW_SIZE);
 /*********************************/
 
@@ -356,8 +357,6 @@ unpack_args (int request, void *args)
 
       put_addr.apid = apid;
       put_addr.offset = 0;
-      printf ("apid = %llu put segid for FMA from server %llu\n",
-	      put_addr.apid, fma_put_seg);
 
       fma_put = xemem_attach (put_addr, FMA_WINDOW_SIZE, NULL);
 
@@ -367,7 +366,7 @@ unpack_args (int request, void *args)
 	  xemem_remove (fma_win_seg);
 	  return HCQ_INVALID_HANDLE;
 	}
-      printf ("after xemem attach of fma PUT window %llu\n", fma_put);
+      //printf ("after xemem attach of fma PUT window %llu\n", fma_put);
 /***************************/
       list_add_element (mt, (uint64_t) fma_put_seg, fma_put, FMA_WINDOW_SIZE);
       fma_get_seg = xemem_lookup_segid ("fma_win_get");
@@ -380,8 +379,6 @@ unpack_args (int request, void *args)
 
       get_addr.apid = apid;
       get_addr.offset = 0;
-      printf ("apid = %llu GET segid for FMA from server %llu\n",
-	      get_addr.apid, fma_get_seg);
 
       fma_get = xemem_attach (get_addr, FMA_WINDOW_SIZE, NULL);
 
@@ -391,7 +388,7 @@ unpack_args (int request, void *args)
 	  xemem_remove (fma_get_seg);
 	  return HCQ_INVALID_HANDLE;
 	}
-      printf ("after xemem attach of fma GET window %llu\n", fma_get);
+      //printf ("after xemem attach of fma GET window %llu\n", fma_get);
       list_add_element (mt, (uint64_t) fma_get_seg, fma_get, FMA_WINDOW_SIZE);
       fma_ctrl_seg = xemem_lookup_segid ("fma_win_ctrl");
       apid = xemem_get (fma_ctrl_seg, XEMEM_RDWR);
@@ -403,8 +400,6 @@ unpack_args (int request, void *args)
 
       ctrl_addr.apid = apid;
       ctrl_addr.offset = 0;
-      printf ("apid = %llu CTRL segid for FMA from server %llu\n",
-	      ctrl_addr.apid, fma_ctrl_seg);
 
       fma_ctrl = xemem_attach (ctrl_addr, FMA_WINDOW_SIZE, NULL);
 

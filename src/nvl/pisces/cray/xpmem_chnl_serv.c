@@ -350,7 +350,12 @@ main (int argc, char *argv[])
 	      gni_mem_segment_t *segment;
 	      int i;
 	      if (mem_register_attr->segments_cnt == 1)
-		{		/* one segment to be registered */
+		{
+		  /* one segment to be registered */
+		  printf ("on server side mem register got segid %llu\n",
+			  mem_register_attr->address);
+		  printf ("on server side mem register got lngth %d\n",
+			  mem_register_attr->length);
 		  apid = xemem_get (mem_register_attr->address, XEMEM_RDWR);
 		  if (apid <= 0)
 		    {

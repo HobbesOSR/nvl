@@ -381,7 +381,7 @@ main (int argc, char **argv)
     }
   else
     {
-      fprintf (stderr, "Rank %d: created CDM\n", inst_id);
+      fprintf (stderr, "created CDM\n");
     }
   fprintf (stderr, "after cdm create ...\n");
 
@@ -392,97 +392,46 @@ main (int argc, char **argv)
     }
   else
     {
-      fprintf (stderr, "Rank %d: attached CDM to NIC\n", inst_id);
+      fprintf (stderr, "attached CDM to NIC\n");
     }
 
 
-  fprintf (stderr, "Rank %d: entering main loop\n", inst_id);
-
   /* main test loop */
-  for (i = 0; i < num_iters; i++)
+
+
+  /* create data buffers */
+
+  /* create recv buffer */
+  size_t size = 10;
+  size_t alignment = 4096;
+  int error;
+
+  error = posix_memalign (&recv_buffer, alignment, size);
+  if (error != 0)
     {
+      perror ("posix_memalign");
+      exit (EXIT_FAILURE);
+    }
+  printf ("posix_memalign(%d, %d) = %p\n", alignment, size, recv_buffer);
 
-      registrations = (seg_reg_t *) malloc (num_regs * sizeof (seg_reg_t));
-      assert (registrations != NULL);
+  fprintf (stderr, "memory registration address %llu, length %d\n",
+	   (uint64_t) recv_buffer, size * 4096);
+  status =
+    GNI_MemRegister (nic_handle, (uint64_t) recv_buffer, 4096 * size, NULL,
+		     GNI_MEM_READWRITE, -1, &mdh_recv_buffer);
+  if (status != GNI_RC_SUCCESS)
+    {
+      fprintf (stderr,
+	       "GNI_MemRegister returned error %d for recv_buffer\n", status);
+    }
+  else
+    {
+      fprintf (stderr,
+	       "Rank %d: Plain Memregister registered recv_buffer\n",
+	       inst_id);
+    }
 
-/* gni_return_t
-GNI_MemRegisterSegments(IN gni_nic_handle_t nic_hndl,
-                        IN gni_mem_segment_t * mem_segments,
-                        IN uint32_t segments_cnt,
-                        IN gni_cq_handle_t dst_cq_hndl,
-                        IN uint32_t flags,
-                        IN uint32_t vmdh_index,
-                        INOUT gni_mem_handle_t * mem_hndl)
-*/
-
-      /* create data buffers */
-      populate_registrations (registrations, num_regs, seg_len, num_segs);
-
-      /* create recv buffer */
-      recv_buffer_len = recv_buff_len (registrations, num_regs);
-
-      recv_buffer = (uint64_t *) malloc (recv_buffer_len * sizeof (uint64_t));
-
-      for (j = 0; j < recv_buffer_len; j++)
-	{
-	  recv_buffer[j] = GARBAGE_VAL;
-	}
-
-      /* register recv buffer */
-      status = GNI_MemRegister (nic_handle, (uint64_t) recv_buffer,
-				recv_buffer_len * sizeof (uint64_t), NULL,
-				GNI_MEM_READWRITE, -1, &mdh_recv_buffer);
-      if (status != GNI_RC_SUCCESS)
-	{
-	  fprintf (stderr,
-		   "GNI_MemRegister returned error %d for recv_buffer\n",
-		   status);
-	}
-      else
-	{
-	  fprintf (stderr,
-		   "Rank %d: Plain Memregister registered recv_buffer\n",
-		   inst_id);
-	}
-
-
-      flags = (uint64_t *) malloc (num_regs * sizeof (uint64_t));
-      assert (flags != NULL);
-
-
-      /* register data segments, flags */
-      for (j = 0; j < num_regs; j++)
-	{
-	  for (k = 0; k < registrations[j].seg_count; k++)
-	    fprintf (stderr, "Rank %d: reg %d, seg %d, len %ld, addr %p\n",
-		     inst_id, j, k, registrations[j].mem_segs[k].length,
-		     registrations[j].data_segs[k]);
-	  status =
-	    GNI_MemRegisterSegments (nic_handle, registrations[j].mem_segs,
-				     registrations[j].seg_count, NULL,
-				     GNI_MEM_READWRITE, -1,
-				     &(registrations[j].mem_handle));
-	  if (status != GNI_RC_SUCCESS)
-	    {
-	      fprintf (stderr, "FAIL: GNI_MemRegisterSegments returned ");
-	      fprintf (stderr, "error %d\n", status);
-	    }
-	  else
-	    {
-	      fprintf (stderr,
-		       "Rank %d:  Memregister segemnts registered recv_buffer\n",
-		       inst_id);
-	    }
-
-	}
-
-      /* put the data */
-
-    }				/* end main test loop */
-
-
-  fprintf (stderr, "inst_id %d test passed\n", inst_id);
-  rc = system ("hostname");
+  fprintf (stderr, "test passed\n");
 
   return 0;
 }

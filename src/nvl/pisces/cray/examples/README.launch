@@ -1,21 +1,3 @@
-Currently we just intercept open from Libugni and ioctl but don't do anything real. This is intended for guest application process which will eventually send the command via XEMEM channel.
 
-See also 'examples; and 'src' directories.
-
-
-
-$ LD_PRELOAD=/scratch1/smukher/KGNI_DRIVER_TEST/xpmem_chnl_test/extra/xpmem_chnl_client.so LD_LIBRARY_PATH=/scratch1/smukher/libhoobes-dev-may26/petlib:/scratch1/smukher/libhoobes-dev-may26/hobbes/whitedb-0.7.3/Main/.libs:/scratch1/smukher/libhoobes-dev-may26/hobbes/libhobbes:/scratch1/smukher/libhoobes-dev-may26/xpmem/lib:/scratch1/smukher/FAKE_GNI_REPO/host_code/apps/libs ./mem_reg
-Hobbes: Initializing
-
-Error> hobbes.c(55): Hobbes is not available
-Lib UGNI mem registration example
-after arg processing...
-Rank -136414029: created CDM
-after cdm create ...
-xpmem open wrapper open(...) to access '/dev/kgni0'!!!
- gemini proxy client  called open: will foward to xpmem server '/dev/kgni0'!!!
-ioctl : wrapping ioctl
-next_ioctl = 0x7ffff74d0fa0
-ioctl: wrapping done
-Fatal Error: GNI_CdmAttach: ioctl(GNI_IOC_NIC_SETATTR) error(9) Bad file descriptor at line 353 in file cdm.c
+LD_PRELOAD=/scratch1/smukher/KGNI_DRIVER_TEST/xpmem_chnl_test/extra/xpmem_chnl_client.so LD_LIBRARY_PATH=/scratch1/smukher/libhoobes-dev-may26/petlib:/scratch1/smukher/libhoobes-dev-may26/hobbes/whitedb-0.7.3/Main/.libs:/scratch1/smukher/libhoobes-dev-may26/hobbes/libhobbes:/scratch1/smukher/libhoobes-dev-may26/xpmem/lib:/scratch1/smukher/FAKE_GNI_REPO/host_code/apps/libs ./mem_reg
 
