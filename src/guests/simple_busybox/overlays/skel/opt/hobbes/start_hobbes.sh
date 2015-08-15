@@ -6,7 +6,8 @@ echo "Loading pisces.ko"
 
 echo "Launching Hobbes Master Daemon"
 export HOBBES_ENCLAVE_ID=0
-/opt/hobbes/master ${@:1} &
+export HOBBES_APP_ID=0
+/opt/hobbes/lnx_init ${@:1} &
 echo $! > leviathan.pid
 
 echo "Done."

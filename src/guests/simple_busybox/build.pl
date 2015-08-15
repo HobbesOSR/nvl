@@ -413,12 +413,12 @@ if ($program_args{build_pisces}) {
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 8: Done building pisces/hobbes/libhobbes\n";
 
-	# Step 9: Build libhobbes master_init
-	print "CNL: STEP 9: Building pisces/hobbes/master_init\n";
-	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/master_init" or die;
+	# Step 9: Build libhobbes lnx_init
+	print "CNL: STEP 9: Building pisces/hobbes/lnx_inittask/lnx_init\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/lnx_inittask" or die;
 	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
 	chdir "$BASEDIR" or die;
-	print "CNL: STEP 9: Done building pisces/hobbes/master_init\n";
+	print "CNL: STEP 9: Done building pisces/hobbes/lnx_inittask/lnx_init\n";
 
 	# Step 10: Build libhobbes shell
 	print "CNL: STEP 10: Building pisces/hobbes/shell\n";
@@ -433,6 +433,13 @@ if ($program_args{build_pisces}) {
 	system "KITTEN_PATH=../../kitten XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 11: Done building pisces/hobbes/lwk_inittask\n";
+
+	# Step 12: Build Hobbes PMI Hello Example App
+	print "CNL: STEP 12: Building pisces/hobbes/examples/apps/pmi/test_pmi_hello\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/examples/apps/pmi" or die;
+	system "make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 12: Done building pisces/hobbes/examples/apps/pmi/test_pmi_hello\n";
 }
 
 
@@ -502,7 +509,7 @@ if ($program_args{build_image}) {
 		or die "error 1";
 	system("cp -R $SRCDIR/pisces/pisces/pisces.ko $IMAGEDIR/opt/hobbes") == 0
 		or die "error 2";
-	system("cp -R $SRCDIR/pisces/hobbes/master_init/master $IMAGEDIR/opt/hobbes") == 0
+	system("cp -R $SRCDIR/pisces/hobbes/lnx_inittask/lnx_init $IMAGEDIR/opt/hobbes") == 0
 		or die "error 4";
 	system("cp -R $SRCDIR/pisces/hobbes/shell/hobbes $IMAGEDIR/opt/hobbes") == 0
 		or die "error 5";
@@ -512,6 +519,8 @@ if ($program_args{build_image}) {
 		or die "error 7";
 	system("cp -R $SRCDIR/pisces/pisces/linux_usr/pisces_cons $IMAGEDIR/opt/hobbes") == 0
 		or die "error 8";
+	system("cp -R $SRCDIR/pisces/hobbes/examples/apps/pmi/test_pmi_hello $IMAGEDIR/opt/hobbes") == 0
+		or die "error 9";
 
 	# Files copied from build host
 	system "cp /etc/localtime $IMAGEDIR/etc";
@@ -565,7 +574,7 @@ if ($program_args{build_isoimage}) {
 	system "cp /usr/share/syslinux/isolinux.bin isoimage";
 	system "cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage";
 	system "cp initramfs.gz isoimage/initrd.img";
-	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
+	system "echo 'default bzImage initrd=initrd.img console=ttyS0 console=tty0' > isoimage/isolinux.cfg";
 #	system "echo 'default bzImage initrd=initrd.img console=hvc0' > isoimage/isolinux.cfg";
 	system "mkisofs -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage";
 }
