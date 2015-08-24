@@ -41,11 +41,9 @@ $dropbear{url}		= "http://matt.ucc.asn.au/dropbear/releases/$dropbear{tarball}";
 push(@packages, \%dropbear);
 
 my %libhugetlbfs;
-$libhugetlbfs{package_type} = "tarball";
-$libhugetlbfs{version}	= "2.17";
-$libhugetlbfs{basename}	= "libhugetlbfs-$libhugetlbfs{version}";
-$libhugetlbfs{tarball}	= "$libhugetlbfs{basename}.tar.gz";
-$libhugetlbfs{url}	= "http://sourceforge.net/projects/libhugetlbfs/files/libhugetlbfs/$libhugetlbfs{version}/$libhugetlbfs{tarball}/download";
+$libhugetlbfs{package_type} = "git";
+$libhugetlbfs{basename}	= "libhugetlbfs";
+$libhugetlbfs{clone_cmd}[0] = "git clone https://github.com/libhugetlbfs/libhugetlbfs.git";
 push(@packages, \%libhugetlbfs);
 
 my %numactl;
