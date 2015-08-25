@@ -9,7 +9,8 @@ my $SRCDIR     = "src";
 my $CONFIGDIR  = "config";
 my $OVERLAYDIR = "overlays";
 my $IMAGEDIR   = "image";
-
+my $ISOPATH = "\$(find /usr/ -name isolinux.bin)";
+    
 if (! -d $SRCDIR)     { mkdir $SRCDIR; }
 if (! -d $IMAGEDIR)   { mkdir $IMAGEDIR; }
 
@@ -569,12 +570,12 @@ if ($program_args{build_image}) {
 ##############################################################################
 if ($program_args{build_isoimage}) {
 	system "mkdir -p isoimage";
-	system "cp /usr/share/syslinux/isolinux.bin isoimage";
+	system "cp $ISOPATH isoimage";
 	system "cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage";
 	system "cp initramfs.gz isoimage/initrd.img";
 	system "echo 'default bzImage initrd=initrd.img console=ttyS0 console=tty0' > isoimage/isolinux.cfg";
 #	system "echo 'default bzImage initrd=initrd.img console=hvc0' > isoimage/isolinux.cfg";
-	system "mkisofs -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage";
+	system "genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage";
 }
 
 
