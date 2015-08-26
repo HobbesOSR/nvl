@@ -1,7 +1,86 @@
-Usage example to build linux kernel, mpi, pisces, and other tools:
+This folder contains a simple pisces example and relevant subsystem
+directories. The build script utilizes git and wget to retrieve key
+elements from external sources. Requires listed are debian/ubuntu
+package names.
 
-WARNING: This will install some files under /opt on the build host
-         as root, use with caution. The safest option is to run build.pl
-         from within a disposable VM host, such as the hobbes_build_appliance.
+To construct nvl kernel image and initial ram disk disk execute:
+   
+   ./build.pl
 
-./build.pl --build-kernel --build-busybox --build-dropbear --build-libhugetlbfs --build-numactl --build-hwloc --build-ofed --build-ompi --build-pisces --build-image --build-isoimage
+with one or more of the following arguments, all of which are required
+to run pisces:
+
+   --build-kernel --build-busybox --build-dropbear
+   --build-libhugetlbfs --build-numactl --build-hwloc --build-ofed
+   --build-ompi --build-pisces --build-image --build-isoimage
+
+Subsytems:
+
+Kernel:
+
+	Currently, pisces is compatible Linux 3.12.29. It may be
+	compatible with newer version, but this is not verified. This
+	argument builds and installs the 3.12.29 kernel.
+	
+Busybox:
+	
+	"BusyBox combines tiny versions of many common UNIX utilities
+	into a single small executable. It provides replacements for
+	most of the utilities you usually find in GNU fileutils,
+	shellutils, etc." -busybox.net/about.html
+
+Dropbear:
+	
+	Requires: zlib1g-dev
+
+	Dropbear provides a ssh-server for the BusyBox shell.
+
+libhugetlbfs:
+	
+	Library for very large memory pages.
+
+numactl/hwloc:
+	 
+	Libraries for process/cpu binding.
+
+OFED:
+
+	Requires: g++
+	
+	InfiniBand Libraries
+
+OMPI:
+	
+	Requires: libibverbs1
+
+	Open MPI libaries/binaries.
+
+	WARNING: This will install some files under /opt on the build
+        host as root, use with caution. The safest option is to run
+        build.pl from within a disposable VM host, such as the
+        hobbes_build_appliance.
+
+Pisces:
+	
+	Petlib, XEMEM, Kitten, Palacious and Pisces.
+	
+	Note: You will be asked for some configuration settings.
+
+Image:
+		
+	Produces the bzimage and initramfs files which can be booted
+	in a physical machine or qemu
+
+ISO Image:
+    	
+	Requires: isolinux, genisoimage
+
+	Produces the image.iso file for live booting. Requires that
+	the bzimage and initramfs from the previous section be built.
+
+all:
+
+	./build.pl --build-kernel --build-busybox --build-dropbear
+	--build-libhugetlbfs --build-numactl --build-hwloc
+	--build-ofed --build-ompi --build-pisces --build-image
+	--build-isoimage
