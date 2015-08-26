@@ -325,7 +325,7 @@ if ($program_args{build_ompi}) {
 	# This is a horrible hack. We're installing OpenMPI into /opt on the host.
 	# This means we need to be root to do a make install and will possibly screw up the host.
 	# We should really be using chroot or something better.
-	system "LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static --with-openib";
+	system "LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static --with-verbs=yes";
 	system "make -j 2";
 	system "sudo make install";
 	chdir "$BASEDIR" or die;
