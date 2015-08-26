@@ -1,6 +1,6 @@
-This folder contains a simple pisces example and relevant subsystem
+This folder contains a simple Pisces example and relevant subsystem
 directories. The build script utilizes git and wget to retrieve key
-elements from external sources. Requires listed are debian/ubuntu
+elements from external sources. Requirements listed are Debian/Ubuntu
 package names.
 
 To construct nvl kernel image and initial ram disk disk execute:
@@ -8,21 +8,21 @@ To construct nvl kernel image and initial ram disk disk execute:
    ./build.pl
 
 with one or more of the following arguments, all of which are required
-to run pisces:
+to run Pisces:
 
    --build-kernel --build-busybox --build-dropbear
    --build-libhugetlbfs --build-numactl --build-hwloc --build-ofed
    --build-ompi --build-pisces --build-image --build-isoimage
 
-Subsytems:
+Subsystems:
 
 Kernel:
 
-	Currently, pisces is compatible Linux 3.12.29. It may be
+	Currently, Pisces is compatible Linux 3.12.29. It may be
 	compatible with newer version, but this is not verified. This
 	argument builds and installs the 3.12.29 kernel.
 	
-Busybox:
+BusyBox:
 	
 	"BusyBox combines tiny versions of many common UNIX utilities
 	into a single small executable. It provides replacements for
@@ -53,7 +53,7 @@ OMPI:
 	
 	Requires: libibverbs1
 
-	Open MPI libaries/binaries.
+	Open MPI libraries/binaries.
 
 	WARNING: This will install some files under /opt on the build
         host as root, use with caution. The safest option is to run
