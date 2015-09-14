@@ -1,0 +1,78 @@
+
+hobbesxt:/home/smukher/nvl/src/nvl/pisces/cray # aprun -L 5 ./xpmem_chnl_serv
+Attaching to local database (db_addr=0x2aaaac170000)
+server segid: 12399570583585
+sending ALPS request
+waiting for ALPS reply
+alps_app_lli_get_response failed: alps_rc=16
+sending ALPS request
+waiting for ALPS replyalps_app_lli_get_response failed: alps_rc=16
+after alps info get cookie 154468352  ptag 140  instance 9216
+Opened device
+cmd code=3225437953
+len (64) and data (�)
+data (�)
+Ioctl call GNI_IOC_NIC_SETATTR returned with nic_pe = 0x0
+created xemem segment for FMA window segid 12399570583587
+created xemem segment for FMA put segid 12399570583588
+created xemem segment for FMA get segid 12399570583589
+created xemem segment for FMA ctrl segid 12399570583590
+Sending signal to client segid (12403865550882)
+cmd code=3226486536
+len (80) and data ()
+data ()
+on server side mem register got segid 12403865550887
+on server side mem register got lngth 40960
+Sending signal to client segid (12403865550882)
+^Caprun: Apid 2329: Caught signal Interrupt, sending to application
+_pmiu_daemon(SIGCHLD): [NID 00005] [c0-0c0s2n1] [Thu Sep 10 12:40:32 2015] PE RANK 0 exit signal Interrupt
+Application 2329 exit codes: 130
+Application 2329 resources: utime ~0s, stime ~0s, Rss ~17384, inblocks ~487, outblocks ~1189
+
+
+--- 
+compute node:
+
+# /home/smukher/hobbes/lnx_inittask/doit.sh
+Loading xpmem.ko ns=1
+Loading pisces.ko
+Launching Hobbes Master Daemon
+Done.
+# Master Enclave id = 0
+Master enclave name=master
+HDB SegID = 1, db_addr=0x7ffff37ed000, db_size=67108864
+segid: 1
+Foo
+Attaching to local database (db_addr=0x7fffef7ec000)
+	Hobbes Enclave: master
+	Initializing Hobbes Command Queue
+	...done
+Entering Command Loop
+
+# LD_PRELOAD=/home/smukher/trial-client-lib/xpmem_chnl_client.so ./mem_reg
+Lib UGNI mem registration example
+after arg processing...
+created CDM
+after cdm create ...
+xpmem open wrapper open(...) to access '/dev/kgni0'!!!
+ gemini proxy client  called open: fd is = 3!!!
+xpmem open wrapper open(...) to access '/dev/xpmem'!!!
+Attaching to local database (db_addr=0x7ffff2b4a000)
+client lookup for seg to connect
+HCQ SEGID = 12399570583585
+ioctl: on kgni device
+from server return cookie : 154468352 ptag :140  rank :9216
+after xemem attach of fma CTRL window 140732953567232
+attached CDM to NIC
+posix_memalign(4096, 10) = 0x605000
+memory registration address 6311936, length 40960
+ioctl: on kgni device
+In mem register attr address 6311936, len 40960
+sucessfully created xemem segid 12403865550887
+wg consistency error: string not found in hash during deletion, offset 55152
+qword1 = 0x            1ee3 qword2 = 0x               1
+GNI_IOC_MEM_REGISTER returned bad mem_hndl
+Rank 0: Plain Memregister registered recv_buffer
+test passed
+Debug> Hobbes: Deinitializing
+

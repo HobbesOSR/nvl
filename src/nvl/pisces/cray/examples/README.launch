@@ -1,3 +1,4 @@
 
-LD_PRELOAD=/scratch1/smukher/KGNI_DRIVER_TEST/xpmem_chnl_test/extra/xpmem_chnl_client.so LD_LIBRARY_PATH=/scratch1/smukher/libhoobes-dev-may26/petlib:/scratch1/smukher/libhoobes-dev-may26/hobbes/whitedb-0.7.3/Main/.libs:/scratch1/smukher/libhoobes-dev-may26/hobbes/libhobbes:/scratch1/smukher/libhoobes-dev-may26/xpmem/lib:/scratch1/smukher/FAKE_GNI_REPO/host_code/apps/libs ./mem_reg
+LD_LIBRARY_PATH=/home/smukher/petlib:/home/smukher/hobbes/whitedb-0.7.3/Main/.libs:/home/smukher/hobbes/libhobbes:/home/smukher/xpmem/lib 
 
+LD_PRELOAD=/home/smukher/trial-client-lib/xpmem_chnl_client.so ./mem_reg

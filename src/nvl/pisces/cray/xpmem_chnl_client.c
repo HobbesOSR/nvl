@@ -18,6 +18,7 @@
 #include "gni_priv.h"
 #include "gni_pub.h"
 #include <alps/libalpslli.h>
+#include <sys/utsname.h>
 
 #include "hobbes_cmd_queue.h"
 #include "xemem.h"
@@ -26,8 +27,61 @@
 #include <xemem.h>
 #include <hobbes_enclave.h>
 #include <dlfcn.h>		/* For dlsym */
+#include "pmi.h"		/* Client should have just include pmi.h but not link libpmi, server might */
+#include <assert.h>		/* Client should have just include pmi.h but not link libpmi, server might */
 #include "xmem_list.h"
+#include "pmi_util.h"
 
+/*  For utilities of PMI etc */
+int my_rank, comm_size;
+
+struct utsname uts_info;
+
+/*  This is to implement utility functions
+ * allgather gather the requested information from all of the ranks.
+ */
+
+int client_fd, pmi_fd;
+xemem_segid_t cmdq_segid;
+hcq_handle_t hcq = HCQ_INVALID_HANDLE;
+struct memseg_list *mt = NULL;
+
+
+void
+allgather (void *in, void *out, int len)
+{
+  uint32_t retlen;
+  hcq_cmd_t cmd = HCQ_INVALID_CMD;
+  cmd = hcq_cmd_issue (hcq, PMI_IOC_ALLGATHER, len, in);
+  out = hcq_get_ret_data (hcq, cmd, &retlen);
+  hcq_cmd_complete (hcq, cmd);
+}
+
+/* Define bare minimum PMI calls to forward to other side */
+
+int
+pmi_finalize (void)
+{
+  int retlen;
+  hcq_cmd_t cmd = HCQ_INVALID_CMD;
+  cmd = hcq_cmd_issue (hcq, PMI_IOC_FINALIZE, 0, NULL);
+  hcq_cmd_complete (hcq, cmd);
+  return PMI_SUCCESS;
+}
+
+int
+pmi_barrier (void)
+{
+  int retlen;
+  hcq_cmd_t cmd = HCQ_INVALID_CMD;
+  cmd = hcq_cmd_issue (hcq, PMI_IOC_BARRIER, 0, NULL);
+  hcq_cmd_complete (hcq, cmd);
+  return PMI_SUCCESS;
+}
+
+/*  End of For utilities of PMI etc */
+
+#define MAXIMUM_CQ_RETRY_COUNT 500
 
 #define PAGE_SHIFT	12
 #define PAGE_SIZE (0x1UL << PAGE_SHIFT)
@@ -46,37 +100,37 @@
 
 #define FMA_WINDOW_SIZE    (1024 * 1024 * 1024L)
 
-int client_fd;
-xemem_segid_t cmdq_segid;
-hcq_handle_t hcq = HCQ_INVALID_HANDLE;
-struct memseg_list *mt = NULL;
 
 typedef int (*orig_open_f_type) (const char *pathname, int flags);
 
 void
 kgni_open (const char *pathname, int flags)
 {
+  static int already_init = 0;
 
   hcq_cmd_t cmd = HCQ_INVALID_CMD;
-
-  mt = list_new ();
-  hobbes_client_init ();
-  cmdq_segid = xemem_lookup_segid ("GEMINI-NEW");
-
-  printf ("client lookup for seg to connect\n");
-  hcq = hcq_connect (cmdq_segid);
-  if (hcq == HCQ_INVALID_HANDLE)
+  if (!already_init)
     {
-      printf ("connect failed\n");
-      return -1;
+      mt = list_new ();
+      hobbes_client_init ();
+      cmdq_segid = xemem_lookup_segid ("GEMINI-NEW");
+
+      hcq = hcq_connect (cmdq_segid);
+      if (hcq == HCQ_INVALID_HANDLE)
+	{
+	  printf ("connect failed\n");
+	  return -1;
+	}
+      already_init = 1;
     }
 }
+
+/* We need to start cmd queue for PMI calls or kgni ioctls */
 
 int
 open (const char *pathname, int flags, ...)
 {
   /* Some evil injected code goes here. */
-  printf ("xpmem open wrapper open(...) to access '%s'!!!\n", pathname);
   orig_open_f_type orig_open;
   orig_open = (orig_open_f_type) dlsym (RTLD_NEXT, "open");
   if (strncmp (pathname, "/dev/kgni0", 10) == 0)
@@ -86,6 +140,13 @@ open (const char *pathname, int flags, ...)
 	(" gemini proxy client  called open: fd is = %d!!!\n", client_fd);
       kgni_open (pathname, flags);
       return client_fd;
+    }
+  else if (strncmp (pathname, "/dev/pmi", 8) == 0)
+    {
+      pmi_fd = orig_open ("/home/smukher/temp1", flags);
+      printf ("  client  called PMI open: fd is = %d!!!\n", pmi_fd);
+      kgni_open (pathname, flags);
+      return pmi_fd;
     }
   else
     {
@@ -109,7 +170,7 @@ ioctl (int fd, unsigned long int request, ...)
 
   next_ioctl_f_type next_ioctl;
   next_ioctl = dlsym (RTLD_NEXT, "ioctl");
-  if (fd == client_fd)
+  if ((fd == client_fd) || (fd == pmi_fd))
     {
       fprintf (stderr, "ioctl: on kgni device\n");
       fflush (stderr);
@@ -138,6 +199,13 @@ pack_args (int request, void *args)
   int i;
   uint32_t seg_cnt;
   xemem_segid_t *cq_index_seg;
+
+  /* PMI ioctls args */
+  pmi_allgather_args_t *gather_arg;
+  pmi_getsize_args_t *size_arg;
+  pmi_getrank_args_t *rank_arg;
+  int *size = malloc (sizeof (int));
+  int *rank = malloc (sizeof (int));
 
 
   switch (request)
@@ -184,7 +252,7 @@ pack_args (int request, void *args)
          segments[0].address && segments[0].length
        */
       mem_reg_attr = (gni_mem_register_args_t *) args;
-      printf ("In mem register attr address %llu, len %d\n",
+      printf ("In mem register attr address %p, len %d\n",
 	      mem_reg_attr->address, mem_reg_attr->length);
       // check to see if memory is segmented
       if (mem_reg_attr->mem_segments == NULL)
@@ -257,9 +325,37 @@ pack_args (int request, void *args)
       cq_destroy_args = hcq_get_ret_data (hcq, cmd, &len);
       hcq_cmd_complete (hcq, cmd);
       memcpy (args, (void *) cq_destroy_args, sizeof (cq_destroy_args));
+    case PMI_IOC_ALLGATHER:
+      gather_arg = args;
+      allgather (gather_arg->in_data, gather_arg->out_data,
+		 gather_arg->in_data_len);
+      break;
+    case PMI_IOC_GETSIZE:
+      size_arg = args;
+      cmd = hcq_cmd_issue (hcq, PMI_IOC_GETSIZE, sizeof (int), size);
+      size = hcq_get_ret_data (hcq, cmd, &len);
+      hcq_cmd_complete (hcq, cmd);
+      comm_size = *size;
+      size_arg->comm_size = *size;	/* Store it in a global */
+      break;
+    case PMI_IOC_GETRANK:
+      rank_arg = args;
+      cmd = hcq_cmd_issue (hcq, PMI_IOC_GETRANK, sizeof (int), rank);
+      rank = hcq_get_ret_data (hcq, cmd, &len);
+      hcq_cmd_complete (hcq, cmd);
+      rank_arg->myrank = *rank;	/* Store it in a global */
+      my_rank = *rank;
+      break;
+    case PMI_IOC_FINALIZE:
+      pmi_finalize ();
+      break;
+    case PMI_IOC_BARRIER:
+      pmi_barrier ();
+      break;
     default:
       break;
     }
+  return 0;
 }
 
 
@@ -278,7 +374,6 @@ handle_ioctl (int device, int request, void *arg)
   gni_mem_handle_t rcv_mhndl;
   gni_mem_handle_t peer_rcv_mhndl;
   gni_cq_entry_t *event_data;
-  ghal_fma_desc_t fma_desc_cpu = GHAL_FMA_INIT;
   void *fma_window;
   uint64_t *get_window;
   uint64_t gcw, get_window_offset;
@@ -291,6 +386,7 @@ handle_ioctl (int device, int request, void *arg)
   int ret = -1;
   pack_args (request, arg);
   unpack_args (request, arg);
+  return 0;
 }
 
 int
@@ -409,7 +505,7 @@ unpack_args (int request, void *args)
 	  xemem_remove (fma_ctrl_seg);
 	  return HCQ_INVALID_HANDLE;
 	}
-      printf ("after xemem attach of fma CTRL window %llu\n", fma_ctrl);
+      printf ("after xemem attach of fma CTRL window %p\n", fma_ctrl);
       list_add_element (mt, (uint64_t) fma_ctrl_seg, fma_ctrl,
 			FMA_WINDOW_SIZE);
 
@@ -418,7 +514,26 @@ unpack_args (int request, void *args)
       nic_set_attr->fma_window_get = fma_get;
       nic_set_attr->fma_ctrl = fma_ctrl;
       break;
+    case GNI_IOC_CQ_CREATE:
+      break;
+    case GNI_IOC_CQ_DESTROY:
+      break;
+    case GNI_IOC_MEM_REGISTER:
+      break;
+    case GNI_IOC_CQ_WAIT_EVENT:
+      break;
+    case PMI_IOC_ALLGATHER:
+      break;
+    case PMI_IOC_GETRANK:
+      break;
+    case PMI_IOC_GETSIZE:
+      break;
+    case PMI_IOC_FINALIZE:
+      break;
+    case PMI_IOC_BARRIER:
+      break;
     default:
+      fprintf (stderr, "called disconnect in client default\n");
       hcq_disconnect (hcq);
       hobbes_client_deinit ();
       break;
