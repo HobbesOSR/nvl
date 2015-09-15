@@ -452,16 +452,9 @@ main (int argc, char *argv[])
 		  segment = mem_register_attr->mem_segments;
 		}
 //
-	      my_mem = malloc (mem_register_attr->length);
-	      memset (&mem_reg_attr, 0, sizeof (mem_reg_attr));
-	      mem_reg_attr.address = (uint64_t) my_mem;
-	      printf ("mem register got address %p length %d actual mem %p\n",
-		      reg_addr, mem_register_attr->length, my_mem);
-	      mem_reg_attr.length = mem_register_attr->length;
-	      mem_reg_attr.kern_cq_descr = GNI_INVALID_CQ_DESCR;
-	      mem_reg_attr.segments_cnt = 1;
-	      mem_reg_attr.flags = GNI_MEM_READWRITE;
-	      rc = ioctl (device, GNI_IOC_MEM_REGISTER, &mem_reg_attr);
+	      printf ("mem register got address %p length %d \n",
+		      reg_addr, mem_register_attr->length);
+	      rc = ioctl (device, GNI_IOC_MEM_REGISTER, mem_register_attr);
 	      if (rc < 0)
 		{
 		  fprintf (stderr, "Failed calling GNI_IOC_MEM_REGISTER\n");
@@ -471,7 +464,7 @@ main (int argc, char *argv[])
 	      printf ("Memory is registered\n");
 	      printf
 		("server after registration ioctl : qword1 = 0x%16lx qword2 = 0x%16lx\n",
-		 mem_reg_attr.mem_hndl.qword1, mem_reg_attr.mem_hndl.qword2);
+		 mem_register_attr->mem_hndl.qword1, mem_register_attr->mem_hndl.qword2);
 //
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (gni_mem_register_args_t),
 			      mem_register_attr);
