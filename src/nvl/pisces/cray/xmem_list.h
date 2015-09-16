@@ -9,7 +9,7 @@
 
 struct xpmem_seg
 {
-  xemem_segid_t *segid;
+  xemem_segid_t segid;
   uint64_t address;
   uint64_t length;
   struct xemem_seg* next;
@@ -32,8 +32,8 @@ struct memseg_list* list_free( struct memseg_list* );
 
 void list_print( const struct memseg_list* );
 void list_print_element(const struct xpmem_seg* );
-xemem_segid_t*  list_find(const struct memseg_list*, uint64_t );
-
+xemem_segid_t  list_find_segid_by_vaddr(const struct memseg_list*, uint64_t );
+uint64_t  list_find_vaddr_by_segid(const struct memseg_list*, xemem_segid_t* );
 /*
 
 int main(void)
@@ -49,7 +49,7 @@ int main(void)
   
   list_print(mt);
 
-  list_find(mt, 0x5000);
+  list_find_segid_by_vaddr(mt, 0x5000);
 
   list_remove_element(mt);
   list_print(mt);
@@ -62,10 +62,9 @@ int main(void)
 
   return 0;
 }
- */
-
+*/
 /* Will always return the pointer to memseg_list */
-struct memseg_list* list_add_element(struct memseg_list* s, xemem_segid_t* segid, uint64_t addr, uint64_t len)
+struct memseg_list* list_add_element(struct memseg_list* s, xemem_segid_t *segid, uint64_t addr, uint64_t len)
 {
   struct xpmem_seg* p = malloc( 1 * sizeof(*p) );
 
@@ -75,11 +74,12 @@ struct memseg_list* list_add_element(struct memseg_list* s, xemem_segid_t* segid
       return s; 
     }
 
-  p->segid = segid;
+  p->segid = *segid;
   p->address = addr;
   p->length = len;
   p->next = NULL;
 
+	fprintf(stderr, "add a new seg to list segid %llu, address %p\n", *segid, addr);
 
   if( NULL == s )
     {
@@ -102,7 +102,7 @@ struct memseg_list* list_add_element(struct memseg_list* s, xemem_segid_t* segid
   else
     {
       /* printf("List not empty, adding element to tail\n"); */
-      s->tail->next = p;
+      s->tail->next =  p;
       s->tail = p;
     }
 
@@ -184,7 +184,7 @@ void list_print( const struct memseg_list* ps )
   printf("------------------\n");
 }
 
-xemem_segid_t*   list_find(const struct memseg_list* ps, uint64_t addr)
+xemem_segid_t   list_find_segid_by_vaddr(const struct memseg_list* ps, uint64_t addr)
 {
 
   struct xpmem_seg* p = NULL;
@@ -195,22 +195,44 @@ xemem_segid_t*   list_find(const struct memseg_list* ps, uint64_t addr)
 	{
 		if((p->address == addr) || ((addr > p->address) && (addr <  p->address + p->length)))
 		{
-			printf("found %llu\n", addr);
+			printf("found %p segid %llu\n", addr, p->segid);
 			return (p->segid);
 		}
 			
 	}
+	return -1;
     }
 
 }
 
 
+uint64_t   list_find_vaddr_by_segid(const struct memseg_list* ps, xemem_segid_t  *segid)
+{
+
+  struct xpmem_seg* p = NULL;
+
+  if( ps )
+    {
+      for( p = ps->head; p; p = p->next )
+	{
+		if(p->segid == *segid)
+		{
+			printf("found segid %llu\n", segid);
+			return (p->address);
+		}
+			
+	}
+	return -1;
+    }
+
+}
 
 void list_print_element(const struct xpmem_seg* p )
 {
   if( p ) 
     {
-      printf("Address = %llu\n", p->address);
+      printf("Address = %p\n", p->address);
+      printf("segid = %llu\n", p->segid);
     }
   else
     {

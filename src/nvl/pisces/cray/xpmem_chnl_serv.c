@@ -35,7 +35,7 @@
 #include "pmi.h"
 #include "pmi_cray_ext.h"
 #include "pmi_util.h"
-
+#include "xmem_list.h"
 
 #define PAGE_SHIFT	12
 #define PAGE_SIZE (0x1UL << PAGE_SHIFT)
@@ -51,6 +51,9 @@
 #define THREAD_NUM_BITS  3
 #define THREAD_NUM_SHIFT (CPU_NUM_SHIFT-THREAD_NUM_BITS)
 #define THREAD_NUM_MASK  0x7
+
+struct memseg_list *mt = NULL;
+
 
 static void
 sfence (void)
@@ -225,7 +228,6 @@ main (int argc, char *argv[])
   gni_ep_postdata_test_args_t ep_posttest_attr;
   gni_ep_postdata_term_args_t ep_postterm_attr;
   gni_mem_register_args_t *mem_register_attr;
-  gni_mem_register_args_t mem_reg_attr;
   gni_mem_deregister_args_t mem_dereg_attr;
   gni_cq_create_args_t cq_create_attr;
   gni_cq_wait_event_args_t cq_wait_attr;
@@ -276,6 +278,8 @@ main (int argc, char *argv[])
   int first_spawned;
   void *outbuf;
   void *mem_mem;
+  int *mallocsz;
+  void *buffer;
 
   rc = PMI_Init (&first_spawned);
   assert (rc == PMI_SUCCESS);
@@ -287,7 +291,7 @@ main (int argc, char *argv[])
 
   hobbes_client_init ();
 
-
+  mt = list_new ();
   hcq = hcq_create_queue ("GEMINI-NEW");
 
   if (hcq == HCQ_INVALID_HANDLE)
@@ -420,40 +424,22 @@ main (int argc, char *argv[])
 	    case GNI_IOC_MEM_REGISTER:
 
 	      mem_register_attr = (gni_mem_register_args_t *) data_buf;
-	      xemem_apid_t apid;
+	      printf ("mem register got Xemem seg address %llu length %d \n",
+		      mem_register_attr->address, mem_register_attr->length);
 	      gni_mem_segment_t *segment;
-	      int i;
 	      if (mem_register_attr->segments_cnt == 1)
 		{
+		  list_print(mt);
 		  /* one segment to be registered */
-		  apid = xemem_get (mem_register_attr->address, XEMEM_RDWR);
-		  if (apid <= 0)
-		    {
-		      printf ("could not attach user provided memreg \n");
-		      return HCQ_INVALID_HANDLE;
-		    }
-
-		  r_addr.apid = apid;
-		  r_addr.offset = 0;
-
-		  reg_addr =
-		    xemem_attach (r_addr, mem_register_attr->length, NULL);
-		  if (reg_addr == MAP_FAILED)
-		    {
-		      printf ("xpmem attach for register failed\n");
-		      xemem_release (apid);
-		      return -1;
-		    }
-
-		  mem_register_attr->address = (uint64_t) reg_addr;
+		  buffer  = (void *) list_find_vaddr_by_segid (mt, &mem_register_attr->address);
+		      fprintf (stderr, "server side actual vaddr is: %p\n", buffer);
+		  mem_register_attr->address = buffer;
 		}
 	      else
 		{
 		  segment = mem_register_attr->mem_segments;
 		}
 //
-	      printf ("mem register got address %p length %d \n",
-		      reg_addr, mem_register_attr->length);
 	      rc = ioctl (device, GNI_IOC_MEM_REGISTER, mem_register_attr);
 	      if (rc < 0)
 		{
@@ -461,7 +447,7 @@ main (int argc, char *argv[])
 		  return 0;
 		}
 
-	      printf ("Memory is registered\n");
+	      printf ("Memory is registered successfully\n");
 	      printf
 		("server after registration ioctl : qword1 = 0x%16lx qword2 = 0x%16lx\n",
 		 mem_register_attr->mem_hndl.qword1, mem_register_attr->mem_hndl.qword2);
@@ -487,6 +473,21 @@ main (int argc, char *argv[])
 	    case PMI_IOC_FINALIZE:
 	      PMI_Finalize ();
 	      hcq_cmd_return (hcq, cmd, ret, 0, NULL);
+	      break;
+	    case PMI_IOC_MALLOC:
+
+		mallocsz = (int *)data_buf;
+	      fprintf (stderr, "server malloc enter size %d\n", *mallocsz);
+		rc = posix_memalign((void **) &buffer, 4096, *mallocsz);
+		assert(rc == 0);
+		size_t msz = 4096 * (*mallocsz);
+		reg_mem_seg =
+                xemem_make (buffer,  msz ,
+                            "reg seg");
+	      hcq_cmd_return (hcq, cmd, ret, sizeof(uint64_t), &reg_mem_seg);
+		list_add_element (mt, &reg_mem_seg, buffer,
+                            msz);
+	      fprintf (stderr, "server malloc return seg %llu\n", reg_mem_seg);
 	      break;
 
 	    default:
