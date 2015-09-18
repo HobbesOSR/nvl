@@ -408,6 +408,7 @@ if ($program_args{build_pisces}) {
 	# Step 8: Build libhobbes.a
 	print "CNL: STEP 8: Building pisces/hobbes/libhobbes\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/libhobbes" or die;
+	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean";
 	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 8: Done building pisces/hobbes/libhobbes\n";
@@ -415,6 +416,7 @@ if ($program_args{build_pisces}) {
 	# Step 9: Build libhobbes lnx_init
 	print "CNL: STEP 9: Building pisces/hobbes/lnx_inittask/lnx_init\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/lnx_inittask" or die;
+	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean";
 	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 9: Done building pisces/hobbes/lnx_inittask/lnx_init\n";
@@ -422,6 +424,7 @@ if ($program_args{build_pisces}) {
 	# Step 10: Build libhobbes shell
 	print "CNL: STEP 10: Building pisces/hobbes/shell\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/shell" or die;
+	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean";
 	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 10: Done building pisces/hobbes/shell\n";
@@ -436,6 +439,7 @@ if ($program_args{build_pisces}) {
 	# Step 12: Build Hobbes PMI Hello Example App
 	print "CNL: STEP 12: Building pisces/hobbes/examples/apps/pmi/test_pmi_hello\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/examples/apps/pmi" or die;
+	system "make clean";
 	system "make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 12: Done building pisces/hobbes/examples/apps/pmi/test_pmi_hello\n";
@@ -518,8 +522,12 @@ if ($program_args{build_image}) {
 		or die "error 7";
 	system("cp -R $SRCDIR/pisces/pisces/linux_usr/pisces_cons $IMAGEDIR/opt/hobbes") == 0
 		or die "error 8";
-	system("cp -R $SRCDIR/pisces/hobbes/examples/apps/pmi/test_pmi_hello $IMAGEDIR/opt/hobbes") == 0
+	system("cp -R $SRCDIR/pisces/pisces/linux_usr/v3_cons_sc $IMAGEDIR/opt/hobbes") == 0
 		or die "error 9";
+	system("cp -R $SRCDIR/pisces/pisces/linux_usr/v3_cons_nosc $IMAGEDIR/opt/hobbes") == 0
+		or die "error 10";
+	system("cp -R $SRCDIR/pisces/hobbes/examples/apps/pmi/test_pmi_hello $IMAGEDIR/opt/hobbes") == 0
+		or die "error 11";
 
 	# Files copied from build host
 	system "cp /etc/localtime $IMAGEDIR/etc";
