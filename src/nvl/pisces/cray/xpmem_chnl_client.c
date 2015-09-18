@@ -189,60 +189,117 @@ ioctl (int fd, unsigned long int request, ...)
     }
 }
 
-
-typedef int (*posix_memalign_f_type) (void **__memptr, size_t  __alignment, size_t __size);
-/* Intercept posix mem_align for 4k buffers , which are typically for memregister */
-int posix_memalign (void **memptr, size_t alignment, size_t size)
+/* Intercept mmap for just one  4k buffers , which is needed in cq_create and mem register inside CqCreate */
+typedef void *(*mmap_f_type) (void *start, size_t length, int prot, int flags,
+			      int fd, __off_t offset);
+void *
+mmap (void *start, size_t length, int prot, int flags, int fd, __off_t offset)
 {
-	uint64_t	*len = malloc(sizeof(uint64_t));
-	uint32_t	retlen;
-	struct xemem_addr r_addr;
-	void *reg_addr;
-  posix_memalign_f_type real_memalign;
-  real_memalign = dlsym (RTLD_NEXT, "posix_memalign");
+  uint64_t *len = malloc (sizeof (uint64_t));
+  uint32_t retlen;
+  struct xemem_addr r_addr;
+  void *reg_addr;
+  mmap_f_type real_mmap;
+  real_mmap = dlsym (RTLD_NEXT, "mmap");
 
-	*len = size;
-	xemem_segid_t memreg_seg;
-	uint64_t  *segid;
+  *len = length;
+  xemem_segid_t memreg_seg;
+  uint64_t *segid;
 
-	hcq_cmd_t cmd = HCQ_INVALID_CMD;
-	if (alignment == 4096 )
-	{
-		fprintf(stderr, "got called in posix memalign hook \n");
-	cmd =
-        hcq_cmd_issue (hcq, PMI_IOC_MALLOC,
-                       sizeof (uint64_t),
-                       len);
+  hcq_cmd_t cmd = HCQ_INVALID_CMD;
+  if ((length == 4096) && (fd == -1) && (start == NULL))
+    {
+      fprintf (stderr, "got called in mmap hook \n");
+      cmd = hcq_cmd_issue (hcq, PMI_IOC_MALLOC, sizeof (uint64_t), len);
 
       len = hcq_get_ret_data (hcq, cmd, &retlen);
       hcq_cmd_complete (hcq, cmd);
-	memreg_seg = *len;
-	fprintf(stderr, "posix memalign after getting xemem retlen %d memseg %llu\n", retlen, memreg_seg);
-	xemem_apid_t apid;
-                  /* one segment to be registered */
-                  apid = xemem_get (memreg_seg, XEMEM_RDWR);
-                  if (apid <= 0)
-                    {
-                      printf ("seg attach from server for malloc failed \n");
-                      return HCQ_INVALID_HANDLE;
-                    }
-
-                  r_addr.apid = apid;
-                  r_addr.offset = 0;
-
-                  reg_addr =
-                    xemem_attach (r_addr, (alignment * size), NULL);
-                  if (reg_addr == MAP_FAILED)
-                    {
-                      printf ("xpmem attach for posix memalign failed\n");
-                      xemem_release (apid);
-                      return -1;
-                    }
-                  *memptr = reg_addr;
-		list_add_element (mt, &memreg_seg, reg_addr,
-                            (size * alignment));
-		  return 0;
+      memreg_seg = *len;
+      fprintf (stderr, "mmap after getting xemem retlen %d memseg %llu\n",
+	       retlen, memreg_seg);
+      xemem_apid_t apid;
+      /* one segment to be registered */
+      apid = xemem_get (memreg_seg, XEMEM_RDWR);
+      if (apid <= 0)
+	{
+	  printf ("seg attach from server for malloc failed \n");
+	  return HCQ_INVALID_HANDLE;
 	}
+
+      r_addr.apid = apid;
+      r_addr.offset = 0;
+
+      reg_addr = xemem_attach (r_addr, length, NULL);
+      if (reg_addr == MAP_FAILED)
+	{
+	  printf ("xpmem attach for posix memalign failed\n");
+	  xemem_release (apid);
+	  return NULL;
+	}
+      list_add_element (mt, &memreg_seg, reg_addr, length);
+
+      fprintf (stderr, "return from  mmap hook \n");
+      return reg_addr;
+    }
+  else
+    {
+      return real_mmap (start, length, prot, flags, fd, offset);
+    }
+}
+
+
+/* Intercept posix mem_align for 4k buffers , which are typically for memregister */
+typedef int (*posix_memalign_f_type) (void **__memptr, size_t __alignment,
+				      size_t __size);
+int
+posix_memalign (void **memptr, size_t alignment, size_t size)
+{
+  uint64_t *len = malloc (sizeof (uint64_t));
+  uint32_t retlen;
+  struct xemem_addr r_addr;
+  void *reg_addr;
+  posix_memalign_f_type real_memalign;
+  real_memalign = dlsym (RTLD_NEXT, "posix_memalign");
+
+  *len = size;
+  xemem_segid_t memreg_seg;
+  uint64_t *segid;
+
+  hcq_cmd_t cmd = HCQ_INVALID_CMD;
+  if (alignment == 4096)
+    {
+      fprintf (stderr, "got called in posix memalign hook \n");
+      cmd = hcq_cmd_issue (hcq, PMI_IOC_MALLOC, sizeof (uint64_t), len);
+
+      len = hcq_get_ret_data (hcq, cmd, &retlen);
+      hcq_cmd_complete (hcq, cmd);
+      memreg_seg = *len;
+      fprintf (stderr,
+	       "posix memalign after getting xemem retlen %d memseg %llu\n",
+	       retlen, memreg_seg);
+      xemem_apid_t apid;
+      /* one segment to be registered */
+      apid = xemem_get (memreg_seg, XEMEM_RDWR);
+      if (apid <= 0)
+	{
+	  printf ("seg attach from server for malloc failed \n");
+	  return HCQ_INVALID_HANDLE;
+	}
+
+      r_addr.apid = apid;
+      r_addr.offset = 0;
+
+      reg_addr = xemem_attach (r_addr, size, NULL);
+      if (reg_addr == MAP_FAILED)
+	{
+	  printf ("xpmem attach for posix memalign failed\n");
+	  xemem_release (apid);
+	  return -1;
+	}
+      *memptr = reg_addr;
+      list_add_element (mt, &memreg_seg, reg_addr, size);
+      return 0;
+    }
   else
     {
       return real_memalign (memptr, alignment, size);
@@ -294,6 +351,9 @@ pack_args (int request, void *args)
       memcpy (args, (void *) nic_set_attr1, sizeof (nic_set_attr1));
       break;
     case GNI_IOC_CQ_CREATE:
+      cq_create_args =
+	(gni_cq_create_args_t *) malloc (sizeof (gni_cq_create_args_t));
+      memcpy (cq_create_args, args, sizeof (gni_cq_create_args_t));
       cq_create_args = args;	/* create xememseg of queue */
       /* Following is what we get in args for this ioctl from client side 
          cq_create_args.queue = (gni_cq_entry_t *) cq->queue;
@@ -304,30 +364,34 @@ pack_args (int request, void *args)
          cq_create_args.kern_cq_descr = GNI_INVALID_CQ_DESCR;
          cq_create_args.interrupt_mask = NULL;
        */
-      cq_seg = list_find_segid_by_vaddr(mt, cq_create_args->queue);
+      printf ("client ioctl for cq create %p, len %d\n",
+	      cq_create_args->queue, cq_create_args->entry_count);
+      cq_seg = list_find_segid_by_vaddr (mt, cq_create_args->queue);
       cq_create_args->queue = (gni_cq_entry_t *) cq_seg;
+      printf ("after find in seg in cq create %llu\n", cq_seg);
       cmd =
 	hcq_cmd_issue (hcq, GNI_IOC_CQ_CREATE, sizeof (cq_create_args),
 		       cq_create_args);
       cq_create_args = hcq_get_ret_data (hcq, cmd, &len);
       hcq_cmd_complete (hcq, cmd);
-      memcpy (args, (void *) cq_create_args, sizeof (cq_create_args));
+      memcpy (args, (void *) cq_create_args, sizeof (gni_cq_create_args_t));
       break;
 
     case GNI_IOC_MEM_REGISTER:
       /* If memory is segmented we just loop through the list 
          segments[0].address && segments[0].length
        */
-      mem_reg_attr = (gni_mem_register_args_t *)malloc (sizeof(gni_mem_register_args_t));
-      memcpy(mem_reg_attr, args, sizeof(gni_mem_register_args_t));
+      mem_reg_attr =
+	(gni_mem_register_args_t *) malloc (sizeof (gni_mem_register_args_t));
+      memcpy (mem_reg_attr, args, sizeof (gni_mem_register_args_t));
       printf ("client ioctl for mem register address %p, len %d\n",
 	      mem_reg_attr->address, mem_reg_attr->length);
-	//list_print(mt);
-	reg_mem_seg = list_find_segid_by_vaddr(mt,  mem_reg_attr->address);
+      //list_print(mt);
+      reg_mem_seg = list_find_segid_by_vaddr (mt, mem_reg_attr->address);
       printf ("after find in seg in mem reg %llu\n", reg_mem_seg);
-	mem_reg_attr->address = (uint64_t)reg_mem_seg;
-      printf ("address in attr %llu\n",  mem_reg_attr->address);
-	  // Now segid actually is 64 bit so push it there
+      mem_reg_attr->address = (uint64_t) reg_mem_seg;
+      printf ("address in attr %llu\n", mem_reg_attr->address);
+      // Now segid actually is 64 bit so push it there
       cmd =
 	hcq_cmd_issue (hcq, GNI_IOC_MEM_REGISTER,
 		       sizeof (gni_mem_register_args_t),
@@ -349,7 +413,8 @@ pack_args (int request, void *args)
          cq_wait_event_args.num_cqs = 0;
        */
       cq_wait_event_args = args;
-      cq_index_seg = list_find_segid_by_vaddr(mt, cq_wait_event_args->next_event_ptr);
+      cq_index_seg =
+	list_find_segid_by_vaddr (mt, cq_wait_event_args->next_event_ptr);
       cq_wait_event_args->next_event_ptr = cq_index_seg;
       cmd =
 	hcq_cmd_issue (hcq, GNI_IOC_CQ_WAIT_EVENT,
@@ -547,8 +612,7 @@ unpack_args (int request, void *args)
 	  return HCQ_INVALID_HANDLE;
 	}
       printf ("after xemem attach of fma CTRL window %p\n", fma_ctrl);
-      list_add_element (mt, &fma_ctrl_seg, fma_ctrl,
-			FMA_WINDOW_SIZE);
+      list_add_element (mt, &fma_ctrl_seg, fma_ctrl, FMA_WINDOW_SIZE);
 
       nic_set_attr->fma_window = fma_win;
       nic_set_attr->fma_window_nwc = fma_put;
