@@ -1,0 +1,143 @@
+<vm class="PC" host_enclave="enclave-1">
+	<memory size="512" />
+
+	<telemetry>enable</telemetry>
+	
+        <paging mode="nested">
+		<large_pages>true</large_pages>	
+        </paging>
+
+	<schedule_hz>100</schedule_hz>
+
+	<cores count="1">
+            <core target_cpu="1"/>
+        </cores>
+<!--        <cores count="2"><core /><core /></cores> -->
+<!--        <cores count="4"><core /><core /><core /><core /></cores> -->
+
+
+
+<!--
+       <memmap>
+		<region>
+                       <start>0xa0000</start>
+                       <end>0xc0000</end>
+                       <host_addr>0xa0000</host_addr>
+               </region>
+       </memmap>
+-->
+
+<!--
+	<fpu osxsave=0 />
+-->
+<!--
+        <files>
+                <file id="System.map" filename="/home/jarusl/fedora-test/System.map-kitten"></file>
+        </files>
+-->
+	<extensions>
+		<extension name="VMWARE_IFACE" />
+	</extensions>
+
+	<devices>
+		<device class="8259A" id="PIC"></device>
+		<device class="KEYBOARD" id="keyboard"></device>
+		<device class="8254_PIT" id="PIT"></device>
+		<device class="BOCHS_DEBUG" id="bochs debug"></device>
+
+		<device class="OS_DEBUG" id="os debug"></device>
+		<device class="LAPIC" id="apic"></device>
+		<device class="IOAPIC" id="ioapic">
+                       <apic>apic</apic>
+		</device>
+
+
+		<device class="PCI" id="pci0"></device>
+
+		<device class="i440FX" id="northbridge">
+			<bus>pci0</bus>
+		</device>
+
+		<device class="PIIX4" id="southbridge">
+			<bus>pci0</bus>
+		</device>
+
+		<device class="IDE" id="ide">
+			<bus>pci0</bus>
+			<controller>southbridge</controller>
+		</device>
+<!--
+		<device class="HOST_PCI" id="nic_1">
+			<bus>pci0</bus>
+			<url>nic_1</url>
+		</device>
+-->
+<!--
+		<device class="LNX_VIRTIO_BLK" id="virtio-blk">
+			<bus>pci0</bus>
+		</device>
+
+
+		<device class="FILEDISK" id="HD0" writable="1">
+			<path>/home/jarusl/fedora-test/fedora19.dimg</path>
+			<frontend tag="virtio-blk">
+			</frontend>
+		</device>
+-->
+<!--
+		<device class="FILEDISK" id="HD0" writable="1">
+			<path>/home/jarusl/fedora-test/fedora19.dimg</path>
+			<frontend tag="ide">
+				<model>V3Vee HDD</model>
+				<type>HD</type>
+				<bus_num>0</bus_num>
+				<drive_num>0</drive_num>
+			</frontend>
+		</device>
+-->
+		<device class="FILEDISK" id="CD0" writable="0">
+			<path>/opt/hobbes/image.iso</path>
+			<frontend tag="ide">
+				<model>V3Vee CDROM</model>
+				<type>CDROM</type>
+				<bus_num>0</bus_num>
+				<drive_num>0</drive_num>
+			</frontend>
+		</device>
+
+<!--
+
+		<device class="TMPDISK" id="tmpdisk1">
+			<size>128</size>
+			<frontend tag="virtio-blk" />
+		</device>
+-->	
+
+
+		<device class="CGA_VIDEO" id="cga" passthrough="disable" />
+		<device class="CURSES_CONSOLE" id="curses">
+			<frontend tag="cga">
+
+			</frontend>
+		</device>
+
+
+<!--
+                <device class="SERIAL" id="serial" />
+
+		<device class="CHAR_STREAM" id="com1">
+		 	<name>com1</name>
+			<frontend tag="serial">
+				<com_port>1</com_port>
+			</frontend>
+		</device>
+-->
+
+		<device class="NVRAM" id="nvram">
+			<storage>ide</storage>
+		</device>
+
+       </devices>
+
+
+</vm>

@@ -3,6 +3,14 @@
     <init_task>/opt/hobbes/lwk_init</init_task>
     <cmd_line>console=pisces</cmd_line>
 
+    <cpus>
+        <cores>2</cores>
+    </cpus>
+
+    <memory>
+        <blocks contig="0">4</blocks>
+    </memory>
+
 <!--    
     <boot_env numa="1">
        <cpu>2</cpu>
