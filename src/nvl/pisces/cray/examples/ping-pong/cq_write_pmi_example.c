@@ -31,8 +31,7 @@ int passed = 0;
 #define CACHELINE_MASK            0x3F	/* 64 byte cacheline */
 #define NUMBER_OF_TRANSFERS       10
 #define SEND_DATA                 0xee0000000000
-#define TRANSFER_LENGTH           512
-#define TRANSFER_LENGTH_IN_BYTES  ((TRANSFER_LENGTH)*sizeof(uint64_t))
+#define TRANSFER_LENGTH_IN_BYTES  4096 
 
 typedef struct
 {
@@ -321,8 +320,8 @@ main (int argc, char **argv)
    *          function.
    *     destination_cq_handle is the handle that is returned pointing this
    *          newly created completion queue.
-   */
 
+   */
   status =
     GNI_CqCreate (nic_handle, number_of_dest_cq_entries, 0,
 		  GNI_CQ_NOBLOCK, NULL, NULL, &destination_cq_handle);
@@ -340,6 +339,8 @@ main (int argc, char **argv)
 	       "[%s] Rank: %4i GNI_CqCreate      destination with %i entries\n",
 	       uts_info.nodename, rank_id, number_of_dest_cq_entries);
     }
+
+
 
   /*
    * Allocate the endpoint handles array.
@@ -439,7 +440,7 @@ main (int argc, char **argv)
    */
 
   rc =
-    posix_memalign ((void **) &receive_buffer, 64, TRANSFER_LENGTH_IN_BYTES);
+    posix_memalign ((void **) &receive_buffer, 4096, 4096);
   assert (rc == 0);
 
   /*

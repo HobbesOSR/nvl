@@ -55,11 +55,6 @@
 struct memseg_list *mt = NULL;
 
 
-static void
-sfence (void)
-{
-  asm volatile ("sfence":::"memory");
-}
 
 static void
 get_alps_info (alpsAppGni_t * alps_info)
@@ -76,36 +71,21 @@ get_alps_info (alpsAppGni_t * alps_info)
 
   alps_app_lli_lock ();
 
-  fprintf (stderr, "sending ALPS request\n");
   alps_rc = alps_app_lli_put_request (ALPS_APP_LLI_ALPS_REQ_GNI, NULL, 0);
   if (alps_rc != 0)
-    fprintf (stderr, "alps_app_lli_put_request failed: %d", alps_rc);
-  fprintf (stderr, "waiting for ALPS reply\n");
+    fprintf (stderr, "waiting for ALPS reply\n");
   alps_rc = alps_app_lli_get_response (&req_rc, &rep_size);
-  if (alps_rc != 0)
-    fprintf (stderr, "alps_app_lli_get_response failed: alps_rc=%d\n",
-	     alps_rc);
-  if (req_rc != 0)
-    fprintf (stderr, "alps_app_lli_get_response failed: req_rc=%d\n", req_rc);
   if (rep_size != 0)
     {
       alps_rc = alps_app_lli_get_response_bytes (alps_info_list, rep_size);
-      if (alps_rc != 0)
-	fprintf (stderr, "alps_app_lli_get_response_bytes failed: %d",
-		 alps_rc);
     }
 
-  fprintf (stderr, "sending ALPS request\n");
   alps_rc = alps_app_lli_put_request (ALPS_APP_LLI_ALPS_REQ_APID, NULL, 0);
   if (alps_rc != 0)
-    fprintf (stderr, "alps_app_lli_put_request failed: %d\n", alps_rc);
-  fprintf (stderr, "waiting for ALPS reply");
-  alps_rc = alps_app_lli_get_response (&req_rc, &rep_size);
+    alps_rc = alps_app_lli_get_response (&req_rc, &rep_size);
   if (alps_rc != 0)
     fprintf (stderr, "alps_app_lli_get_response failed: alps_rc=%d\n",
 	     alps_rc);
-  if (req_rc != 0)
-    fprintf (stderr, "alps_app_lli_get_response failed: req_rc=%d\n", req_rc);
   if (rep_size != 0)
     {
       alps_rc = alps_app_lli_get_response_bytes (&apid, rep_size);
@@ -229,7 +209,7 @@ main (int argc, char *argv[])
   gni_ep_postdata_term_args_t ep_postterm_attr;
   gni_mem_register_args_t *mem_register_attr;
   gni_mem_deregister_args_t mem_dereg_attr;
-  gni_cq_create_args_t cq_create_attr;
+  gni_cq_create_args_t *cq_create_attr;
   gni_cq_wait_event_args_t cq_wait_attr;
   gni_cq_destroy_args_t cq_destroy_attr;
   gni_post_rdma_args_t post_attr;
@@ -353,12 +333,7 @@ main (int argc, char *argv[])
 	  char *data_buf = hcq_get_cmd_data (hcq, cmd, &data_len);
 
 
-	  printf ("cmd code=%llu\n", cmd_code);
-	  if (data_len > 0)
-	    {
-	      printf ("len (%d) received\n", data_len);
-	      //memcpy((void *)&nic_set_attr, sizeof(nic_set_attr), (void *)data_buf);        
-	    }
+	  printf ("client cmd code=%llu\n", cmd_code);
 
 	  switch (cmd_code)
 	    {
@@ -429,10 +404,14 @@ main (int argc, char *argv[])
 	      gni_mem_segment_t *segment;
 	      if (mem_register_attr->segments_cnt == 1)
 		{
-		  list_print(mt);
+		  //list_print(mt);
 		  /* one segment to be registered */
-		  buffer  = (void *) list_find_vaddr_by_segid (mt, &mem_register_attr->address);
-		      fprintf (stderr, "server side actual vaddr is: %p\n", buffer);
+		  buffer =
+		    (void *) list_find_vaddr_by_segid (mt,
+						       &mem_register_attr->
+						       address);
+		  fprintf (stderr, "server side actual vaddr is: %p\n",
+			   buffer);
 		  mem_register_attr->address = buffer;
 		}
 	      else
@@ -450,11 +429,41 @@ main (int argc, char *argv[])
 	      printf ("Memory is registered successfully\n");
 	      printf
 		("server after registration ioctl : qword1 = 0x%16lx qword2 = 0x%16lx\n",
-		 mem_register_attr->mem_hndl.qword1, mem_register_attr->mem_hndl.qword2);
+		 mem_register_attr->mem_hndl.qword1,
+		 mem_register_attr->mem_hndl.qword2);
 //
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (gni_mem_register_args_t),
 			      mem_register_attr);
 	      break;
+	    case GNI_IOC_CQ_CREATE:
+	      cq_create_attr = (gni_cq_create_args_t *) data_buf;
+	      printf ("server CQ CREATE  got Xemem seg address %p length %d \n",
+		      cq_create_attr->queue, cq_create_attr->entry_count);
+	      printf ("server CQ CREATE  got mem_hndl qword1= %16lx qword2= %16lx \n",
+		      cq_create_attr->mem_hndl.qword1, cq_create_attr->mem_hndl.qword2);
+	      /* one segment to be registered */
+	      buffer =
+		(void *) list_find_vaddr_by_segid (mt,
+						   &cq_create_attr->queue);
+	      fprintf (stderr, "server side actual vaddr is: %p\n", buffer);
+	      cq_create_attr->queue = buffer;
+	      rc = ioctl (device, GNI_IOC_CQ_CREATE, cq_create_attr);
+	      if (rc < 0)
+		{
+		  fprintf (stderr, "Failed calling GNI_IOC_CQ_CREATE\n");
+		  return 0;
+		}
+
+	      printf ("completion Queue created  successfully\n");
+	      printf
+		("server after CQ CRAETE hw_rd_index_ptr = %p  kern_cq_descr = %p\n",
+		 cq_create_attr->hw_rd_index_ptr,
+		 cq_create_attr->kern_cq_descr);
+//
+	      hcq_cmd_return (hcq, cmd, ret, sizeof (gni_cq_create_args_t),
+			      cq_create_attr);
+	      break;
+
 	    case PMI_IOC_ALLGATHER:
 	      outbuf = (char *) malloc (job_size * data_len);
 	      assert (outbuf);
@@ -468,7 +477,6 @@ main (int argc, char *argv[])
 	    case PMI_IOC_GETSIZE:
 	      rc = PMI_Get_size (&job_size);
 	      hcq_cmd_return (hcq, cmd, ret, 4, &job_size);
-	      fprintf (stderr, "server side after  get size return \n");
 	      break;
 	    case PMI_IOC_FINALIZE:
 	      PMI_Finalize ();
@@ -476,18 +484,16 @@ main (int argc, char *argv[])
 	      break;
 	    case PMI_IOC_MALLOC:
 
-		mallocsz = (int *)data_buf;
-	      fprintf (stderr, "server malloc enter size %d\n", *mallocsz);
-		rc = posix_memalign((void **) &buffer, 4096, *mallocsz);
-		assert(rc == 0);
-		size_t msz = 4096 * (*mallocsz);
-		reg_mem_seg =
-                xemem_make (buffer,  msz ,
-                            "reg seg");
-	      hcq_cmd_return (hcq, cmd, ret, sizeof(uint64_t), &reg_mem_seg);
-		list_add_element (mt, &reg_mem_seg, buffer,
-                            msz);
-	      fprintf (stderr, "server malloc return seg %llu\n", reg_mem_seg);
+	      mallocsz = (int *) data_buf;
+		fprintf(stderr, "size for posix_memalign %d\n", *mallocsz);
+	      rc = posix_memalign ((void **) &buffer, 4096, *mallocsz);
+	      assert (rc == 0);
+	      size_t msz = (*mallocsz);
+	      reg_mem_seg = xemem_make (buffer, msz, "reg seg");
+	      hcq_cmd_return (hcq, cmd, ret, sizeof (uint64_t), &reg_mem_seg);
+	      list_add_element (mt, &reg_mem_seg, buffer, msz);
+	      fprintf (stderr, "server malloc return seg %llu\n",
+		       reg_mem_seg);
 	      break;
 
 	    default:

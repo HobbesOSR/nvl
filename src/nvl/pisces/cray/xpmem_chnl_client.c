@@ -142,15 +142,12 @@ open (const char *pathname, int flags, ...)
   if (strncmp (pathname, "/dev/kgni0", 10) == 0)
     {
       client_fd = orig_open ("/home/smukher/temp", flags);
-      printf
-	(" gemini proxy client  called open: fd is = %d!!!\n", client_fd);
       kgni_open (pathname, flags);
       return client_fd;
     }
   else if (strncmp (pathname, "/dev/pmi", 8) == 0)
     {
       pmi_fd = orig_open ("/home/smukher/temp1", flags);
-      printf ("  client  called PMI open: fd is = %d!!!\n", pmi_fd);
       kgni_open (pathname, flags);
       return pmi_fd;
     }
@@ -176,9 +173,16 @@ ioctl (int fd, unsigned long int request, ...)
 
   next_ioctl_f_type next_ioctl;
   next_ioctl = dlsym (RTLD_NEXT, "ioctl");
-  if ((fd == client_fd) || (fd == pmi_fd))
+  if (fd == client_fd)
     {
       fprintf (stderr, "ioctl: on kgni device\n");
+      fflush (stderr);
+      handle_ioctl (client_fd, request, argp);
+      return 0;
+    }
+  else if (fd == pmi_fd)
+    {
+      fprintf (stderr, "ioctl: on PMI device\n");
       fflush (stderr);
       handle_ioctl (client_fd, request, argp);
       return 0;
@@ -215,8 +219,10 @@ mmap (void *start, size_t length, int prot, int flags, int fd, __off_t offset)
       len = hcq_get_ret_data (hcq, cmd, &retlen);
       hcq_cmd_complete (hcq, cmd);
       memreg_seg = *len;
+/*
       fprintf (stderr, "mmap after getting xemem retlen %d memseg %llu\n",
 	       retlen, memreg_seg);
+*/
       xemem_apid_t apid;
       /* one segment to be registered */
       apid = xemem_get (memreg_seg, XEMEM_RDWR);
@@ -268,7 +274,7 @@ posix_memalign (void **memptr, size_t alignment, size_t size)
   hcq_cmd_t cmd = HCQ_INVALID_CMD;
   if (alignment == 4096)
     {
-      fprintf (stderr, "got called in posix memalign hook \n");
+      fprintf (stderr, "got called in posix memalign hook requested length is %d\n", size);
       cmd = hcq_cmd_issue (hcq, PMI_IOC_MALLOC, sizeof (uint64_t), len);
 
       len = hcq_get_ret_data (hcq, cmd, &retlen);
@@ -282,7 +288,7 @@ posix_memalign (void **memptr, size_t alignment, size_t size)
       apid = xemem_get (memreg_seg, XEMEM_RDWR);
       if (apid <= 0)
 	{
-	  printf ("seg attach from server for malloc failed \n");
+	  printf ("seg attach from server for posix memalign failed \n");
 	  return HCQ_INVALID_HANDLE;
 	}
 
@@ -308,7 +314,7 @@ posix_memalign (void **memptr, size_t alignment, size_t size)
 
 
 int
-pack_args (int request, void *args)
+pack_args (unsigned long int request, void *args)
 {
   gni_nic_setattr_args_t *nic_set_attr1;
   gni_mem_register_args_t *mem_reg_attr;
@@ -323,6 +329,7 @@ pack_args (int request, void *args)
   xemem_segid_t cq_index_seg;
   xemem_segid_t reg_mem_seg;
   xemem_segid_t cq_seg;
+  uint32_t len = 0;
 
   /* PMI ioctls args */
   pmi_allgather_args_t *gather_arg;
@@ -330,7 +337,6 @@ pack_args (int request, void *args)
   pmi_getrank_args_t *rank_arg;
   int *size = malloc (sizeof (int));
   int *rank = malloc (sizeof (int));
-
 
   switch (request)
     {
@@ -341,14 +347,13 @@ pack_args (int request, void *args)
 	hcq_cmd_issue (hcq, GNI_IOC_NIC_SETATTR,
 		       sizeof (gni_nic_setattr_args_t), nic_set_attr1);
 
-      //printf ("cmd = %llu data size %d\n", cmd, sizeof (nic_set_attr1));
-      uint32_t len = 0;
+      fprintf (stderr, "cmd = %0x data size %d\n", cmd, sizeof (nic_set_attr1));
       nic_set_attr1 = hcq_get_ret_data (hcq, cmd, &len);
-      printf ("from server return cookie : %d ptag :%d  rank :%d\n",
-	      nic_set_attr1->cookie, nic_set_attr1->ptag,
-	      nic_set_attr1->rank);
       hcq_cmd_complete (hcq, cmd);
       memcpy (args, (void *) nic_set_attr1, sizeof (nic_set_attr1));
+      printf ("after NIC attach  cookie : %d ptag :%d  rank :%d\n",
+	      nic_set_attr1->cookie, nic_set_attr1->ptag,
+	      nic_set_attr1->rank);
       break;
     case GNI_IOC_CQ_CREATE:
       cq_create_args =
@@ -364,13 +369,14 @@ pack_args (int request, void *args)
          cq_create_args.kern_cq_descr = GNI_INVALID_CQ_DESCR;
          cq_create_args.interrupt_mask = NULL;
        */
-      printf ("client ioctl for cq create %p, len %d\n",
+      fprintf (stderr, "client ioctl for cq create %p, entry count %d\n",
 	      cq_create_args->queue, cq_create_args->entry_count);
+      fprintf (stderr, " cLIENT CQ_CREATE mem hndl word1=0x%16lx, word2 = 0x%16lx\n",
+	      cq_create_args->mem_hndl.qword1, cq_create_args->mem_hndl.qword2);
       cq_seg = list_find_segid_by_vaddr (mt, cq_create_args->queue);
       cq_create_args->queue = (gni_cq_entry_t *) cq_seg;
-      printf ("after find in seg in cq create %llu\n", cq_seg);
       cmd =
-	hcq_cmd_issue (hcq, GNI_IOC_CQ_CREATE, sizeof (cq_create_args),
+	hcq_cmd_issue (hcq, GNI_IOC_CQ_CREATE, sizeof (gni_cq_create_args_t),
 		       cq_create_args);
       cq_create_args = hcq_get_ret_data (hcq, cmd, &len);
       hcq_cmd_complete (hcq, cmd);
@@ -384,13 +390,11 @@ pack_args (int request, void *args)
       mem_reg_attr =
 	(gni_mem_register_args_t *) malloc (sizeof (gni_mem_register_args_t));
       memcpy (mem_reg_attr, args, sizeof (gni_mem_register_args_t));
-      printf ("client ioctl for mem register address %p, len %d\n",
+      printf ("client ioctl for mem register xemem segid is: %p, len %d\n",
 	      mem_reg_attr->address, mem_reg_attr->length);
       //list_print(mt);
       reg_mem_seg = list_find_segid_by_vaddr (mt, mem_reg_attr->address);
-      printf ("after find in seg in mem reg %llu\n", reg_mem_seg);
       mem_reg_attr->address = (uint64_t) reg_mem_seg;
-      printf ("address in attr %llu\n", mem_reg_attr->address);
       // Now segid actually is 64 bit so push it there
       cmd =
 	hcq_cmd_issue (hcq, GNI_IOC_MEM_REGISTER,
@@ -431,6 +435,7 @@ pack_args (int request, void *args)
       cq_destroy_args = hcq_get_ret_data (hcq, cmd, &len);
       hcq_cmd_complete (hcq, cmd);
       memcpy (args, (void *) cq_destroy_args, sizeof (cq_destroy_args));
+	break;
     case PMI_IOC_ALLGATHER:
       gather_arg = args;
       allgather (gather_arg->in_data, gather_arg->out_data,
@@ -458,7 +463,97 @@ pack_args (int request, void *args)
     case PMI_IOC_BARRIER:
       pmi_barrier ();
       break;
+
+    case GNI_IOC_NIC_FMA_CONFIG:
+      fprintf (stderr, "FMA config client case\n");
+      break;
+    case GNI_IOC_EP_POSTDATA:
+      fprintf (stderr, "EP POSTDATA client case\n");
+      break;
+    case GNI_IOC_EP_POSTDATA_TEST:
+      fprintf (stderr, "EP POSTDATA test client case\n");
+      break;
+    case GNI_IOC_EP_POSTDATA_WAIT:
+      fprintf (stderr, "EP POSTDATA WAIT client case\n");
+      break;
+    case GNI_IOC_EP_POSTDATA_TERMINATE:
+      fprintf (stderr, "EP POSTDATA TERMINATE client case\n");
+      break;
+
+    case GNI_IOC_MEM_DEREGISTER:
+      fprintf (stderr, "mem deregister client case\n");
+      break;
+    case GNI_IOC_POST_RDMA:
+      fprintf (stderr, "post RDMA  client case\n");
+      break;
+
+    case GNI_IOC_NIC_VMDH_CONFIG:
+      fprintf (stderr, "VMDH config  client case\n");
+      break;
+    case GNI_IOC_NIC_NTT_CONFIG:
+      fprintf (stderr, "NTT config client case\n");
+      break;
+
+    case GNI_IOC_NIC_JOBCONFIG:
+      fprintf (stderr, "NIC jobconfig client case\n");
+      break;
+
+    case GNI_IOC_FMA_SET_PRIVMASK:
+      fprintf (stderr, "FMA set PRIVMASK client case\n");
+      break;
+
+    case GNI_IOC_SUBSCRIBE_ERR:
+      fprintf (stderr, "subscribe error client case\n");
+      break;
+    case GNI_IOC_RELEASE_ERR:
+      fprintf (stderr, "Release error client case\n");
+      break;
+    case GNI_IOC_SET_ERR_MASK:
+      fprintf (stderr, "Set Err Mask client case\n");
+      break;
+    case GNI_IOC_GET_ERR_EVENT:
+      fprintf (stderr, "Get Err event client case\n");
+      break;
+    case GNI_IOC_WAIT_ERR_EVENTS:
+      fprintf (stderr, "Wait err event client case\n");
+      break;
+    case GNI_IOC_SET_ERR_PTAG:
+      fprintf (stderr, "EP POSTDATA client case\n");
+      break;
+    case GNI_IOC_CDM_BARR:
+      fprintf (stderr, "CDM BARR client case\n");
+      break;
+    case GNI_IOC_NIC_NTTJOB_CONFIG:
+      fprintf (stderr, "NTT JOBCONFIG client case\n");
+      break;
+    case GNI_IOC_DLA_SETATTR:
+      fprintf (stderr, "DLA SETATTR client case\n");
+      break;
+    case GNI_IOC_VCE_ALLOC:
+      fprintf (stderr, "VCE ALLOC client case\n");
+      break;
+    case GNI_IOC_VCE_FREE:
+      fprintf (stderr, "VCE FREE client case\n");
+      break;
+    case GNI_IOC_VCE_CONFIG:
+      fprintf (stderr, "VCE CONFIG client case\n");
+      break;
+    case GNI_IOC_FLBTE_SETATTR:
+      fprintf (stderr, "FLBTE SETATTR client case\n");
+      break;
+    case GNI_IOC_FMA_ASSIGN:
+      fprintf (stderr, "FMA ASSIGN  client case\n");
+      break;
+    case GNI_IOC_FMA_UMAP:
+      fprintf (stderr, "fma unmap client case\n");
+      break;
+    case GNI_IOC_MEM_QUERY_HNDLS:
+      fprintf (stderr, "mem query hndlclient case\n");
+      break;
     default:
+      fprintf (stderr,
+	       "Called default case in client side for kgni ioctl %llu\n",
+	       request);
       break;
     }
   return 0;
@@ -466,7 +561,7 @@ pack_args (int request, void *args)
 
 
 int
-handle_ioctl (int device, int request, void *arg)
+handle_ioctl (int device, unsigned long int request, void *arg)
 {
 
   int status;
@@ -496,7 +591,7 @@ handle_ioctl (int device, int request, void *arg)
 }
 
 int
-unpack_args (int request, void *args)
+unpack_args (unsigned long int request, void *args)
 {
   gni_nic_setattr_args_t *nic_set_attr;
   gni_cq_wait_event_args_t *cq_wait_event_args;
@@ -554,7 +649,7 @@ unpack_args (int request, void *args)
       if (apid <= 0)
 	{
 	  xemem_remove (fma_put_seg);
-	  return HCQ_INVALID_HANDLE;
+	  return -1;  //invalid handle
 	}
 
       put_addr.apid = apid;
@@ -566,7 +661,7 @@ unpack_args (int request, void *args)
 	{
 	  xemem_release (apid);
 	  xemem_remove (fma_win_seg);
-	  return HCQ_INVALID_HANDLE;
+	  return -1;  // invalid HCQ handle
 	}
       //printf ("after xemem attach of fma PUT window %llu\n", fma_put);
 /***************************/
@@ -611,7 +706,7 @@ unpack_args (int request, void *args)
 	  xemem_remove (fma_ctrl_seg);
 	  return HCQ_INVALID_HANDLE;
 	}
-      printf ("after xemem attach of fma CTRL window %p\n", fma_ctrl);
+      //printf ("after xemem attach of fma CTRL window %p\n", fma_ctrl);
       list_add_element (mt, &fma_ctrl_seg, fma_ctrl, FMA_WINDOW_SIZE);
 
       nic_set_attr->fma_window = fma_win;
@@ -619,13 +714,102 @@ unpack_args (int request, void *args)
       nic_set_attr->fma_window_get = fma_get;
       nic_set_attr->fma_ctrl = fma_ctrl;
       break;
+    case GNI_IOC_NIC_FMA_CONFIG:
+      fprintf (stderr, "FMA config client case\n");
+      break;
+    case GNI_IOC_EP_POSTDATA:
+      fprintf (stderr, "unpack EP POSTDATA client case\n");
+      break;
+    case GNI_IOC_EP_POSTDATA_TEST:
+      fprintf (stderr, "unpack EP POSTDATA test client case\n");
+      break;
+    case GNI_IOC_EP_POSTDATA_WAIT:
+      fprintf (stderr, "unpack EP POSTDATA WAIT client case\n");
+      break;
+    case GNI_IOC_EP_POSTDATA_TERMINATE:
+      fprintf (stderr, "unpack EP POSTDATA TERMINATE client case\n");
+      break;
+
+    case GNI_IOC_MEM_DEREGISTER:
+      fprintf (stderr, "unpack mem deregister client case\n");
+      break;
+    case GNI_IOC_POST_RDMA:
+      fprintf (stderr, "unpack post RDMA  client case\n");
+      break;
+
+    case GNI_IOC_NIC_VMDH_CONFIG:
+      fprintf (stderr, "unpack VMDH config  client case\n");
+      break;
+    case GNI_IOC_NIC_NTT_CONFIG:
+      fprintf (stderr, "unpack NTT config client case\n");
+      break;
+
+    case GNI_IOC_NIC_JOBCONFIG:
+      fprintf (stderr, "unpack NIC jobconfig client case\n");
+      break;
+
+    case GNI_IOC_FMA_SET_PRIVMASK:
+      fprintf (stderr, "unpack FMA set PRIVMASK client case\n");
+      break;
+
+    case GNI_IOC_SUBSCRIBE_ERR:
+      fprintf (stderr, "unpack subscribe error client case\n");
+      break;
+    case GNI_IOC_RELEASE_ERR:
+      fprintf (stderr, "unpack Release error client case\n");
+      break;
+    case GNI_IOC_SET_ERR_MASK:
+      fprintf (stderr, "unpack Set Err Mask client case\n");
+      break;
+    case GNI_IOC_GET_ERR_EVENT:
+      fprintf (stderr, "unpack Get Err event client case\n");
+      break;
+    case GNI_IOC_WAIT_ERR_EVENTS:
+      fprintf (stderr, "unpack Wait err event client case\n");
+      break;
+    case GNI_IOC_SET_ERR_PTAG:
+      fprintf (stderr, "unpack EP POSTDATA client case\n");
+      break;
+    case GNI_IOC_CDM_BARR:
+      fprintf (stderr, "unpack CDM BARR client case\n");
+      break;
+    case GNI_IOC_NIC_NTTJOB_CONFIG:
+      fprintf (stderr, "unpack NTT JOBCONFIG client case\n");
+      break;
+    case GNI_IOC_DLA_SETATTR:
+      fprintf (stderr, "unpack DLA SETATTR client case\n");
+      break;
+    case GNI_IOC_VCE_ALLOC:
+      fprintf (stderr, "unpack VCE ALLOC client case\n");
+      break;
+    case GNI_IOC_VCE_FREE:
+      fprintf (stderr, "unpack VCE FREE client case\n");
+      break;
+    case GNI_IOC_VCE_CONFIG:
+      fprintf (stderr, "unpack VCE CONFIG client case\n");
+      break;
+    case GNI_IOC_FLBTE_SETATTR:
+      fprintf (stderr, "unpack FLBTE SETATTR client case\n");
+      break;
+    case GNI_IOC_FMA_ASSIGN:
+      fprintf (stderr, "unpack FMA ASSIGN  client case\n");
+      break;
+    case GNI_IOC_FMA_UMAP:
+      fprintf (stderr, "unpack fma unmap client case\n");
+      break;
+    case GNI_IOC_MEM_QUERY_HNDLS:
+      fprintf (stderr, "unpack mem query hndlclient case\n");
+	break;
     case GNI_IOC_CQ_CREATE:
+      fprintf (stderr, "unpack CQ CREATE  client case\n");
       break;
     case GNI_IOC_CQ_DESTROY:
+      fprintf (stderr, "unpack CQ destroy  client case\n");
       break;
     case GNI_IOC_MEM_REGISTER:
       break;
     case GNI_IOC_CQ_WAIT_EVENT:
+      fprintf (stderr, "unpack CQ wait event client case\n");
       break;
     case PMI_IOC_ALLGATHER:
       break;
@@ -641,8 +825,8 @@ unpack_args (int request, void *args)
       break;
     default:
       fprintf (stderr, "called disconnect in client default\n");
-      hcq_disconnect (hcq);
-      hobbes_client_deinit ();
+      //hcq_disconnect (hcq);
+      //hobbes_client_deinit ();
       break;
     }
   //let's print something what we got back in nic_set_attr struct 
