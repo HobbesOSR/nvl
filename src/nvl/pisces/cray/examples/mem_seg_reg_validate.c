@@ -414,8 +414,8 @@ main (int argc, char **argv)
     }
   printf ("posix_memalign(%d, %d) = %p\n", alignment, size, recv_buffer);
 
-  fprintf (stderr, "memory registration address %llu, length %d\n",
-	   (uint64_t) recv_buffer, size * 4096);
+  fprintf (stderr, "memory registration address %p, length %d\n",
+	    recv_buffer, size * 4096);
   status =
     GNI_MemRegister (nic_handle, (uint64_t) recv_buffer, 4096 * size, NULL,
 		     GNI_MEM_READWRITE, -1, &mdh_recv_buffer);

@@ -139,6 +139,8 @@ main (int argc, char **argv)
 
   rc = PMI_Get_size (&number_of_ranks);
   assert (rc == PMI_SUCCESS);
+  my_rank = rank_id;
+  comm_size = number_of_ranks;;
 
   while ((opt = getopt (argc, argv, "hn:v")) != -1)
     {
@@ -354,8 +356,9 @@ main (int argc, char **argv)
   /*
    * Get all of the NIC address for all of the ranks.
    */
-
+  fprintf(stderr, "before gather_nic_addresses\n");
   all_nic_addresses = (unsigned int *) gather_nic_addresses ();
+  fprintf(stderr, "after  gather_nic_addresses\n");
 
   /*
    * Create the endpoints to all of the ranks.

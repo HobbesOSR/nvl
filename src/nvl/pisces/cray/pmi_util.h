@@ -36,7 +36,8 @@ typedef struct pmi_getrank_args {
 #define PMI_IOC_GETRANK        _IOWR(PMI_IOC_MAGIC, 3, pmi_getrank_args_t)
 #define PMI_IOC_FINALIZE       _IOWR(PMI_IOC_MAGIC, 4,NULL) 
 #define PMI_IOC_BARRIER        _IOWR(PMI_IOC_MAGIC, 5, NULL)
-
+#define PMI_IOC_MALLOC        _IOWR(PMI_IOC_MAGIC, 6, NULL)
+#define PMI_IOC_INIT          _IOWR(PMI_IOC_MAGIC, 7, int)
 #ifdef __cplusplus 
 } /* extern "C" */
 #endif

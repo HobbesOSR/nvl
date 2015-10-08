@@ -57,9 +57,12 @@ void
 allgather (void *in, void *out, int len)
 {
   uint32_t retlen;
+  void *out_ptr;
   hcq_cmd_t cmd = HCQ_INVALID_CMD;
+  //fprintf(stdout, "client library allgather in pointer  %p, \n", in);
   cmd = hcq_cmd_issue (hcq, PMI_IOC_ALLGATHER, len, in);
-  out = hcq_get_ret_data (hcq, cmd, &retlen);
+  out_ptr = hcq_get_ret_data (hcq, cmd, &retlen);
+  memcpy(out, out_ptr, (comm_size * len));
   hcq_cmd_complete (hcq, cmd);
 }
 
@@ -175,15 +178,15 @@ ioctl (int fd, unsigned long int request, ...)
   next_ioctl = dlsym (RTLD_NEXT, "ioctl");
   if (fd == client_fd)
     {
-      fprintf (stderr, "ioctl: on kgni device\n");
-      fflush (stderr);
+      //fprintf (stderr, "ioctl: on kgni device\n");
+      //fflush (stderr);
       handle_ioctl (client_fd, request, argp);
       return 0;
     }
   else if (fd == pmi_fd)
     {
-      fprintf (stderr, "ioctl: on PMI device\n");
-      fflush (stderr);
+      //fprintf (stderr, "ioctl: on PMI device\n");
+      //fflush (stderr);
       handle_ioctl (client_fd, request, argp);
       return 0;
     }
@@ -238,13 +241,13 @@ mmap (void *start, size_t length, int prot, int flags, int fd, __off_t offset)
       reg_addr = xemem_attach (r_addr, length, NULL);
       if (reg_addr == MAP_FAILED)
 	{
-	  printf ("xpmem attach for posix memalign failed\n");
+	  //printf ("xpmem attach for posix memalign failed\n");
 	  xemem_release (apid);
 	  return NULL;
 	}
       list_add_element (mt, &memreg_seg, reg_addr, length);
 
-      fprintf (stderr, "return from  mmap hook \n");
+      //fprintf (stderr, "return from  mmap hook \n");
       return reg_addr;
     }
   else
@@ -274,15 +277,17 @@ posix_memalign (void **memptr, size_t alignment, size_t size)
   hcq_cmd_t cmd = HCQ_INVALID_CMD;
   if (alignment == 4096)
     {
-      fprintf (stderr, "got called in posix memalign hook requested length is %d\n", size);
+      //fprintf (stderr, "got called in posix memalign hook requested length is %d\n", size);
       cmd = hcq_cmd_issue (hcq, PMI_IOC_MALLOC, sizeof (uint64_t), len);
 
       len = hcq_get_ret_data (hcq, cmd, &retlen);
       hcq_cmd_complete (hcq, cmd);
       memreg_seg = *len;
+      /*
       fprintf (stderr,
 	       "posix memalign after getting xemem retlen %d memseg %llu\n",
 	       retlen, memreg_seg);
+	*/
       xemem_apid_t apid;
       /* one segment to be registered */
       apid = xemem_get (memreg_seg, XEMEM_RDWR);
@@ -328,6 +333,7 @@ pack_args (unsigned long int request, void *args)
   uint32_t seg_cnt;
   xemem_segid_t cq_index_seg;
   xemem_segid_t reg_mem_seg;
+  xemem_segid_t my_mem_seg;
   xemem_segid_t cq_seg;
   uint32_t len = 0;
 
@@ -337,6 +343,7 @@ pack_args (unsigned long int request, void *args)
   pmi_getrank_args_t *rank_arg;
   int *size = malloc (sizeof (int));
   int *rank = malloc (sizeof (int));
+  mdh_addr_t      *clnt_gather_hdl;
 
   switch (request)
     {
@@ -368,11 +375,11 @@ pack_args (unsigned long int request, void *args)
          cq_create_args.delay_count = delay_count;
          cq_create_args.kern_cq_descr = GNI_INVALID_CQ_DESCR;
          cq_create_args.interrupt_mask = NULL;
-       */
       fprintf (stderr, "client ioctl for cq create %p, entry count %d\n",
 	      cq_create_args->queue, cq_create_args->entry_count);
       fprintf (stderr, " cLIENT CQ_CREATE mem hndl word1=0x%16lx, word2 = 0x%16lx\n",
 	      cq_create_args->mem_hndl.qword1, cq_create_args->mem_hndl.qword2);
+       */
       cq_seg = list_find_segid_by_vaddr (mt, cq_create_args->queue);
       cq_create_args->queue = (gni_cq_entry_t *) cq_seg;
       cmd =
@@ -390,8 +397,8 @@ pack_args (unsigned long int request, void *args)
       mem_reg_attr =
 	(gni_mem_register_args_t *) malloc (sizeof (gni_mem_register_args_t));
       memcpy (mem_reg_attr, args, sizeof (gni_mem_register_args_t));
-      printf ("client ioctl for mem register xemem segid is: %p, len %d\n",
-	      mem_reg_attr->address, mem_reg_attr->length);
+      //printf ("client ioctl for mem register xemem segid is: %p, len %d\n",
+//	      mem_reg_attr->address, mem_reg_attr->length);
       //list_print(mt);
       reg_mem_seg = list_find_segid_by_vaddr (mt, mem_reg_attr->address);
       mem_reg_attr->address = (uint64_t) reg_mem_seg;
@@ -437,7 +444,20 @@ pack_args (unsigned long int request, void *args)
       memcpy (args, (void *) cq_destroy_args, sizeof (cq_destroy_args));
 	break;
     case PMI_IOC_ALLGATHER:
-      gather_arg = args;
+      gather_arg = args; // Now check to see if we are gathering mem hnlds
+	if(gather_arg->in_data_len == sizeof(mdh_addr_t)) {
+		clnt_gather_hdl = gather_arg->in_data;
+	/*
+		fprintf(stdout, "Client casting :  0x%lx    0x%016lx    0x%016lx\n",
+                    clnt_gather_hdl->addr,
+                    clnt_gather_hdl->mdh.qword1,
+                    clnt_gather_hdl->mdh.qword2);
+	*/
+		my_mem_seg =
+        		list_find_segid_by_vaddr (mt, clnt_gather_hdl->addr);
+		clnt_gather_hdl->addr = (uint64_t)my_mem_seg;	
+		//fprintf(stdout, "client  gather after segid found :  %llu\n", clnt_gather_hdl->addr);
+	}
       allgather (gather_arg->in_data, gather_arg->out_data,
 		 gather_arg->in_data_len);
       break;

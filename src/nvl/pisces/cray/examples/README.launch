@@ -1,4 +1,4 @@
 
 LD_LIBRARY_PATH=/home/smukher/petlib:/home/smukher/hobbes/whitedb-0.7.3/Main/.libs:/home/smukher/hobbes/libhobbes:/home/smukher/xpmem/lib 
 
-LD_PRELOAD=/home/smukher/trial-client-lib/xpmem_chnl_client.so ./mem_reg
+LD_PRELOAD=/home/smukher/nvl/src/nvl/pisces/cray/xpmem_chnl_client.so ./mem_reg

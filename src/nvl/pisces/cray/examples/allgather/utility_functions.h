@@ -475,7 +475,7 @@ gather (void *in, void *out, int len)
   gather_arg.in_data = in;
   gather_arg.out_data = out;
   gather_arg.in_data_len = len;
-  //fprintf(stdout, "here pointer in %p, len %d, pointer pack %p\n", in, len, gather_arg.in_data);
+  fprintf(stdout, "here pointer in %p, len %d, pointer pack %p\n", in, len, gather_arg.in_data);
   //hexdump(gather_arg.in_data, len);
   rc =
     ioctl (pmi_fd, PMI_IOC_ALLGATHER, &gather_arg,
