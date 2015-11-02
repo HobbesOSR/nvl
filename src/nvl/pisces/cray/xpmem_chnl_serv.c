@@ -59,49 +59,53 @@ struct memseg_list *mt = NULL;
 #define HEXDUMP_COLS 8
 #endif
 
-void hexdump(void *mem, unsigned int len)
+void
+hexdump (void *mem, unsigned int len)
 {
-        unsigned int i, j;
+  unsigned int i, j;
 
-        for(i = 0; i < len + ((len % HEXDUMP_COLS) ? (HEXDUMP_COLS - len % HEXDUMP_COLS) : 0); i++)
-        {
-                /* print offset */
-                if(i % HEXDUMP_COLS == 0)
-                {
-                        printf("0x%06x: ", i);
-                }
+  for (i = 0;
+       i <
+       len + ((len % HEXDUMP_COLS) ? (HEXDUMP_COLS - len % HEXDUMP_COLS) : 0);
+       i++)
+    {
+      /* print offset */
+      if (i % HEXDUMP_COLS == 0)
+	{
+	  printf ("0x%06x: ", i);
+	}
 
-                /* print hex data */
-                if(i < len)
-                {
-                        printf("%02x ", 0xFF & ((char*)mem)[i]);
-                }
-                else /* end of block, just aligning for ASCII dump */
-                {
-                        printf("   ");
-                }
+      /* print hex data */
+      if (i < len)
+	{
+	  printf ("%02x ", 0xFF & ((char *) mem)[i]);
+	}
+      else			/* end of block, just aligning for ASCII dump */
+	{
+	  printf ("   ");
+	}
 
-                /* print ASCII dump */
-                if(i % HEXDUMP_COLS == (HEXDUMP_COLS - 1))
-                {
-                        for(j = i - (HEXDUMP_COLS - 1); j <= i; j++)
-                        {
-                                if(j >= len) /* end of block, not really printing */
-                                {
-                                        putchar(' ');
-                                }
-                                else if(isprint(((char*)mem)[j])) /* printable char */
-                                {
-                                        putchar(0xFF & ((char*)mem)[j]);
-                                }
-                                else /* other char */
-                                {
-                                        putchar('.');
-                                }
-                        }
-                        putchar('\n');
-                }
-        }
+      /* print ASCII dump */
+      if (i % HEXDUMP_COLS == (HEXDUMP_COLS - 1))
+	{
+	  for (j = i - (HEXDUMP_COLS - 1); j <= i; j++)
+	    {
+	      if (j >= len)	/* end of block, not really printing */
+		{
+		  putchar (' ');
+		}
+	      else if (isprint (((char *) mem)[j]))	/* printable char */
+		{
+		  putchar (0xFF & ((char *) mem)[j]);
+		}
+	      else		/* other char */
+		{
+		  putchar ('.');
+		}
+	    }
+	  putchar ('\n');
+	}
+    }
 }
 
 
@@ -309,7 +313,8 @@ main (int argc, char *argv[])
   void *mem_mem;
   int *mallocsz;
   void *buffer;
-  mdh_addr_t  *memhdl;
+  void *rdma_post_buf;
+  mdh_addr_t *memhdl;
 
   rc = PMI_Init (&first_spawned);
   assert (rc == PMI_SUCCESS);
@@ -331,7 +336,8 @@ main (int argc, char *argv[])
       return -1;
     }
 
-  fprintf (stderr, "server segid: %llu\n", hcq_get_segid (hcq));
+  fprintf (stderr, "my rank : %d shadow process server segid: %llu\n",
+	   my_rank, hcq_get_segid (hcq));
 
   fd = hcq_get_fd (hcq);
 
@@ -343,8 +349,6 @@ main (int argc, char *argv[])
   cpu_num = get_cpunum ();
 
   instance = GNI_INSTID (nic_addr, cpu_num, thread_num);
-  fprintf (stderr, "after alps info get cookie %lu  ptag %lu  instance %d\n",
-	   alps_info.cookie, alps_info.ptag, instance);
 
   device = open ("/dev/kgni0", O_RDWR);
   if (device < 0)
@@ -450,8 +454,7 @@ main (int argc, char *argv[])
 		  /* one segment to be registered */
 		  buffer =
 		    (void *) list_find_vaddr_by_segid (mt,
-						       &mem_register_attr->
-						       address);
+						       &mem_register_attr->address);
 		  mem_register_attr->address = buffer;
 		}
 	      else
@@ -465,16 +468,52 @@ main (int argc, char *argv[])
 		  fprintf (stderr, "Failed calling GNI_IOC_MEM_REGISTER\n");
 		  return 0;
 		}
-
-	      //printf ("Memory is registered successfully\n");
+/*
+	      printf ("Memory is registered successfully\n");
 	      printf
-		("server after registration ioctl buffer %p: qword1 = 0x%16lx qword2 = 0x%16lx\n", buffer,
-		 mem_register_attr->mem_hndl.qword1,
+		("server after registration ioctl buffer %p: qword1 = 0x%16lx qword2 = 0x%16lx\n",
+		 buffer, mem_register_attr->mem_hndl.qword1,
 		 mem_register_attr->mem_hndl.qword2);
-//
+*/
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (gni_mem_register_args_t),
 			      mem_register_attr);
 	      break;
+	    case GNI_IOC_POST_RDMA:
+
+	      memcpy (&post_desc, data_buf, sizeof (gni_post_descriptor_t));
+	      buffer = data_buf + sizeof (gni_post_descriptor_t);
+	      memcpy (&post_attr, buffer, sizeof (gni_post_rdma_args_t));
+
+	      //              list_print(mt);
+	      //              hexdump(&post_desc, sizeof(gni_post_descriptor_t));
+	      buffer =
+		(void *) list_find_vaddr_by_segid (mt, &post_desc.local_addr);
+	      post_desc.local_addr = (uint64_t) buffer;
+/*
+	      fprintf (stderr,
+		       "server after local vaddr POST RDMA 0x%lx  word1 0x%016lx  word2  0x%016lx\n",
+		       post_desc.local_addr,
+		       post_desc.local_mem_hndl.qword1,
+		       post_desc.local_mem_hndl.qword2);
+	      fprintf (stderr,
+		       "server remote vaddr POST RDMA 0x%lx  word1 0x%016lx  word2  0x%016lx\n",
+		       post_desc.remote_addr,
+		       post_desc.remote_mem_hndl.qword1,
+		       post_desc.remote_mem_hndl.qword2);
+*/
+	      post_attr.post_desc = (gni_post_descriptor_t *) & post_desc;
+	      rc = ioctl (device, GNI_IOC_POST_RDMA, &post_attr);
+	      if (rc < 0)
+		{
+		  fprintf (stderr,
+			   "Failed calling GNI_IOC_POST_RDMA reason %d\n",
+			   rc);
+		  return 0;
+		}
+	      hcq_cmd_return (hcq, cmd, ret, sizeof (rc), &rc);
+
+	      break;
+
 	    case GNI_IOC_CQ_CREATE:
 	      cq_create_attr = (gni_cq_create_args_t *) data_buf;
 	      /* one segment to be registered */
@@ -497,17 +536,19 @@ main (int argc, char *argv[])
 	    case PMI_IOC_ALLGATHER:
 	      outbuf = (char *) malloc (job_size * data_len);
 	      assert (outbuf);
-		if(data_len == sizeof(mdh_addr_t)) {
-			memhdl = data_buf;
+	      if (data_len == sizeof (mdh_addr_t))
+		{
+		  memhdl = data_buf;
 /*
 			fprintf(stdout, "server  casting :  %llu    0x%016lx    0x%016lx\n",
                     memhdl->addr,
                     memhdl->mdh.qword1,
                     memhdl->mdh.qword2);
 */
-			buffer = (void *) list_find_vaddr_by_segid (mt, &memhdl->addr);
-			memhdl->addr = (uint64_t) buffer;
-			fprintf(stdout, "server  found vaddr :  %p\n", buffer);
+		  buffer =
+		    (void *) list_find_vaddr_by_segid (mt, &memhdl->addr);
+		  memhdl->addr = (uint64_t) buffer;
+//                fprintf (stdout, "server  found vaddr :  %p\n", buffer);
 		}
 	      allgather (data_buf, outbuf, data_len);
 	      hcq_cmd_return (hcq, cmd, ret, (job_size * data_len), outbuf);
@@ -529,7 +570,10 @@ main (int argc, char *argv[])
 	      mallocsz = (int *) data_buf;
 	      rc = posix_memalign ((void **) &buffer, 4096, *mallocsz);
 	      assert (rc == 0);
-	      fprintf (stderr, "server malloc return buffer size %p  %d\n", buffer, *mallocsz);
+/*
+	      fprintf (stderr, "server malloc return buffer size %p  %d\n",
+		       buffer, *mallocsz);
+*/
 	      size_t msz = (*mallocsz);
 	      reg_mem_seg = xemem_make (buffer, msz, NULL);
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (uint64_t), &reg_mem_seg);

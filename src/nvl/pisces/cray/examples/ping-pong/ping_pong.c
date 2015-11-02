@@ -36,13 +36,12 @@
 #define CDM_ID_MULTIPLIER        1000
 #define FLAG_DATA                0xffff000000000000
 #define LOCAL_EVENT_ID_BASE      10000000
-#define NUMBER_OF_TRANSFERS      1
+#define NUMBER_OF_TRANSFERS      16
 #define POST_ID_MULTIPLIER       1000
 #define REMOTE_EVENT_ID_BASE     11000000
 #define SEND_DATA                0xdddd000000000000
-//#define TRANSFER_LENGTH          4096
-#define TRANSFER_LENGTH          100
-#define TRANSFER_LENGTH_IN_BYTES 4096
+#define TRANSFER_LENGTH          16384
+#define TRANSFER_LENGTH_IN_BYTES 16384
 
 typedef struct
 {
@@ -132,8 +131,10 @@ main (int argc, char **argv)
   gni_return_t status = GNI_RC_SUCCESS;
   char *text_pointer;
   uint32_t transfers = NUMBER_OF_TRANSFERS;
+  uint32_t transfer_size;
   int use_event_id = 0;
-
+  struct timeval t0, t1;
+  long long elapsed;
 
   if ((i = uname (&uts_info)) != 0)
     {
@@ -217,13 +218,6 @@ main (int argc, char **argv)
 	       "[%s] Rank: %4i GNI_CdmCreate     ERROR status: %s (%d)\n",
 	       uts_info.nodename, rank_id, gni_err_str[status], status);
       goto EXIT_TEST;
-    }
-
-  if (v_option > 1)
-    {
-      fprintf (stdout,
-	       "[%s] Rank: %4i GNI_CdmCreate     inst_id: %i ptag: %u cookie: 0x%x\n",
-	       uts_info.nodename, rank_id, cdm_id, ptag, cookie);
     }
 
   /*
@@ -392,7 +386,7 @@ main (int argc, char **argv)
    * sending data for all of the transfers.
    */
 
-  rc = posix_memalign ((void **) &send_buffer, 4096, 4096);
+  rc = posix_memalign ((void **) &send_buffer, 4096, TRANSFER_LENGTH);
   assert (rc == 0);
 
   /*
@@ -417,7 +411,7 @@ main (int argc, char **argv)
    */
 
   status = GNI_MemRegister (nic_handle, (uint64_t) send_buffer,
-			    4096,
+			    TRANSFER_LENGTH,
 			    NULL,
 			    GNI_MEM_READWRITE, -1, &source_memory_handle);
   if (status != GNI_RC_SUCCESS)
@@ -443,7 +437,7 @@ main (int argc, char **argv)
    * all of the transfers.
    */
 
-  rc = posix_memalign ((void **) &receive_buffer, 4096, 4096);
+  rc = posix_memalign ((void **) &receive_buffer, 4096, TRANSFER_LENGTH);
   assert (rc == 0);
 
   /*
@@ -451,7 +445,7 @@ main (int argc, char **argv)
    */
 
   //memset(receive_buffer, 0, (TRANSFER_LENGTH_IN_BYTES * transfers));
-  memset (receive_buffer, 0, 4096);
+  memset (receive_buffer, 0, TRANSFER_LENGTH);
 
   /*
    * Register the memory associated for the receive buffer with the NIC.
@@ -469,7 +463,7 @@ main (int argc, char **argv)
    */
 
   status = GNI_MemRegister (nic_handle, (uint64_t) receive_buffer,
-			    4096,
+			    TRANSFER_LENGTH,
 			    destination_cq_handle,
 			    GNI_MEM_READWRITE, -1, &receive_memory_handle);
   if (status != GNI_RC_SUCCESS)
@@ -538,24 +532,26 @@ main (int argc, char **argv)
   expected_local_event_id = send_to;
   expected_remote_event_id = receive_from;
 
-  for (i = 0; i < transfers; i++)
+  if (my_rank == 0)
     {
-      send_post_id =
-	((uint64_t) expected_local_event_id * POST_ID_MULTIPLIER) + i + 1;
-
-      /*
-       * Initialize the data to be sent.
-       * The source data will look like: 0xddddlllllltttttt
-       *     where: dddd is the actual value
-       *            llllll is the rank for this process
-       *            tttttt is the transfer number
-       */
-
-      data = SEND_DATA + my_id + i + 1;
-      for (j = 0; j < 100; j++)
+      for (i = 0; i < transfers; i++)
 	{
-	  send_buffer[j] = data;
-	}
+	  send_post_id =
+	    ((uint64_t) expected_local_event_id * POST_ID_MULTIPLIER) + i + 1;
+
+	  /*
+	   * Initialize the data to be sent.
+	   * The source data will look like: 0xddddlllllltttttt
+	   *     where: dddd is the actual value
+	   *            llllll is the rank for this process
+	   *            tttttt is the transfer number
+	   */
+
+	  data = SEND_DATA + my_id + i + 1;
+	  for (j = 0; j < 100; j++)
+	    {
+	      send_buffer[j] = data;
+	    }
 
 /*
          * Setup the data request.
@@ -575,333 +571,166 @@ main (int argc, char **argv)
          *    src_cq_hndl is the source complete queue handle.
          */
 
-      rdma_data_desc[i].type = GNI_POST_RDMA_PUT;
-      if (create_destination_cq != 0)
-	{
-	  rdma_data_desc[i].cq_mode = GNI_CQMODE_GLOBAL_EVENT |
-	    GNI_CQMODE_REMOTE_EVENT;
-	}
-      else
-	{
-	  rdma_data_desc[i].cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-	}
-      rdma_data_desc[i].dlvr_mode = GNI_DLVMODE_PERFORMANCE;
-      rdma_data_desc[i].local_addr = send_buffer;
-      rdma_data_desc[i].local_mem_hndl = source_memory_handle;
-      rdma_data_desc[i].remote_addr =
-	remote_memory_handle_array[send_to].addr;
-      rdma_data_desc[i].remote_mem_hndl =
-	remote_memory_handle_array[send_to].mdh;
-      rdma_data_desc[i].length = TRANSFER_LENGTH * 8;
-      rdma_data_desc[i].rdma_mode = 0;
-      rdma_data_desc[i].src_cq_hndl = cq_handle;
-      rdma_data_desc[i].post_id = send_post_id;
-
-      if (v_option)
-	{
-	  fprintf (stdout,
-		   "[%s] Rank: %4i GNI_PostRdma      data transfer: %4i send to:   %4i local addr:  0x%lx remote addr: 0x%lx data: 0x%16lx data length: %4i post_id: %lu\n",
-		   uts_info.nodename, rank_id, (i + 1), send_to,
-		   rdma_data_desc[i].local_addr,
-		   rdma_data_desc[i].remote_addr, data,
-		   (int) (4096 - sizeof (uint64_t)),
-		   rdma_data_desc[i].post_id);
-	}
-
-      /*
-       * Send the data.
-       */
-
-      status =
-	GNI_PostRdma (endpoint_handles_array[send_to], &rdma_data_desc[i]);
-      if (status != GNI_RC_SUCCESS)
-	{
-	  fprintf (stdout,
-		   "[%s] Rank: %4i GNI_PostRdma      data ERROR status: %s (%d)\n",
-		   uts_info.nodename, rank_id, gni_err_str[status], status);
-	  continue;
-	}
-
-
-      if (v_option > 2)
-	{
-	  fprintf (stdout,
-		   "[%s] Rank: %4i GNI_PostRdma      data successful\n",
-		   uts_info.nodename, rank_id);
-	}
-
-      data_transfers_sent++;
-    }				/* end of for loop for transfers */
-
-  if (v_option)
-    {
-
-      /*
-       * Write out all of the output messages.
-       */
-
-      fflush (stdout);
-    }
-
-  /*
-   * Get all of the data completion queue events.
-   */
-
-  if (v_option > 2)
-    {
-      fprintf (stdout,
-	       "[%s] Rank: %4i data transfers complete, checking CQ events\n",
-	       uts_info.nodename, rank_id);
-    }
-
-  for (i = 0; i < data_transfers_sent; i++)
-    {
-      send_post_id =
-	((uint64_t) expected_local_event_id * POST_ID_MULTIPLIER) + i + 1;
-
-      /*
-       * Check the completion queue to verify that the message request has
-       * been sent.  The source completion queue needs to be checked and
-       * events to be removed so that it does not become full and cause
-       * succeeding calls to PostRdma to fail.
-       */
-
-      rc = get_cq_event (cq_handle, uts_info, rank_id, 1, 1, &current_event);
-      if (rc == 0)
-	{
-
-	  /*
-	   * An event was received.
-	   *
-	   * Complete the event, which removes the current event's post
-	   * descriptor from the event queue.
-	   */
-
-	  status =
-	    gni_getcompleted (cq_handle, current_event, &event_post_desc_ptr);
-	  if (status != GNI_RC_SUCCESS)
+	  rdma_data_desc[i].type = GNI_POST_RDMA_PUT;
+	  if (create_destination_cq != 0)
 	    {
-	      fprintf (stdout,
-		       "[%s] Rank: %4i GNI_GetCompleted  data ERROR status: %s (%d)\n",
-		       uts_info.nodename, rank_id, gni_err_str[status],
-		       status);
-
+	      rdma_data_desc[i].cq_mode = GNI_CQMODE_GLOBAL_EVENT |
+		GNI_CQMODE_REMOTE_EVENT;
 	    }
 	  else
 	    {
-
-	      /*
-	       * Validate the completed request's post id with the expected id.
-	       */
-
-	      if (send_post_id != event_post_desc_ptr->post_id)
-		{
-
-		  /*
-		   * The event's inst_id was not the expected inst_id
-		   * value.
-		   */
-
-		  fprintf (stdout,
-			   "[%s] Rank: %4i Completed data ERROR received post_id: %lu, expected post_id: %lu\n",
-			   uts_info.nodename, rank_id,
-			   event_post_desc_ptr->post_id, send_post_id);
-
-		}
-	      else
-		{
-
-		  if (v_option)
-		    {
-		      fprintf (stdout,
-			       "[%s] Rank: %4i GNI_GetCompleted  data transfer: %4i send to:   %4i remote addr: 0x%lx post_id: %lu\n",
-			       uts_info.nodename, rank_id, (i + 1), send_to,
-			       event_post_desc_ptr->remote_addr,
-			       event_post_desc_ptr->post_id);
-		    }
-
-		}
-
-	      /*
-	       * Validate the current event's instance id with the expected id.
-	       */
-
-	      event_inst_id = GNI_CQ_GET_INST_ID (current_event);
-	      if (event_inst_id != expected_local_event_id)
-		{
-
-		  /*
-		   * The event's inst_id was not the expected inst_id
-		   * value.
-		   */
-
-		  fprintf (stdout,
-			   "[%s] Rank: %4i CQ Event data ERROR received inst_id: %u, expected inst_id: %u in event_data\n",
-			   uts_info.nodename, rank_id, event_inst_id,
-			   expected_local_event_id);
-
-		}
-	      else
-		{
-
-		}
+	      rdma_data_desc[i].cq_mode = GNI_CQMODE_GLOBAL_EVENT;
 	    }
-	}
+	  rdma_data_desc[i].dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+	  rdma_data_desc[i].local_addr = send_buffer;
+	  rdma_data_desc[i].local_mem_hndl = source_memory_handle;
+	  rdma_data_desc[i].remote_addr =
+	    remote_memory_handle_array[send_to].addr;
+	  rdma_data_desc[i].remote_mem_hndl =
+	    remote_memory_handle_array[send_to].mdh;
+	  rdma_data_desc[i].length = 256 * i * 8;
+	  rdma_data_desc[i].rdma_mode = 0;
+	  rdma_data_desc[i].src_cq_hndl = cq_handle;
+	  rdma_data_desc[i].post_id = send_post_id;
+	  transfer_size = rdma_data_desc[i].length;
+/*
+        if (v_option) {
+            fprintf(stdout,
+                    "[%s] Rank: %4i GNI_PostRdma      data transfer: %4i send to:   %4i local addr:  0x%lx remote addr: 0x%lx data: 0x%16lx data length: %4i post_id: %lu\n",
+                    uts_info.nodename, rank_id, (i + 1), send_to,
+                    rdma_data_desc[i].local_addr,
+                    rdma_data_desc[i].remote_addr, data,
+                    (int) (4096 - sizeof(uint64_t)),
+                    rdma_data_desc[i].post_id);
+        }
 
-    }
+         * Send the data.
+         */
+	  gettimeofday (&t0, 0);
+	  status =
+	    GNI_PostRdma (endpoint_handles_array[send_to],
+			  &rdma_data_desc[i]);
+	  if (status != GNI_RC_SUCCESS)
+	    {
+	      fprintf (stdout,
+		       "[%s] Rank: %4i GNI_PostRdma      data ERROR status: %s (%d)\n",
+		       uts_info.nodename, rank_id, gni_err_str[status],
+		       status);
+	      continue;
+	    }
 
-  if (v_option)
-    {
 
-      /*
-       * Write out all of the output messages.
-       */
+	  if (v_option > 2)
+	    {
+	      fprintf (stdout,
+		       "[%s] Rank: %4i GNI_PostRdma      data successful\n",
+		       uts_info.nodename, rank_id);
+	    }
 
-      fflush (stdout);
-    }
+	  data_transfers_sent++;
+	  /*
+	   * Get all of the data completion queue events.
+	   */
 
-  if (create_destination_cq != 0)
-    {
+	  send_post_id =
+	    ((uint64_t) expected_local_event_id * POST_ID_MULTIPLIER) + i + 1;
 
-      if (v_option > 2)
-	{
-	  fprintf (stdout,
-		   "[%s] Rank: %4i Wait for destination completion queue events recv from: %4i\n",
-		   uts_info.nodename, rank_id, receive_from);
-	}
+	  /*
+	   * Check the completion queue to verify that the message request has
+	   * been sent.  The source completion queue needs to be checked and
+	   * events to be removed so that it does not become full and cause
+	   * succeeding calls to PostRdma to fail.
+	   */
 
-      /*
-       * Check the completion queue to verify that the data and flag has
-       * been received.  The destination completion queue needs to be
-       * checked and events to be removed so that it does not become full
-       * and cause succeeding events to be lost.
-       */
-
-      for (i = 0; i < transfers; i++)
-	{
-	  rc = get_cq_event (destination_cq_handle, uts_info,
-			     rank_id, 0, 1, &current_event);
+	  rc =
+	    get_cq_event (cq_handle, uts_info, rank_id, 1, 1, &current_event);
 	  if (rc == 0)
 	    {
 
 	      /*
 	       * An event was received.
 	       *
-	       * Validate the current event's instance id with the expected id.
+	       * Complete the event, which removes the current event's post
+	       * descriptor from the event queue.
 	       */
 
-	      event_inst_id = GNI_CQ_GET_INST_ID (current_event);
-	      if (event_inst_id != expected_remote_event_id)
+	      status =
+		gni_getcompleted (cq_handle, current_event,
+				  &event_post_desc_ptr);
+	      if (status != GNI_RC_SUCCESS)
 		{
-
-		  /*
-		   * The event's inst_id was not the expected inst_id
-		   * value.
-		   */
-
 		  fprintf (stdout,
-			   "[%s] Rank: %4i CQ Event destination ERROR received inst_id: %u, expected inst_id: %u in event_data\n",
-			   uts_info.nodename, rank_id, event_inst_id,
-			   expected_remote_event_id);
+			   "[%s] Rank: %4i GNI_GetCompleted  data ERROR status: %s (%d)\n",
+			   uts_info.nodename, rank_id, gni_err_str[status],
+			   status);
 
 		}
 	      else
 		{
 
-		}
-	    }
-	  else if (rc == 2)
-	    {
+		  /*
+		   * Validate the completed request's post id with the expected id.
+		   */
 
-	      /*
-	       * An overrun error occurred while receiving the event.
-	       */
+		  if (send_post_id != event_post_desc_ptr->post_id)
+		    {
 
-	      goto EXIT_WAIT_BARRIER;
-	    }
-	  else
-	    {
+		      /*
+		       * The event's inst_id was not the expected inst_id
+		       * value.
+		       */
 
-	      /*
-	       * An error occurred while receiving the event.
-	       */
+		      fprintf (stdout,
+			       "[%s] Rank: %4i Completed data ERROR received post_id: %lu, expected post_id: %lu\n",
+			       uts_info.nodename, rank_id,
+			       event_post_desc_ptr->post_id, send_post_id);
 
-	      fprintf (stdout,
-		       "[%s] Rank: %4i CQ Event ERROR destination queue did not receieve"
-		       " flag or data event\n", uts_info.nodename, rank_id);
+		    }
+		  else
+		    {
+		      gettimeofday (&t1, 0);
+		      elapsed =
+			(t1.tv_sec - t0.tv_sec) * 1000000LL + t1.tv_usec -
+			t0.tv_usec;
+		      fprintf (stdout, "rank: %d  bytes :%ld speed: %lf MB/s \n", my_rank, transfer_size, (double) (transfer_size * 1000000) / (double) (elapsed * 1048576));	/* make microsec to sec, bytes to MB */
+		      fflush (stdout);
+/*
 
-	      goto EXIT_WAIT_BARRIER;
-	    }
-	}
+                    if (v_option) {
+                        fprintf(stdout,
+                                "[%s] Rank: %4i GNI_GetCompleted  data transfer: %4i send to:   %4i remote addr: 0x%lx post_id: %lu\n",
+                                uts_info.nodename, rank_id, (i + 1), send_to,
+                                event_post_desc_ptr->remote_addr,
+                                event_post_desc_ptr->post_id);
+                    }
+*/
 
-      if (v_option)
-	{
+		    }
 
-	  /*
-	   * Write out all of the output messages.
-	   */
+		  /*
+		   * Validate the current event's instance id with the expected id.
+		   */
 
-	  fflush (stdout);
-	}
-    }
+		  event_inst_id = GNI_CQ_GET_INST_ID (current_event);
+		  if (event_inst_id != expected_local_event_id)
+		    {
 
+		      /*
+		       * The event's inst_id was not the expected inst_id
+		       * value.
+		       */
 
-  for (i = 0; i < transfers; i++)
-    {
+		      fprintf (stdout,
+			       "[%s] Rank: %4i CQ Event data ERROR received inst_id: %u, expected inst_id: %u in event_data\n",
+			       uts_info.nodename, rank_id, event_inst_id,
+			       expected_local_event_id);
 
-      /*
-       * Detemine what the received data will look like.
-       * The received data will look like: 0xddddrrrrrrtttttt
-       *     where: dddd is the actual value
-       *            rrrrrr is the rank of the remote process,
-       *                   that is sending to this process
-       *            tttttt is the transfer number
-       */
+		    }
 
-      receive_data = SEND_DATA + my_receive_from + i + 1;
-
-      /*
-       * Verify the received data.
-       * The first element in the buffer is the flag.
-       */
-
-
-      for (j = 1; j < TRANSFER_LENGTH; j++)
-	{
-	  if (receive_buffer[j + (TRANSFER_LENGTH * i)] != receive_data)
-	    {
-
-	      /*
-	       * The data was not what was expected.
-	       */
-
-	      fprintf (stdout,
-		       "[%s] Rank: %4i Received data ERROR in transfer: %4i element: %4i (address %p)"
-		       " received data: 0x%016lx expected data: 0x%016lx\n",
-		       uts_info.nodename, rank_id, (i + 1),
-		       j + (TRANSFER_LENGTH * i),
-		       &(receive_buffer[j + (TRANSFER_LENGTH * i)]),
-		       receive_buffer[j + (TRANSFER_LENGTH * i)],
-		       receive_data);
-	    }
-	  else if (j == 1)
-	    {
-	      if (v_option)
-		{
-		  fprintf (stdout,
-			   "[%s] Rank: %4i Received          data transfer: %4i recv from: %4i remote addr: %p data: 0x%016lx\n",
-			   uts_info.nodename, rank_id, (i + 1),
-			   (int) ((receive_buffer
-				   [j + (TRANSFER_LENGTH * i)] >> 24)
-				  & 0xffffff),
-			   &receive_buffer[j + (TRANSFER_LENGTH * i)],
-			   receive_buffer[j + (TRANSFER_LENGTH * i)]);
 		}
 	    }
 
-
 	}
-
     }
 
   if (v_option)
@@ -910,6 +739,103 @@ main (int argc, char **argv)
       /*
        * Write out all of the output messages.
        */
+
+      fflush (stdout);
+    }
+
+  if (my_rank == 1)
+    {
+      if (create_destination_cq != 0)
+	{
+
+	  if (v_option > 2)
+	    {
+	      fprintf (stdout,
+		       "[%s] Rank: %4i Wait for destination completion queue events recv from: %4i\n",
+		       uts_info.nodename, rank_id, receive_from);
+	    }
+
+	  /*
+	   * Check the completion queue to verify that the data and flag has
+	   * been received.  The destination completion queue needs to be
+	   * checked and events to be removed so that it does not become full
+	   * and cause succeeding events to be lost.
+	   */
+
+	  for (i = 0; i < transfers; i++)
+	    {
+	      rc = get_cq_event (destination_cq_handle, uts_info,
+				 rank_id, 0, 1, &current_event);
+	      if (rc == 0)
+		{
+
+		  /*
+		   * An event was received.
+		   *
+		   * Validate the current event's instance id with the expected id.
+		   */
+
+		  event_inst_id = GNI_CQ_GET_INST_ID (current_event);
+		  if (event_inst_id != expected_remote_event_id)
+		    {
+
+		      /*
+		       * The event's inst_id was not the expected inst_id
+		       * value.
+		       */
+
+		      fprintf (stdout,
+			       "[%s] Rank: %4i CQ Event destination ERROR received inst_id: %u, expected inst_id: %u in event_data\n",
+			       uts_info.nodename, rank_id, event_inst_id,
+			       expected_remote_event_id);
+
+		    }
+		  else
+		    {
+
+		    }
+		}
+	      else if (rc == 2)
+		{
+
+		  /*
+		   * An overrun error occurred while receiving the event.
+		   */
+
+		  goto EXIT_WAIT_BARRIER;
+		}
+	      else
+		{
+
+		  /*
+		   * An error occurred while receiving the event.
+		   */
+
+		  fprintf (stdout,
+			   "[%s] Rank: %4i CQ Event ERROR destination queue did not receieve"
+			   " flag or data event\n",
+			   uts_info.nodename, rank_id);
+
+		  goto EXIT_WAIT_BARRIER;
+		}
+	    }
+
+	  if (v_option)
+	    {
+
+	      /*
+	       * Write out all of the output messages.
+	       */
+
+	      fflush (stdout);
+	    }
+	}
+    }
+
+
+
+  if (v_option)
+    {
 
       fflush (stdout);
     }

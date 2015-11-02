@@ -4,10 +4,10 @@
 SHELL   = /bin/sh
 CC=gcc
 #GNI_HEADER=/opt/cray/gni-headers/default/include
-GNI_HEADER=/home/smukher/gni-headers/cray-gni-headers-2.1/include
-WHITEDB=/home/smukher/hobbes/whitedb-0.7.3
-HOBBS=/home/smukher/hobbes/libhobbes
-XPMEM=/home/smukher/xpmem
+GNI_HEADER=/lscratch2/smukher/new-prgenv/kgni-header-driver/cray-gni-headers-4.0/include
+WHITEDB=/lscratch2/smukher/new-hobbes-LANL-cray/hobbes/whitedb-0.7.3
+HOBBS=/lscratch2/smukher/new-hobbes-LANL-cray/hobbes/libhobbes
+XPMEM=/lscratch2/smukher/new-hobbes-LANL-cray/xpmem
 UGNI=/opt/cray/ugni/default/lib64
 ALPS=/opt/cray/alps/default
 PMI=/opt/cray/pmi/default

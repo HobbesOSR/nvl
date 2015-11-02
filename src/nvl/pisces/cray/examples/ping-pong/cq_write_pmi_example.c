@@ -31,7 +31,7 @@ int passed = 0;
 #define CACHELINE_MASK            0x3F	/* 64 byte cacheline */
 #define NUMBER_OF_TRANSFERS       10
 #define SEND_DATA                 0xee0000000000
-#define TRANSFER_LENGTH_IN_BYTES  4096 
+#define TRANSFER_LENGTH_IN_BYTES  4096
 
 typedef struct
 {
@@ -356,9 +356,9 @@ main (int argc, char **argv)
   /*
    * Get all of the NIC address for all of the ranks.
    */
-  fprintf(stderr, "before gather_nic_addresses\n");
+  fprintf (stderr, "before gather_nic_addresses\n");
   all_nic_addresses = (unsigned int *) gather_nic_addresses ();
-  fprintf(stderr, "after  gather_nic_addresses\n");
+  fprintf (stderr, "after  gather_nic_addresses\n");
 
   /*
    * Create the endpoints to all of the ranks.
@@ -442,8 +442,7 @@ main (int argc, char **argv)
    * Allocate the buffer that will receive the data.
    */
 
-  rc =
-    posix_memalign ((void **) &receive_buffer, 4096, 4096);
+  rc = posix_memalign ((void **) &receive_buffer, 4096, 4096);
   assert (rc == 0);
 
   /*

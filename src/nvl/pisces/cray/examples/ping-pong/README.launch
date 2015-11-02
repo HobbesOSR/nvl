@@ -1,3 +1,3 @@
 
-LD_PRELOAD=/home/smukher/nvl/src/nvl/pisces/cray/xpmem_chnl_client.so LD_LIBRARY_PATH=/home/smukher/petlib:/home/smukher/hobbes/whitedb-0.7.3/Main/.libs:/home/smukher/hobbes/libhobbes:/home/smukher/xpmem/lib ./ping_pong -vvv
+LD_PRELOAD=/lscratch2/smukher/new-hobbes-LANL-cray/nvl/src/nvl/pisces/cray/xpmem_chnl_client.so LD_LIBRARY_PATH=/lscratch2/smukher/new-hobbes-LANL-cray/petlib:/lscratch2/smukher/new-hobbes-LANL-cray/hobbes/whitedb-0.7.3/Main/.libs:/lscratch2/smukher/new-hobbes-LANL-cray/hobbes/libhobbes:/lscratch2/smukher/new-hobbes-LANL-cray/xpmem/lib ./ping_pong -v
 
