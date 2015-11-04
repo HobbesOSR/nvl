@@ -42,10 +42,25 @@
 int my_rank, comm_size;
 
 struct utsname uts_info;
+#define NUMBER_OF_TRANSFERS 10
+
+int transfer;
+uint64_t  cqin[NUMBER_OF_TRANSFERS][2];
 
 /*  This is to implement utility functions
  * allgather gather the requested information from all of the ranks.
  */
+uint64_t
+now(void) {
+        int rc;
+        struct timeval tv;
+
+        rc = gettimeofday(&tv, NULL);
+        if (rc != 0) abort();
+
+        return (tv.tv_sec * 1e6) + tv.tv_usec;
+}
+
 
 int client_fd, pmi_fd;
 xemem_segid_t cmdq_segid;
@@ -376,6 +391,7 @@ pack_args (unsigned long int request, void *args)
 {
   gni_nic_setattr_args_t *nic_set_attr1;
   gni_mem_register_args_t *mem_reg_attr;
+  gni_mem_register_args_t *mem_reg_attr1;
   gni_cq_destroy_args_t *cq_destroy_args;
   gni_cq_create_args_t *cq_create_args;
   gni_cq_wait_event_args_t *cq_wait_event_args;
@@ -420,6 +436,7 @@ pack_args (unsigned long int request, void *args)
       printf ("after NIC attach  cookie : %d ptag :%d  rank :%d\n",
 	      nic_set_attr1->cookie, nic_set_attr1->ptag,
 	      nic_set_attr1->rank);
+	transfer = 0;
       break;
     case GNI_IOC_CQ_CREATE:
       cq_create_args =
@@ -454,9 +471,8 @@ pack_args (unsigned long int request, void *args)
       /* If memory is segmented we just loop through the list 
          segments[0].address && segments[0].length
        */
-      mem_reg_attr =
-	(gni_mem_register_args_t *) malloc (sizeof (gni_mem_register_args_t));
-      memcpy (mem_reg_attr, args, sizeof (gni_mem_register_args_t));
+      mem_reg_attr = args;
+ //     memcpy (mem_reg_attr, args, sizeof (gni_mem_register_args_t));
       //printf ("client ioctl for mem register xemem segid is: %p, len %d\n",
 //            mem_reg_attr->address, mem_reg_attr->length);
       //list_print(mt);
@@ -584,6 +600,7 @@ pack_args (unsigned long int request, void *args)
 	      post_rdma_args->post_desc, sizeof (gni_post_descriptor_t));
       memcpy (rdma_post_tmpbuf + sizeof (gni_post_descriptor_t),
 	      post_rdma_args, sizeof (gni_post_rdma_args_t));
+	cqin[transfer][0] = now();
       cmd =
 	hcq_cmd_issue (hcq, GNI_IOC_POST_RDMA,
 		       sizeof (gni_post_rdma_args_t) +
@@ -591,6 +608,8 @@ pack_args (unsigned long int request, void *args)
 
       rc = hcq_get_ret_data (hcq, cmd, &len);
       hcq_cmd_complete (hcq, cmd);
+	cqin[transfer][1] = now();
+	transfer++;
       free (rdma_post_tmpbuf);
       break;
 
@@ -701,6 +720,7 @@ int
 unpack_args (unsigned long int request, void *args)
 {
   gni_nic_setattr_args_t *nic_set_attr;
+	int i;
   gni_cq_wait_event_args_t *cq_wait_event_args;
   switch (request)
     {
@@ -923,6 +943,13 @@ unpack_args (unsigned long int request, void *args)
     case PMI_IOC_GETSIZE:
       break;
     case PMI_IOC_FINALIZE:
+      fprintf (stderr, "unpack PMI Finalize client case\n");
+	if(my_rank == 0){	
+	for (i = 0; i< NUMBER_OF_TRANSFERS; i++){
+		fprintf(stderr, "transfer# = %d start time :%llu  end: %llu   elapsed %llu\n", i , cqin[i][0], cqin[i][1], cqin[i][1] - cqin[i][0]);
+	}
+	}
+
       break;
     case PMI_IOC_BARRIER:
       break;

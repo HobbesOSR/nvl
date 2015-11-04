@@ -51,9 +51,25 @@
 #define THREAD_NUM_BITS  3
 #define THREAD_NUM_SHIFT (CPU_NUM_SHIFT-THREAD_NUM_BITS)
 #define THREAD_NUM_MASK  0x7
+#define NUMBER_OF_TRANSFERS  10
 
 struct memseg_list *mt = NULL;
+int transfer;
+int global_rank;
 
+
+uint64_t
+now(void) {
+        int rc;
+        struct timeval tv;
+
+        rc = gettimeofday(&tv, NULL);
+        if (rc != 0) abort();
+
+        return (tv.tv_sec * 1e6) + tv.tv_usec;
+}
+
+uint64_t cqserv[NUMBER_OF_TRANSFERS][2];
 
 #ifndef HEXDUMP_COLS
 #define HEXDUMP_COLS 8
@@ -323,6 +339,7 @@ main (int argc, char *argv[])
 
   rc = PMI_Get_rank (&my_rank);
   assert (rc == PMI_SUCCESS);
+  global_rank = my_rank;
 
   hobbes_client_init ();
 
@@ -389,6 +406,7 @@ main (int argc, char *argv[])
 	  switch (cmd_code)
 	    {
 	    case GNI_IOC_NIC_SETATTR:
+		transfer = 0;
 
 	      nic_set_attr.modes = 0;
 
@@ -454,7 +472,8 @@ main (int argc, char *argv[])
 		  /* one segment to be registered */
 		  buffer =
 		    (void *) list_find_vaddr_by_segid (mt,
-						       &mem_register_attr->address);
+						       &mem_register_attr->
+						       address);
 		  mem_register_attr->address = buffer;
 		}
 	      else
@@ -479,6 +498,7 @@ main (int argc, char *argv[])
 			      mem_register_attr);
 	      break;
 	    case GNI_IOC_POST_RDMA:
+		cqserv[transfer][0] = now();
 
 	      memcpy (&post_desc, data_buf, sizeof (gni_post_descriptor_t));
 	      buffer = data_buf + sizeof (gni_post_descriptor_t);
@@ -511,6 +531,8 @@ main (int argc, char *argv[])
 		  return 0;
 		}
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (rc), &rc);
+		cqserv[transfer][1] = now();
+		transfer++;
 
 	      break;
 
@@ -564,6 +586,11 @@ main (int argc, char *argv[])
 	    case PMI_IOC_FINALIZE:
 	      PMI_Finalize ();
 	      hcq_cmd_return (hcq, cmd, ret, 0, NULL);
+		if(global_rank == 0){
+		for (i=0; i< NUMBER_OF_TRANSFERS; i++) {
+			fprintf(stdout, "transfer #= %d, start = %llu  end %llu  elapsed %llu\n", transfer, cqserv[i][0], cqserv[i][1], cqserv[i][1] - cqserv[i][0]);
+		}
+		}
 	      break;
 	    case PMI_IOC_MALLOC:
 
