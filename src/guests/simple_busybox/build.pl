@@ -361,6 +361,7 @@ if ($program_args{build_pisces}) {
 		copy "$BASEDIR/$CONFIGDIR/pisces/palacios_config", ".config" or die;
 		system "make oldconfig";
 	}
+	system "make clean";
 	system "make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 2: Done building pisces/palacios\n";
@@ -375,6 +376,7 @@ if ($program_args{build_pisces}) {
 	# STEP 4: Build petlib. Pisces depends on this.
 	print "CNL: STEP 4: Building pisces/petlib\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/petlib" or die;
+	system "make clean";
 	system "make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 4: Done building pisces/petlib\n";
@@ -382,9 +384,11 @@ if ($program_args{build_pisces}) {
 	# STEP 5: Build XPMEM for host Linux. Pisces depends on this.
 	print "CNL: STEP 5: Building pisces/xpmem\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/xpmem/mod" or die;
+	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod LINUX_KERN=$BASEDIR/$SRCDIR/$kernel{basename} make clean";
 	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod LINUX_KERN=$BASEDIR/$SRCDIR/$kernel{basename} make";
 	chdir "$BASEDIR" or die;
 	chdir "$SRCDIR/$pisces{src_subdir}/xpmem/lib" or die;
+	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/lib make clean";
 	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/lib make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 5: Done building pisces/xpmem\n";
@@ -392,6 +396,7 @@ if ($program_args{build_pisces}) {
 	# Step 6: Build Pisces for Kitten
 	print "CNL: STEP 6: Building pisces/pisces\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/pisces" or die;
+	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces KERN_PATH=$BASEDIR/$SRCDIR/$kernel{basename} make clean XPMEM=y";
 	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces KERN_PATH=$BASEDIR/$SRCDIR/$kernel{basename} make XPMEM=y";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 6: Done building pisces/pisces\n";
@@ -432,6 +437,7 @@ if ($program_args{build_pisces}) {
 	# Step 11: Build Hobbes Kitten init_task
 	print "CNL: STEP 11: Building pisces/hobbes/lwk_inittask\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/lwk_inittask" or die;
+	system "KITTEN_PATH=../../kitten XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean";
 	system "KITTEN_PATH=../../kitten XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 11: Done building pisces/hobbes/lwk_inittask\n";
@@ -512,6 +518,8 @@ if ($program_args{build_image}) {
 		or die "error 1";
 	system("cp -R $SRCDIR/pisces/pisces/pisces.ko $IMAGEDIR/opt/hobbes") == 0
 		or die "error 2";
+	system("cp -R $SRCDIR/pisces/petlib/hw_status $IMAGEDIR/opt/hobbes") == 0
+		or die "error 2";
 	system("cp -R $SRCDIR/pisces/hobbes/lnx_inittask/lnx_init $IMAGEDIR/opt/hobbes") == 0
 		or die "error 4";
 	system("cp -R $SRCDIR/pisces/hobbes/shell/hobbes $IMAGEDIR/opt/hobbes") == 0
@@ -582,6 +590,7 @@ if ($program_args{build_isoimage}) {
 	system "cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage";
 	system "cp initramfs.gz isoimage/initrd.img";
 	system "echo 'default bzImage initrd=initrd.img console=ttyS0 console=tty0' > isoimage/isolinux.cfg";
+#	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
 #	system "echo 'default bzImage initrd=initrd.img console=hvc0' > isoimage/isolinux.cfg";
 	system "genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage";
 }
