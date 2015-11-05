@@ -48,4 +48,6 @@ echo "Starting dropbear ssh server"
 #node=`echo $ip | cut -d '.' -f 4`
 #ifconfig ib0 172.30.0.$node netmask 255.255.255.0
 
+echo "4 4 1 7" > /proc/sys/kernel/printk
+
 echo "END /etc/init.d/rcS"
