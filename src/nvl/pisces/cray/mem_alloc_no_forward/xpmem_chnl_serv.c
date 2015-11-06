@@ -247,6 +247,37 @@ allgather (void *in, void *out, int len)
   free (tmp_buf);
 }
 
+#define PAGE_SIZE        4096
+#define PAGE_ALIGN(addr) (addr & (PAGE_SIZE - 1))
+
+static void * 
+xemem_attach_address(xemem_apid_t apid,
+                     void       * client_addr,
+                     size_t       size)
+{
+    off_t  offset         = 0;
+    size_t aligned_size   = 0;
+    void * client_aligned = NULL;
+    void * server_aligned = NULL;
+
+    struct xemem_addr addr;
+
+    client_aligned = PAGE_ALIGN(client_addr);
+    offset         = (client_addr - client_aligned);
+    aligned_size   = size + offset;
+    nr_pages       = aligned_size / PAGE_SIZE;
+    if ((aligned_size % PAGE_SIZE) != 0)
+        nr_pages++;
+
+    addr.apid   = apid;
+    addr.offset = 0;
+
+    server_aligned = xemem_attach(addr, nr_pages * PAGE_SIZE, NULL);
+    if (server_aligned == MAP_FAILED)
+        return NULL;
+
+    return (server_aligned + offset);
+}
 
 int
 main (int argc, char *argv[])
@@ -315,7 +346,6 @@ main (int argc, char *argv[])
   void *rdma_post_buf;
   mdh_addr_t *memhdl;
   xemem_apid_t apid;
-  struct xemem_addr r_addr;
 
   rc = PMI_Init (&first_spawned);
   assert (rc == PMI_SUCCESS);
@@ -458,9 +488,10 @@ main (int argc, char *argv[])
 		     (void *) list_find_vaddr_by_segid (mt,
 		     &mem_register_attr->address);
 		   */
+          reg_mem_seg = *((xemem_segid_t *)&(mem_register_attr->mem_hndl));
 		  fprintf (stderr, "Sever mem register find segment %llu\n",
-			   mem_register_attr->address);
-		  apid = xemem_get (mem_register_attr->address, XEMEM_RDWR);
+			   reg_mem_seg);
+		  apid = xemem_get (reg_mem_seg, XEMEM_RDWR);
 		  if (apid <= 0)
 		    {
 		      printf
@@ -469,12 +500,9 @@ main (int argc, char *argv[])
 		    }
 		  fprintf (stderr, "Sever mem register got segment \n");
 
-		  r_addr.apid = apid;
-		  r_addr.offset = 0;
-
 		  buffer =
-		    xemem_attach (r_addr, mem_register_attr->length, NULL);
-		  if (reg_addr == MAP_FAILED)
+		    xemem_attach_address (apid, mem_register_attr->address, mem_register_attr->length);
+		  if (buffer == MAP_FAILED)
 		    {
 		      printf ("xpmem attach for MEM REGISTER failed\n");
 		      xemem_release (apid);

@@ -372,6 +372,26 @@ posix_memalign (void **memptr, size_t alignment, size_t size)
 
 */
 
+#define PAGE_SIZE        4096
+#define PAGE_ALIGN(addr) (addr & (PAGE_SIZE - 1))
+
+static xemem_segid_t 
+xemem_make_address(void * addr,
+                   size_t size)
+{
+    void  * aligned      = NULL;
+    size_t  aligned_size = 0;
+    int     nr_pages     = 0;
+
+    aligned      = PAGE_ALIGN(addr);
+    aligned_size = size + (addr - aligned);
+    nr_pages     = aligned_size / PAGE_SIZE;
+    if ((aligned_size % PAGE_SIZE) != 0)
+        nr_pages++;
+
+    return xemem_make(aligned, nr_pages * PAGE_SIZE, NULL);
+}
+
 int
 pack_args (unsigned long int request, void *args)
 {
@@ -453,22 +473,26 @@ pack_args (unsigned long int request, void *args)
       /* If memory is segmented we just loop through the list 
          segments[0].address && segments[0].length
        */
-      mem_reg_attr =
-	(gni_mem_register_args_t *) malloc (sizeof (gni_mem_register_args_t));
-      memcpy (mem_reg_attr, args, sizeof (gni_mem_register_args_t));
       printf ("client ioctl for mem register vaddr: %p, len %d\n",
-	      mem_reg_attr->address, mem_reg_attr->length);
+	      args->address, args->length);
       //list_print(mt);
       //reg_mem_seg = list_find_segid_by_vaddr (mt, mem_reg_attr->address);
       fprintf (stderr, "client requested vaddr for register %p len %d\n",
 	       mem_reg_attr->address, mem_reg_attr->length);
-      reg_mem_seg =
-	xemem_make (mem_reg_attr->address, mem_reg_attr->length, NULL);
+
+      reg_mem_seg = xemem_make_address(mem_reg_attr->address, mem_reg_attr->length);
+      if (reg_mem_seg == XEMEM_INVALID_SEGID) {
+          fprintf(stderr, "client could not make GNI_IOC_MEM_REGISTER segment\n");
+          break;
+      }
+
       fprintf (stderr, "client made the segment %llu \n", reg_mem_seg);
-      mem_reg_attr->address = (uint64_t) reg_mem_seg;
-      // Now segid actually is 64 bit so push it there
+
+      /* HACK: store segid in mem handle, which is an output parameter */
+      *((xemem_segid_t *)&(mem_reg_attr->mem_hndl)) = reg_mem_seg;
+
       cmd =
-	hcq_cmd_issue (hcq, GNI_IOC_MEM_REGISTER,
+        hcq_cmd_issue (hcq, GNI_IOC_MEM_REGISTER,
 		       sizeof (gni_mem_register_args_t),
 		       (char *) mem_reg_attr);
 
