@@ -190,7 +190,8 @@ for (my $i=0; $i < @packages; $i++) {
 	if ($pkg{package_type} eq "tarball") {
 		if (! -e "$SRCDIR/$pkg{tarball}") {
 			print "CNL: Downloading $pkg{tarball}\n";
-			system ("wget --directory-prefix=$SRCDIR $pkg{url} -O $SRCDIR\/$pkg{tarball}");
+			system ("wget --directory-prefix=$SRCDIR $pkg{url} -O $SRCDIR\/$pkg{tarball}") == 0 
+                          or die "failed to wget $pkg{tarball}";
 		}
 	} elsif ($pkg{package_type} eq "git") {
 		chdir "$SRCDIR" or die;
@@ -203,7 +204,8 @@ for (my $i=0; $i < @packages; $i++) {
 		if (! -e "$pkg{basename}") {
 			for (my $j=0; $j < @{$pkg{clone_cmd}}; $j++) {
 				print "CNL: Running command '$pkg{clone_cmd}[$j]'\n";
-				system ($pkg{clone_cmd}[$j]);
+				system ($pkg{clone_cmd}[$j]) == 0
+                                  or die "failed to clone $pkg{clone_cmd}[$j]";
 			}
 		}
 		chdir "$BASEDIR" or die;
@@ -220,11 +222,14 @@ for (my $i=0; $i < @packages; $i++) {
 	if (! -d "$SRCDIR/$pkg{basename}") {
 		print "CNL: Unpacking $pkg{tarball}\n";
 		if ($pkg{tarball} =~ m/tar\.gz/) {
-			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball}");
+			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball}") == 0
+                          or die "failed to unpack tar $pkg{tarball}";
 		} elsif ($pkg{tarball} =~ m/tar\.bz2/) {
-			system ("tar --directory $SRCDIR -jxvf $SRCDIR/$pkg{tarball}");
+			system ("tar --directory $SRCDIR -jxvf $SRCDIR/$pkg{tarball}") == 0
+                          or die "failed to unpack tar $pkg{tarball}";
 		} elsif ($pkg{tarball} =~ m/tgz/) {
-			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball}");
+			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball}") == 0
+                          or die "failed to unpack tar $pkg{tarball}";
 		} else {
 			die "Unknown tarball type: $pkg{basename}";
 		}
@@ -240,11 +245,11 @@ if ($program_args{build_kernel}) {
 	} else {
 		print "CNL: Using default .config\n";
 		copy "$BASEDIR/$CONFIGDIR/linux_config", ".config" or die;
-		system "make oldconfig";
+		system ("make oldconfig") == 0 or die "failed to make oldconfig";
 	}
-	system "make -j 4 bzImage modules";
-#	system "INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install";
-	system "sudo make modules_install";
+	system ("make -j 4 bzImage modules") == 0 or die "failed to make bzImage or modules";
+#	system ("INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install";
+	system ("sudo make modules_install") == 0 or die "failed to make modules_install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -257,10 +262,10 @@ if ($program_args{build_busybox}) {
 	} else {
 		print "CNL: Using default .config\n";
 		copy "$BASEDIR/$CONFIGDIR/busybox_config", ".config" or die;
-		system "make oldconfig";
+		system ("make oldconfig") == 0 or die "failed to make oldconfig";
 	}
-	system "make";
-	system "make install";
+	system ("make") == 0 or die "failed to make";
+	system ("make install") == 0 or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -268,8 +273,9 @@ if ($program_args{build_busybox}) {
 if ($program_args{build_dropbear}) {
 	print "CNL: Building Dropbear $dropbear{basename}\n";
 	chdir "$SRCDIR/$dropbear{basename}" or die;
-	system "./configure --prefix=/";
-	system "make PROGRAMS=\"dropbear dbclient dropbearkey dropbearconvert scp\" MULTI=1";
+	system ("./configure --prefix=/") == 0 or die "failed to configure";
+	system ("make PROGRAMS=\"dropbear dbclient dropbearkey dropbearconvert scp\" MULTI=1") == 0 or die
+          "failed to make";
 	chdir "$BASEDIR" or die;
 }
 
@@ -277,9 +283,10 @@ if ($program_args{build_dropbear}) {
 if ($program_args{build_libhugetlbfs}) {
 	print "CNL: Building libhugetlbfs $libhugetlbfs{basename}\n";
 	chdir "$SRCDIR/$libhugetlbfs{basename}" or die;
-	system "rm -rf ./_install";
-	system "BUILDTYPE=NATIVEONLY make";
-	system "BUILDTYPE=NATIVEONLY make install DESTDIR=$BASEDIR/$SRCDIR/$libhugetlbfs{basename}/_install";
+	system ("rm -rf ./_install") == 0 or die;
+	system ("BUILDTYPE=NATIVEONLY make") == 0 or die "failed to make";
+	system ("BUILDTYPE=NATIVEONLY make install DESTDIR=$BASEDIR/$SRCDIR/$libhugetlbfs{basename}/_install") == 0
+          or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -289,13 +296,13 @@ if ($program_args{build_numactl}) {
 	chdir "$SRCDIR/$numactl{basename}" or die;
 	my $DESTDIR = "$BASEDIR/$SRCDIR/$numactl{basename}/_install/usr";
 	$DESTDIR =~ s/\//\\\//g;
-	system "sed '/^prefix/s/\\/usr/$DESTDIR/' Makefile > Makefile.cnl";
-	system "mv Makefile Makefile.orig";
-	system "cp Makefile.cnl Makefile";
-	system "make";
-	system "make install";
-	system "mv Makefile.orig Makefile";
-	system "rm -rf ./_install/share";  # don't need manpages
+	system ("sed '/^prefix/s/\\/usr/$DESTDIR/' Makefile > Makefile.cnl") == 0 or die;
+	system ("mv Makefile Makefile.orig") == 0 or die;
+	system ("cp Makefile.cnl Makefile") == 0 or die;
+	system ("make") == 0 or die "failed to make";
+	system ("make install") == 0 or die "failed to install";
+	system ("mv Makefile.orig Makefile") == 0 or die;
+	system ("rm -rf ./_install/share") == 0 or die;  # don't need manpages
 	chdir "$BASEDIR" or die;
 }
 
@@ -303,10 +310,11 @@ if ($program_args{build_numactl}) {
 if ($program_args{build_hwloc}) {
 	print "CNL: Building hwloc $hwloc{basename}\n";
 	chdir "$SRCDIR/$hwloc{basename}" or die;
-	system "rm -rf ./_install";
-	system "./configure --prefix=/usr";
-	system "make";
-	system "make install DESTDIR=$BASEDIR/$SRCDIR/$hwloc{basename}/_install";
+	system ("rm -rf ./_install") == 0 or die;
+	system ("./configure --prefix=/usr") == 0 or die "failed to configure";
+	system ("make") == 0 or die "failed to make";
+	system ("make install DESTDIR=$BASEDIR/$SRCDIR/$hwloc{basename}/_install") == 0
+          or die "failed ot install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -314,7 +322,8 @@ if ($program_args{build_hwloc}) {
 if ($program_args{build_ofed}) {
 	print "CNL: Building OFED $ofed{basename}\n";
 	chdir "$SRCDIR/$ofed{basename}" or die;
-	system "sudo ./install.pl --basic --without-depcheck --kernel-sources $BASEDIR/$SRCDIR/$kernel{basename} --kernel $kernel{version}";
+	system ("sudo ./install.pl --basic --without-depcheck --kernel-sources $BASEDIR/$SRCDIR/$kernel{basename} --kernel $kernel{version}") == 0
+          or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -325,9 +334,10 @@ if ($program_args{build_ompi}) {
 	# This is a horrible hack. We're installing OpenMPI into /opt on the host.
 	# This means we need to be root to do a make install and will possibly screw up the host.
 	# We should really be using chroot or something better.
-	system "LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static --with-verbs=yes";
-	system "make -j 2";
-	system "sudo make install";
+	system ("LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static --with-verbs=yes") == 0
+          or die "failed to configure";
+	system ("make -j 2") == 0 or die "failed to make";
+	system ("sudo make install") == 0 or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -345,9 +355,9 @@ if ($program_args{build_pisces}) {
 	} else {
 		print "CNL: pisces/kitten using default .config\n";
 		copy "$BASEDIR/$CONFIGDIR/pisces/kitten_config", ".config" or die;
-		system "make oldconfig";
+		system ("make oldconfig") == 0 or die "failed to make oldconfig";
 	}
-	system "make";
+	system ("make"); # This will always fail
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 1: Done building pisces/kitten stage 1\n";
 
@@ -359,17 +369,17 @@ if ($program_args{build_pisces}) {
 	} else {
 		print "CNL: pisces/palacios using default .config\n";
 		copy "$BASEDIR/$CONFIGDIR/pisces/palacios_config", ".config" or die;
-		system "make oldconfig";
+		system ("make oldconfig") == 0 or die "failed to make oldconfig";
 	}
 	system "make clean";
-	system "make";
+	system ("make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 2: Done building pisces/palacios\n";
 
 	# STEP 3: Rebuild Kitten... this will now succeed since Palacios has been built.
 	print "CNL: STEP 3: Building pisces/kitten stage 2\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/kitten" or die;
-	system "make";
+	system ("make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 3: Done building pisces/kitten stage 2\n";
 
@@ -377,7 +387,7 @@ if ($program_args{build_pisces}) {
 	print "CNL: STEP 4: Building pisces/petlib\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/petlib" or die;
 	system "make clean";
-	system "make";
+	system ("make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 4: Done building pisces/petlib\n";
 
@@ -385,11 +395,12 @@ if ($program_args{build_pisces}) {
 	print "CNL: STEP 5: Building pisces/xpmem\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/xpmem/mod" or die;
 	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod LINUX_KERN=$BASEDIR/$SRCDIR/$kernel{basename} make clean";
-	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod LINUX_KERN=$BASEDIR/$SRCDIR/$kernel{basename} make";
+	system ("PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/mod LINUX_KERN=$BASEDIR/$SRCDIR/$kernel{basename} make") == 0
+          or die "failed to make";
 	chdir "$BASEDIR" or die;
 	chdir "$SRCDIR/$pisces{src_subdir}/xpmem/lib" or die;
 	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/lib make clean";
-	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/lib make";
+	system ("PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/xpmem/lib make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 5: Done building pisces/xpmem\n";
 
@@ -397,40 +408,42 @@ if ($program_args{build_pisces}) {
 	print "CNL: STEP 6: Building pisces/pisces\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/pisces" or die;
 	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces KERN_PATH=$BASEDIR/$SRCDIR/$kernel{basename} make clean XPMEM=y";
-	system "PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces KERN_PATH=$BASEDIR/$SRCDIR/$kernel{basename} make XPMEM=y";
+	system ("PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/pisces KERN_PATH=$BASEDIR/$SRCDIR/$kernel{basename} make XPMEM=y") == 0
+	  or die;
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 6: Done building pisces/pisces\n";
 
 	# Step 7: Build WhiteDB
 	print "CNL: STEP 7: Building pisces/hobbes/whitedb-0.7.3\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/whitedb-0.7.3" or die;
-	system "autoreconf -fvi";
-	system "./configure --enable-locking=wpspin";
-	system "make";
+	system ("autoreconf -fvi") == 0 or die "failed to autoreconf";
+	system ("./configure --enable-locking=wpspin") == 0 or die "failed to configure";
+	system ("make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 7: Done building pisces/hobbes/whitedb-0.7.3\n";
 
 	# Step 8: Build libhobbes.a
 	print "CNL: STEP 8: Building pisces/hobbes/libhobbes\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/libhobbes" or die;
-	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean";
-	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
+	system ("XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean") == 0 or die "failed to clean";
+	system ("XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 8: Done building pisces/hobbes/libhobbes\n";
 
 	# Step 9: Build libhobbes lnx_init
 	print "CNL: STEP 9: Building pisces/hobbes/lnx_inittask/lnx_init\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/lnx_inittask" or die;
-	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean";
-	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
+	system ("XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean") == 0 or die "failed to clean";
+	# this will allways die
+	system ("XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make") == 0 or die;
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 9: Done building pisces/hobbes/lnx_inittask/lnx_init\n";
 
 	# Step 10: Build libhobbes shell
 	print "CNL: STEP 10: Building pisces/hobbes/shell\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/shell" or die;
-	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean";
-	system "XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
+	system ("XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean") == 0 or die "failed to clean";
+	system ("XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make") == 0 or die;
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 10: Done building pisces/hobbes/shell\n";
 
@@ -438,15 +451,15 @@ if ($program_args{build_pisces}) {
 	print "CNL: STEP 11: Building pisces/hobbes/lwk_inittask\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/lwk_inittask" or die;
 	system "KITTEN_PATH=../../kitten XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make clean";
-	system "KITTEN_PATH=../../kitten XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make";
+	system ("KITTEN_PATH=../../kitten XPMEM_PATH=../../xpmem PALACIOS_PATH=../../palacios PISCES_PATH=../../pisces PETLIB_PATH=../../petlib WHITEDB_PATH=../whitedb-0.7.3 make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 11: Done building pisces/hobbes/lwk_inittask\n";
 
 	# Step 12: Build Hobbes PMI Hello Example App
 	print "CNL: STEP 12: Building pisces/hobbes/examples/apps/pmi/test_pmi_hello\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/hobbes/examples/apps/pmi" or die;
-	system "make clean";
-	system "make";
+	system ("make clean") == 0 or die "failed to clean";
+	system ("make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 12: Done building pisces/hobbes/examples/apps/pmi/test_pmi_hello\n";
 }
@@ -456,36 +469,36 @@ if ($program_args{build_pisces}) {
 # Build Initramfs Image
 ##############################################################################
 if ($program_args{build_image}) {
-	#system "rm -rf $IMAGEDIR/*";
+	#system ("rm -rf $IMAGEDIR/*";
 
 	# Create some directories needed for stuff
-	system "mkdir -p $IMAGEDIR/etc";
+	system ("mkdir -p $IMAGEDIR/etc");
 
 	# Busybox
-	system "cp -R $SRCDIR/$busybox{basename}/_install/* $IMAGEDIR/";
-	system "ln -sf /bin/busybox $IMAGEDIR/bin/cut";
-	system "ln -sf /bin/busybox $IMAGEDIR/bin/env";
-	system "ln -sf /bin/gawk $IMAGEDIR/bin/awk";
-	system "cp $IMAGEDIR/bin/busybox $IMAGEDIR/bin/busybox_root";
-	system "ln -sf /bin/busybox_root $IMAGEDIR/bin/su";
-	system "ln -sf /bin/busybox_root $IMAGEDIR/bin/ping";
-	system "ln -sf /bin/busybox_root $IMAGEDIR/bin/ping6";
-	system "ln -sf /bin/busybox_root $IMAGEDIR/usr/bin/traceroute";
-	system "ln -sf /bin/busybox_root $IMAGEDIR/usr/bin/traceroute6";
+	system ("cp -R $SRCDIR/$busybox{basename}/_install/* $IMAGEDIR/");
+	system ("ln -sf /bin/busybox $IMAGEDIR/bin/cut");
+	system ("ln -sf /bin/busybox $IMAGEDIR/bin/env");
+	system ("ln -sf /bin/gawk $IMAGEDIR/bin/awk");
+	system ("cp $IMAGEDIR/bin/busybox $IMAGEDIR/bin/busybox_root");
+	system ("ln -sf /bin/busybox_root $IMAGEDIR/bin/su");
+	system ("ln -sf /bin/busybox_root $IMAGEDIR/bin/ping");
+	system ("ln -sf /bin/busybox_root $IMAGEDIR/bin/ping6");
+	system ("ln -sf /bin/busybox_root $IMAGEDIR/usr/bin/traceroute");
+	system ("ln -sf /bin/busybox_root $IMAGEDIR/usr/bin/traceroute6");
 
 	# Dropbear
-	system "cp $SRCDIR/$dropbear{basename}/dropbearmulti $IMAGEDIR/bin";
-	system "cp -R $CONFIGDIR/dropbear_files/etc/dropbear $IMAGEDIR/etc";
+	system ("cp $SRCDIR/$dropbear{basename}/dropbearmulti $IMAGEDIR/bin");
+	system ("cp -R $CONFIGDIR/dropbear_files/etc/dropbear $IMAGEDIR/etc");
 	chdir  "$BASEDIR/$IMAGEDIR/bin" or die;
-	system "ln -s dropbearmulti dropbearconvert";
-	system "ln -s dropbearmulti dropbearkey";
+	system ("ln -s dropbearmulti dropbearconvert");
+	system ("ln -s dropbearmulti dropbearkey");
 	# Use OpenSSH clients, rather than dropbear clients so that OpenSSH generated keys work.
-	system "ln -s /usr/bin/scp scp";
-	system "ln -s /usr/bin/ssh ssh";
+	system ("ln -s /usr/bin/scp scp");
+	system ("ln -s /usr/bin/ssh ssh");
 	chdir  "$BASEDIR/$IMAGEDIR/sbin" or die;
-	system "ln -s ../bin/dropbearmulti dropbear";
+	system ("ln -s ../bin/dropbearmulti dropbear");
 	chdir  "$BASEDIR/$IMAGEDIR/usr/bin" or die;
-	system "ln -s ../../bin/dropbearmulti dbclient";
+	system ("ln -s ../../bin/dropbearmulti dbclient");
 	chdir  "$BASEDIR" or die;
 
 	# Use rsync to merge in skeleton overlay
@@ -538,46 +551,46 @@ if ($program_args{build_image}) {
 		or die "error 11";
 
 	# Files copied from build host
-	system "cp /etc/localtime $IMAGEDIR/etc";
-	system "cp /lib64/libnss_files.so.* $IMAGEDIR/lib64";
-	system "cp /usr/bin/ldd $IMAGEDIR/usr/bin";
-	system "cp /usr/bin/strace $IMAGEDIR/usr/bin";
-	system "cp /usr/bin/ssh $IMAGEDIR/usr/bin";
-	system "cp /usr/bin/scp $IMAGEDIR/usr/bin";
-	system "cp -R /usr/share/terminfo $IMAGEDIR/usr/share";
+	system ("cp /etc/localtime $IMAGEDIR/etc");
+	system ("cp /lib64/libnss_files.so.* $IMAGEDIR/lib64");
+	system ("cp /usr/bin/ldd $IMAGEDIR/usr/bin");
+	system ("cp /usr/bin/strace $IMAGEDIR/usr/bin");
+	system ("cp /usr/bin/ssh $IMAGEDIR/usr/bin");
+	system ("cp /usr/bin/scp $IMAGEDIR/usr/bin");
+	system ("cp -R /usr/share/terminfo $IMAGEDIR/usr/share");
 
 	# Infiniband files copied from build host
-	system "cp -R /etc/libibverbs.d $IMAGEDIR/etc";
-	system "cp /usr/lib64/libcxgb4-rdmav2.so $IMAGEDIR/usr/lib64";
-	system "cp /usr/lib64/libocrdma-rdmav2.so $IMAGEDIR/usr/lib64";
-	system "cp /usr/lib64/libcxgb3-rdmav2.so $IMAGEDIR/usr/lib64";
-	system "cp /usr/lib64/libnes-rdmav2.so $IMAGEDIR/usr/lib64";
-	system "cp /usr/lib64/libmthca-rdmav2.so $IMAGEDIR/usr/lib64";
-	system "cp /usr/lib64/libmlx4-rdmav2.so $IMAGEDIR/usr/lib64";
-	system "cp /usr/lib64/libmlx5-rdmav2.so $IMAGEDIR/usr/lib64";
-	system "cp /usr/bin/ibv_devices $IMAGEDIR/usr/bin";
-	system "cp /usr/bin/ibv_devinfo $IMAGEDIR/usr/bin";
-	system "cp /usr/bin/ibv_rc_pingpong $IMAGEDIR/usr/bin";
+	system ("cp -R /etc/libibverbs.d $IMAGEDIR/etc");
+	system ("cp /usr/lib64/libcxgb4-rdmav2.so $IMAGEDIR/usr/lib64");
+	system ("cp /usr/lib64/libocrdma-rdmav2.so $IMAGEDIR/usr/lib64");
+	system ("cp /usr/lib64/libcxgb3-rdmav2.so $IMAGEDIR/usr/lib64");
+	system ("cp /usr/lib64/libnes-rdmav2.so $IMAGEDIR/usr/lib64");
+	system ("cp /usr/lib64/libmthca-rdmav2.so $IMAGEDIR/usr/lib64");
+	system ("cp /usr/lib64/libmlx4-rdmav2.so $IMAGEDIR/usr/lib64");
+	system ("cp /usr/lib64/libmlx5-rdmav2.so $IMAGEDIR/usr/lib64");
+	system ("cp /usr/bin/ibv_devices $IMAGEDIR/usr/bin");
+	system ("cp /usr/bin/ibv_devinfo $IMAGEDIR/usr/bin");
+	system ("cp /usr/bin/ibv_rc_pingpong $IMAGEDIR/usr/bin");
 
 	# Find and copy all shared library dependencies
 	copy_libs($IMAGEDIR);
 
 	# Build the guest initramfs image
 	# Fixup permissions, need to copy everything to a tmp directory
-	system "cp -R $IMAGEDIR $IMAGEDIR\_tmp";
-	system "sudo chown -R root.root $IMAGEDIR\_tmp";
-	system "sudo chmod +s $IMAGEDIR\_tmp/bin/busybox_root";
-	system "sudo chmod 777 $IMAGEDIR\_tmp/tmp";
-	system "sudo chmod +t $IMAGEDIR\_tmp/tmp";
+	system ("cp -R $IMAGEDIR $IMAGEDIR\_tmp");
+	system ("sudo chown -R root.root $IMAGEDIR\_tmp");
+	system ("sudo chmod +s $IMAGEDIR\_tmp/bin/busybox_root");
+	system ("sudo chmod 777 $IMAGEDIR\_tmp/tmp");
+	system ("sudo chmod +t $IMAGEDIR\_tmp/tmp");
 	chdir  "$IMAGEDIR\_tmp" or die;
-	system "sudo find . | sudo cpio -H newc -o > $BASEDIR/initramfs.cpio";
+	system ("sudo find . | sudo cpio -H newc -o > $BASEDIR/initramfs.cpio");
 	chdir  "$BASEDIR" or die;
-	system "cat initramfs.cpio | gzip > initramfs.gz";
-	system "rm initramfs.cpio";
-	system "sudo rm -rf $IMAGEDIR\_tmp";
+	system ("cat initramfs.cpio | gzip > initramfs.gz");
+	system ("rm initramfs.cpio");
+	system ("sudo rm -rf $IMAGEDIR\_tmp");
 
 	# As a convenience, copy Linux bzImage to top level
-	system "cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage bzImage";
+	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage bzImage");
 }
 
 
@@ -585,14 +598,13 @@ if ($program_args{build_image}) {
 # Build an ISO Image
 ##############################################################################
 if ($program_args{build_isoimage}) {
-	system "mkdir -p isoimage";
-	system "cp $ISOPATH isoimage";
-	system "cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage";
-	system "cp initramfs.gz isoimage/initrd.img";
-	system "echo 'default bzImage initrd=initrd.img console=ttyS0 console=tty0' > isoimage/isolinux.cfg";
+	system ("mkdir -p isoimage");
+	system ("cp $ISOPATH isoimage");
+	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage");
+	system ("cp initramfs.gz isoimage/initrd.img");
+	system ("echo 'default bzImage initrd=initrd.img console=ttyS0 console=tty0' > isoimage/isolinux.cfg");
 #	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
-#	system "echo 'default bzImage initrd=initrd.img console=hvc0' > isoimage/isolinux.cfg";
-	system "genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage";
+	system ("genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage");
 }
 
 
@@ -600,5 +612,5 @@ if ($program_args{build_isoimage}) {
 # Build a Palacios Guest Image for the NVL (xml config file + isoimage)
 ##############################################################################
 if ($program_args{build_nvl_guest}) {
-        system "../../nvl/palacios/utils/guest_creator/build_vm config/nvl_guest.xml -o image.img"
+        system ("../../nvl/palacios/utils/guest_creator/build_vm config/nvl_guest.xml -o image.img");
 }
