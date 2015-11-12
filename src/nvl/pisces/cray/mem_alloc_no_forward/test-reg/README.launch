@@ -1,0 +1,8 @@
+#Start master DB on client compute node upon login. i.e: ssh -l root c0-0c0s2n1;  ./start_leviathon.sh
+# Start server proxy process via aprun. i.e: on login node (i.e: hobbesxt)  #aprun -n1 -N1 -L 4
+# start memory registration example below  launching this README.launch
+
+
+LD_LIBRARY_PATH=/lscratch2/smukher/new-hobbes-LANL-cray/petlib:/lscratch2/smukher/new-hobbes-LANL-cray/hobbes/whitedb-0.7.3/Main/.libs:/lscratch2/smukher/new-hobbes-LANL-cray/hobbes/libhobbes:/lscratch2/smukher/new-hobbes-LANL-cray/xpmem/lib 
+
+LD_PRELOAD=/lscratch2/smukher/new-hobbes-LANL-cray/nvl/src/nvl/pisces/cray/trial-memreg/xpmem_chnl_client.so ./mem_reg
