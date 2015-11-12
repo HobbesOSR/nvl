@@ -107,6 +107,11 @@ so it needs to be recompiled, which is a royal pain.  Cray's Gemini
 kGNI driver also needs to be recompiled.  Recompiling Lustre and Gemini
 kernel modules appears to be enough to get a compute node to boot.
 
+To rebuild KGNI driver:
+    cd cray-gni-1.0/gemini/kgni
+    # Edit Kbuild to set appropriate paths
+    make -C /home/ktpedre/cray_cnos/linux-3.0.101-0.31.1_1.0502.8394 M=$PWD
+
 
 ==========================================================================
 To push palacios changes to Pitt tree on essex, must have a valid ssh key
