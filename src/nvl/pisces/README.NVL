@@ -1,58 +1,97 @@
-Steps for building Pisces
+Steps for building Pisces with Leviathan
+========================================
 
 1. Configure and build Kitten
-     cp nvl/configs/pisces/kitten.config .config
+     cd src/nvl/kitten
+     cp ../../../configs/pisces/kitten.config .
      make
+
 
 2. Configure and build Palacios
-     cp nvl/configs/pisces/palacios.config .config
+     cd src/nvl/pisces/palacios
+     cp ../../../../configs/pisces/palacios.config .config
      make
+
 
 3. Rebuild Kitten to statically link in Palacios library
-     cd kitten
+     cd src/nvl/kitten
      make
 
-4. Configure and build Pisces
+
+4. Build Petlib
+     cd src/nvl/pisces/petos
+     make
+
+
+5. Build XEMEM kernel module
+     # Edit Makefile, set KERN_PATH to point to your kernel build tree.
+     cd src/nvl/pisces/xpmem/mod
+     make
+
+
+6. Configure and build Pisces
      # Edit Makefile, set KERN_PATH to point to your kernel build tree.
      # Be sure to add XPMEM=y to make line.
-     KERN_PATH = /home/hobbes/hobbes/cray_kernel
+     cd src/nvl/pisces/pisces
      make XPMEM=y
 
-5. Configure and build host XPMEM module
-     # Edit mod/Makefile, set KERN_PATH to point to your kernel build tree.
-     KERN_PATH = /home/hobbes/hobbes/cray_kernel
+
+7. Configure and build Leviathan / libhobbes.a
+     # Edit build.cfg, set PARENT_PATH to root of hobbes directory
+     cd src/nvl/pisces/hobbes/libhobbes
+     ./setup_leviathan.sh
      make
 
-6. Copy everything to your host image, or somewhere accessible from your host:
 
-     scp pisces/xpmem/mod/xpmem.ko ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
-     scp pisces/xpmem/test/*       ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
-     scp pisces/pisces/pisces.ko   ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
-     scp pisces/pisces/linux_usr/* ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
-     scp kitten/vmlwk.bin          ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
-     scp kitten/user/pisces/pisces ktpedre@curie1:/home/ktpedre/nvl-feb15/pisces
+8. Configure and build Leviathan / hobbes shell
+     cd src/nvl/pisces/hobbes/shell
+     make
 
-7. Boot your host OS, load Pisces module, use Pisces tools to create envlaves
-     insmod xpmem.ko
-     insmod pisces.ko
-     pisces_load vmlwk.bin pisces "console=pisces"
-     pisces_launch /dev/pisces-enclave0
 
-     # After enclave is launched, add CPU and memory to it
+9. Configure and build Leviathan / lwk_init
+     cd src/nvl/pisces/hobbes/lwk_inittask
+     make
 
-     # Add one block of memory. By default each block is 128 MB
-     pisces_ctrl --mem=1 /dev/pisces-enclave0
 
-     # Add a block of memory from NUMA zone 1 to enclave.
-     # NUMA zone IDs correspond to OS logical NUMA zone IDs.
-     pisces_ctrl --mem=1 --numa=1
+10. Configure and build Leviathan / lnx_init
+     cd src/nvl/pisces/hobbes/lnx_inittask
+     make
 
-     # Add three CPU cores, explicitly specify cores 1, 4, and 2.
-     # CPU core numbers correspond to OS logical core IDs.
-     pisces_ctrl --e --cpu=1,4,2 /dev/pisces-enclave0
 
-     # Add any three CPU cores to enclave.
-     pisces_ctrl --cpu=3 /dev/pisces-enclave0
+11. Copy everything to your host image, or somewhere accessible from your host:
+
+     SRCDIR=.
+     IMAGEDIR=.
+
+     cp -R $SRCDIR/xpmem/mod/xpmem.ko $IMAGEDIR/opt/hobbes
+     cp -R $SRCDIR/pisces/pisces.ko $IMAGEDIR/opt/hobbes
+     cp -R $SRCDIR/petlib/hw_status $IMAGEDIR/opt/hobbes
+     cp -R $SRCDIR/hobbes/lnx_inittask/lnx_init $IMAGEDIR/opt/hobbes
+     cp -R $SRCDIR/hobbes/shell/hobbes $IMAGEDIR/opt/hobbes
+     cp -R $SRCDIR/../kitten/vmlwk.bin $IMAGEDIR/opt/hobbes
+     cp -R $SRCDIR/hobbes/lwk_inittask/lwk_init $IMAGEDIR/opt/hobbes
+     cp -R $SRCDIR/pisces/linux_usr/pisces_cons $IMAGEDIR/opt/hobbes
+     cp -R $SRCDIR/pisces/linux_usr/v3_cons_sc $IMAGEDIR/opt/hobbes
+     cp -R $SRCDIR/pisces/linux_usr/v3_cons_nosc $IMAGEDIR/opt/hobbes
+     cp -R $SRCDIR/hobbes/examples/apps/pmi/test_pmi_hello $IMAGEDIR/opt/hobbes
+
+
+12. Boot your host OS, load Pisces module, use Pisces tools to create envlaves
+
+     echo "Loading xpmem.ko ns=1"
+     /sbin/rmmod xpmem
+     /sbin/insmod /tmp/hobbes/xpmem.ko ns=1
+
+     echo "Loading pisces.ko"
+     /sbin/insmod /tmp/hobbes/pisces.ko
+
+     echo "Launching Hobbes Master Daemon"
+     export HOBBES_ENCLAVE_ID=0
+     export HOBBES_APP_ID=0
+     /tmp/hobbes/lnx_init --cpulist=0,31 ${@:1} &
+     echo $! > leviathan.pid
+
+     echo "Done."
 
 
 ==========================================================================
@@ -75,6 +114,10 @@ installed on essex and push as palacios user:
 
     git push ssh://palacios@essex.cs.pitt.edu//palacios
 
-Ditto for pisces:
+For pisces:
 
     git push petos@essex.cs.pitt.edu:./pisces/pisces
+
+For Leviathan:
+
+    git push petos@essex.cs.pitt.edu:leviathan.git
