@@ -24,10 +24,6 @@
 #define _GNI_PRIV_H_
 
 #include "gni_pub.h"
-#include <linux/ioctl.h>
-#ifdef CONFIG_MMU_NOTIFIER_FORK
-#include <linux/mmu_notifier.h>
-#endif
 #ifdef __cplusplus
 extern "C"
 {
@@ -35,22 +31,6 @@ extern "C"
 
 #ifndef __KERNEL__
 #include <sys/ioctl.h>
-#else
-#include <linux/ioctl.h>
-#endif
-
-/**
- * Atomic type.
- */
-  typedef struct
-  {
-    volatile int counter;
-  } atomic_t;
-
-  typedef struct
-  {
-    volatile long counter;
-  } atomic64_t;
 #include <pthread.h>
 #else
 #include <linux/ioctl.h>
@@ -179,7 +159,6 @@ extern "C"
 #define GNII_STAT_MAX(nic_hndl, idx, cmp)  \
 	((nic_hndl)->stats[idx] = MAX((nic_hndl)->stats[idx], (cmp)))
 #endif
->>>>>>> e87e1eb5aa88831c3f28aaebfc3b948834449bd5
 
 /* IOCTL Arguments */
 #define GNI_INVALID_CQ_DESCR    (-1L)
@@ -525,10 +504,6 @@ extern "C"
   } gni_cdm_barr_args_t;
 
 /* DLA modes */
-#define GNI_DLA_MODE_PERSIST            1
-#define GNI_DLA_MODE_DISCARD_USER       2
-#define GNI_DLA_MODE_DISCARD_KERN       3
-#define GNI_DLA_MODE_PERSIST_SHARED     4
 #define GNI_DLA_MODE_NONE               0
 #define GNI_DLA_MODE_PERSIST            1
 #define GNI_DLA_MODE_DISCARD_USER_OLD   2
@@ -547,8 +522,8 @@ extern "C"
     uint32_t max_alloc_credits;	/* OUT maximum credits per DLA block */
     uint32_t max_mode_credits;	/* OUT maximum credits for DLA mode */
     uint32_t max_credits;	/* OUT maximum total credits */
-    uint32_t reserved[5];
     uint32_t alloc_type;	/* OUT configured DLA events (FMA sharing) */
+    uint32_t reserved[4];
   } gni_dla_setattr_args_t;
 
   typedef struct gni_flbte_setattr_args
@@ -567,26 +542,13 @@ extern "C"
     uint32_t modes;		/* not used in 1st impl. */
   } gni_vce_mgmt_args_t;
 
+/* CE child types */
   typedef enum
   {
     GNI_CE_CHILD_UNUSED,
     GNI_CE_CHILD_VCE,
     GNI_CE_CHILD_PE
   } gni_ce_child_t;
-
-/* Collective engine modes */
-#define GNI_CE_MODE_ROUND_UP            0x00000001	/* Rounding mode, specify 1 */
-#define GNI_CE_MODE_ROUND_DOWN          0x00000002
-#define GNI_CE_MODE_ROUND_NEAR          0x00000004
-#define GNI_CE_MODE_ROUND_ZERO          0x00000008
-#define GNI_CE_MODE_CQE_ONCOMP          0x00000010	/* CQE delivery mode, specify 1 */
-#define GNI_CE_MODE_CQE_ONERR           0x00000040
-#define GNI_CE_MODE_RC_NMIN_HASH        0x00000080	/* Routing mode, specify 1 */
-#define GNI_CE_MODE_RC_MIN_HASH         0x00000100
-#define GNI_CE_MODE_RC_MNON_HASH        0x00000200
-#define GNI_CE_MODE_RC_ADAPT            0x00000400
-
-#define GNI_CE_MAX_CHILDREN             32
 
 #define GNI_CE_MAX_CHILDREN             32
 /* Configure collective engine resources */
@@ -622,9 +584,6 @@ extern "C"
     uint64_t put_nwc;
     uint64_t get;
     uint64_t ctrl;
-  } gni_fma_win_addrs_t;
-
-=======
     struct gni_dla_state *dla_hndl;
   } gni_fma_win_addrs_t;
 
@@ -718,11 +677,6 @@ extern "C"
 #define GNI_IOC_EP_POSTDATA_TERMINATE   _IOWR(GNI_IOC_MAGIC, 7, gni_ep_postdata_term_args_t)
 
 #define GNI_IOC_MEM_REGISTER            _IOWR(GNI_IOC_MAGIC, 8, gni_mem_register_args_t)
-#define GNI_IOC_MEM_DEREGISTER          _IOWR(GNI_IOC_MAGIC, 10, gni_mem_deregister_args_t)
-
-#define GNI_IOC_CQ_CREATE               _IOWR(GNI_IOC_MAGIC, 11, gni_cq_create_args_t)
-#define GNI_IOC_CQ_DESTROY              _IOWR(GNI_IOC_MAGIC, 12, gni_cq_destroy_args_t)
-#define GNI_IOC_CQ_WAIT_EVENT           _IOWR(GNI_IOC_MAGIC, 13, gni_cq_wait_event_args_t)
 #define GNI_IOC_MEM_OLD_REGISTER        _IOWR(GNI_IOC_MAGIC, 8, gni_mem_register_noxargs_t)
 
 #define GNI_IOC_MEM_DEREGISTER          _IOWR(GNI_IOC_MAGIC, 10, gni_mem_deregister_args_t)
@@ -762,18 +716,6 @@ extern "C"
 #define GNI_IOC_FLBTE_SETATTR           _IOWR(GNI_IOC_MAGIC, 32, gni_flbte_setattr_args_t)
 #define GNI_IOC_FMA_ASSIGN              _IOWR(GNI_IOC_MAGIC, 33, gni_fma_assign_args_t)
 #define GNI_IOC_FMA_UMAP                _IOWR(GNI_IOC_MAGIC, 34, gni_fma_umap_args_t)
-#define GNI_IOC_MEM_QUERY_HNDLS         _IOWR(GNI_IOC_MAGIC, 36, gni_mem_query_hndls_args_t)
-
-/* These are just some cmd code for hobbes to send PMI calls */
-
-#define GNI_IOC_PMI_ALLGATHER      51000
-#define GNI_IOC_PMI_GETSIZE        51001
-#define GNI_IOC_PMI_GETRANK        51002
-#define GNI_IOC_PMI_FINALIZE        51003
-#define GNI_IOC_PMI_BARRIER        51004
-
-
-#define GNI_IOC_MAXNR  36
 #define GNI_IOC_GET_PTAG                _IOWR(GNI_IOC_MAGIC, 35, gni_nic_jobconfig_args_t)
 #define GNI_IOC_MEM_QUERY_HNDLS         _IOWR(GNI_IOC_MAGIC, 36, gni_mem_query_hndls_args_t)
 #define GNI_IOC_SR_WAIT_EVENT           _IOWR(GNI_IOC_MAGIC, 37, gni_sr_wait_event_args_t)
@@ -2012,7 +1954,6 @@ extern "C"
       }
     return 1;
   }
->>>>>>> e87e1eb5aa88831c3f28aaebfc3b948834449bd5
 
 #ifdef __cplusplus
 }				/* extern "C" */

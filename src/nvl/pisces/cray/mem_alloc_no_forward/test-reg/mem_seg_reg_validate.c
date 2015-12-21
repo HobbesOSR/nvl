@@ -295,6 +295,7 @@ main (int argc, char **argv)
 
   uint64_t *flags;
   uint64_t *recv_buffer;
+  void  *rbuffer;
   uint32_t instance;
 
   gni_cdm_handle_t cdm_handle;
@@ -402,22 +403,22 @@ main (int argc, char **argv)
   /* create data buffers */
 
   /* create recv buffer */
-  size_t size = 10;
+  size_t size = 8192;
   size_t alignment = 4096;
   int error;
 
-  error = posix_memalign (&recv_buffer, alignment, size);
+  error = posix_memalign ((void **)&rbuffer, alignment, 8192);
   if (error != 0)
     {
       perror ("posix_memalign");
       exit (EXIT_FAILURE);
     }
-  printf ("posix_memalign(%d, %d) = %p\n", alignment, size, recv_buffer);
+  printf ("posix_memalign(%d, %d) = %p\n", alignment, size, rbuffer);
 
   fprintf (stderr, "memory registration address %p, length %d\n",
-	    recv_buffer, size * 4096);
+	    rbuffer, size);
   status =
-    GNI_MemRegister (nic_handle, (uint64_t) recv_buffer, 4096 * size, NULL,
+    GNI_MemRegister (nic_handle, rbuffer, size, NULL,
 		     GNI_MEM_READWRITE, -1, &mdh_recv_buffer);
   if (status != GNI_RC_SUCCESS)
     {

@@ -32,7 +32,7 @@ int passed = 0;
 #define NUMBER_OF_TRANSFERS       10
 #define SEND_DATA                 0xee0000000000
 #define TRANSFER_LENGTH           512
-#define TRANSFER_LENGTH_IN_BYTES  ((TRANSFER_LENGTH)*sizeof(uint64_t))
+#define TRANSFER_LENGTH_IN_BYTES  4096
 
 typedef struct
 {
@@ -140,6 +140,8 @@ main (int argc, char **argv)
 
   rc = PMI_Get_size (&number_of_ranks);
   assert (rc == PMI_SUCCESS);
+  my_rank = rank_id;
+  comm_size = number_of_ranks;;
 
   while ((opt = getopt (argc, argv, "hn:v")) != -1)
     {
@@ -307,22 +309,6 @@ main (int argc, char **argv)
 
   number_of_dest_cq_entries = transfers;
 
-  /*
-   * Create the destination completion queue, which is used to receive
-   * message notifications from the other ranks.
-   *     nic_handle is the NIC handle that this completion queue will be
-   *          associated with.
-   *     number_of_dest_cq_entries is the size of the completion queue.
-   *     zero is the delay count is the number of allowed events before an
-   *          interrupt is generated.
-   *     GNI_CQ_NOBLOCK states that the operation mode is non-blocking.
-   *     NULL states that no user supplied callback function is defined.
-   *     NULL states that no user supplied pointer is passed to the callback
-   *          function.
-   *     destination_cq_handle is the handle that is returned pointing this
-   *          newly created completion queue.
-   */
-
   status =
     GNI_CqCreate (nic_handle, number_of_dest_cq_entries, 0,
 		  GNI_CQ_NOBLOCK, NULL, NULL, &destination_cq_handle);
@@ -438,8 +424,7 @@ main (int argc, char **argv)
    * Allocate the buffer that will receive the data.
    */
 
-  rc =
-    posix_memalign ((void **) &receive_buffer, 64, TRANSFER_LENGTH_IN_BYTES);
+  rc = posix_memalign ((void **) &receive_buffer, 4096, 4096);
   assert (rc == 0);
 
   /*

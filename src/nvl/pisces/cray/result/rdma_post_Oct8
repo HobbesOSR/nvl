@@ -1,0 +1,215 @@
+Server :
+
+hobbesxt:/home/smukher/nvl/src/nvl/pisces/cray # aprun -N1 -n2 ./xpmem_chnl_serv
+Attaching to local database (db_addr=0x2aaaac170000)
+Attaching to local database (db_addr=0x2aaaac37d000)
+server segid: 11712375816225
+after alps info get cookie 176881664  ptag 231  instance 8192
+Opened device
+server segid: 11776800325665
+after alps info get cookie 176881664  ptag 231  instance 9216
+Opened device
+Sending signal to client segid (11785390260258)
+Sending signal to client segid (11785390260258)
+Sending signal to client segid (11785390260258)
+server malloc return buffer size 0x632000  4096
+Sending signal to client segid (11785390260258)
+server after registration ioctl buffer 0x632000: qword1 = 0x 580000000000632 qword2 = 0xdb000020c0000001
+Sending signal to client segid (11785390260258)
+server malloc return buffer size 0x634000  4096
+Sending signal to client segid (11785390260258)
+Sending signal to client segid (11785390260258)
+server after registration ioctl buffer 0x634000: qword1 = 0x 590000000000634 qword2 = 0x4a000020c0000001
+Sending signal to client segid (11785390260258)
+Sending signal to client segid (11785390260258)
+Sending signal to client segid (11720965750818)
+Sending signal to client segid (11720965750818)
+Sending signal to client segid (11720965750818)
+server malloc return buffer size 0x631000  4096
+Sending signal to client segid (11720965750818)
+server after registration ioctl buffer 0x631000: qword1 = 0x 520000000000631 qword2 = 0x82000020c0000001
+Sending signal to client segid (11720965750818)
+Sending signal to client segid (11720965750818)
+server malloc return buffer size 0x633000  4096
+Sending signal to client segid (11720965750818)
+server after registration ioctl buffer 0x633000: qword1 = 0x 530000000000633 qword2 = 0x21000020c0000001
+Sending signal to client segid (11720965750818)
+Sending signal to client segid (11720965750818)
+Sending signal to client segid (11720965750818)
+Sending signal to client segid (11785390260258)
+server malloc return buffer size 0x636000  4096
+Sending signal to client segid (11785390260258)
+server after registration ioctl buffer 0x636000: qword1 = 0x 5a0000000000636 qword2 = 0x84000020c0000001
+Sending signal to client segid (11785390260258)
+server malloc return buffer size 0x638000  4096
+Sending signal to client segid (11785390260258)
+server after registration ioctl buffer 0x638000: qword1 = 0x 5b0000000000638 qword2 = 0x71000020c0000001
+Sending signal to client segid (11785390260258)
+server  found vaddr :  0x638000
+server malloc return buffer size 0x635000  4096
+Sending signal to client segid (11720965750818)
+server after registration ioctl buffer 0x635000: qword1 = 0x 540000000000635 qword2 = 0x 7000020c0000001
+Sending signal to client segid (11720965750818)
+server malloc return buffer size 0x637000  4096
+Sending signal to client segid (11720965750818)
+server after registration ioctl buffer 0x637000: qword1 = 0x 550000000000637 qword2 = 0xa4000020c0000001
+Sending signal to client segid (11720965750818)
+server  found vaddr :  0x637000
+Sending signal to client segid (11720965750818)
+Sending signal to client segid (11785390260258)
+^Caprun: Apid 2671: Caught signal Interrupt, sending to application
+_pmiu_daemon(SIGCHLD): [NID 00004] [c0-0c0s2n0] [Thu Oct  8 13:23:23 2015] PE RANK 0 exit signal Interrupt
+_pmiu_daemon(SIGCHLD): [NID 00005] [c0-0c0s2n1] [Thu Oct  8 13:23:22 2015] PE RANK 1 exit signal Interrupt
+Application 2671 exit codes: 130
+Application 2671 resources: utime ~1s, stime ~3s, Rss ~17604, inblocks ~1015, outblocks ~2426
+hobbesxt:/home/smukher/nvl/src/nvl/pisces/cray # aprun -N1 -n2 ./xpmem_chnl_serv
+Attaching to local database (db_addr=0x2aaaac170000)
+Attaching to local database (db_addr=0x2aaaac37d000)
+server segid: 12064563134497
+after alps info get cookie 176947200  ptag 232  instance 8192
+Opened device
+server segid: 12128987643937
+after alps info get cookie 176947200  ptag 232  instance 9216
+Opened device
+Sending signal to client segid (12073153069090)
+Sending signal to client segid (12073153069090)
+Sending signal to client segid (12073153069090)
+server malloc return buffer size 0x631000  4096
+Sending signal to client segid (12073153069090)
+server after registration ioctl buffer 0x631000: qword1 = 0x 7f0000000000631 qword2 = 0xc9000020c0000001
+Sending signal to client segid (12073153069090)
+Sending signal to client segid (12073153069090)
+server malloc return buffer size 0x633000  4096
+Sending signal to client segid (12073153069090)
+server after registration ioctl buffer 0x633000: qword1 = 0x 800000000000633 qword2 = 0x8a000020c0000001
+Sending signal to client segid (12073153069090)
+Sending signal to client segid (12073153069090)
+Sending signal to client segid (12137577578530)
+Sending signal to client segid (12137577578530)
+Sending signal to client segid (12137577578530)
+server malloc return buffer size 0x632000  4096
+Sending signal to client segid (12137577578530)
+server after registration ioctl buffer 0x632000: qword1 = 0x 880000000000632 qword2 = 0xa7000020c0000001
+Sending signal to client segid (12137577578530)
+Sending signal to client segid (12137577578530)
+server malloc return buffer size 0x634000  4096
+Sending signal to client segid (12137577578530)
+server after registration ioctl buffer 0x634000: qword1 = 0x 890000000000634 qword2 = 0x36000020c0000001
+Sending signal to client segid (12137577578530)
+Sending signal to client segid (12137577578530)
+Sending signal to client segid (12073153069090)
+Sending signal to client segid (12137577578530)
+server malloc return buffer size 0x635000  4096
+Sending signal to client segid (12073153069090)
+server malloc return buffer size 0x636000  4096
+server malloc return buffer size 0x637000  4096
+server after registration ioctl buffer 0x635000: qword1 = 0x 810000000000635 qword2 = 0x1b000020c0000001
+Sending signal to client segid (12073153069090)
+Sending signal to client segid (12073153069090)
+Sending signal to client segid (12137577578530)
+server after registration ioctl buffer 0x636000: qword1 = 0x 8a0000000000636 qword2 = 0xf8000020c0000001
+Sending signal to client segid (12137577578530)
+server malloc return buffer size 0x638000  4096
+server after registration ioctl buffer 0x637000: qword1 = 0x 820000000000637 qword2 = 0xd5000020c0000001
+Sending signal to client segid (12073153069090)
+server  found vaddr :  0x637000
+Sending signal to client segid (12073153069090)
+Sending signal to client segid (12137577578530)
+server after registration ioctl buffer 0x638000: qword1 = 0x 8b0000000000638 qword2 = 0x d000020c0000001
+Sending signal to client segid (12137577578530)
+server  found vaddr :  0x638000
+Sending signal to client segid (12137577578530)
+
+
+--- client 1:
+
+==================
+
+# ./README.launch 
+Attaching to local database (db_addr=0x7ffff2b48000)
+HCQ SEGID = 12064563134497
+[nid00004] Rank:    0 GNI_CdmCreate     inst_id: 0 ptag: 10 cookie: 0x64
+cmd = 2 data size 8
+after NIC attach  cookie : 176947200 ptag :232  rank :8192
+[nid00004] Rank:    0 GNI_CdmAttach     to NIC
+got called in mmap hook 
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+unpack CQ CREATE  client case
+[nid00004] Rank:    0 GNI_CqCreate      source with 1 entries
+got called in mmap hook 
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+unpack CQ CREATE  client case
+[nid00004] Rank:    0 GNI_CqCreate      destination with 2 entries
+[nid00004] Rank:    0 GNI_EpCreate      remote rank:    1 NIC: 0x608470, CQ: 0x6087b0, EP: 0x608730
+[nid00004] Rank:    0 GNI_EpBind        remote rank:    1 EP:  0x608730 remote_address: 1, remote_id: 4294961968
+wg consistency error: string not found in hash during deletion, offset 55152
+[nid00004] Rank:    0 GNI_MemRegister   send_buffer  size: 4096 address: 0x7ffef1b45000
+wg consistency error: string not found in hash during deletion, offset 55152
+[nid00004] Rank:    0 GNI_MemRegister   receive_buffer  size: 33280 address: 0x7ffef1b44000
+wg consistency error: string not found in hash during deletion, offset 55152
+[nid00004] rank address     mdh.qword1            mdn.qword2
+[nid00004]    0 0x637000    0x0820000000000637    0xd5000020c0000001
+[nid00004]    1 0x638000    0x08b0000000000638    0x0d000020c0000001
+[nid00004] Rank:    0 GNI_PostRdma      data transfer:    1 send to:      1 local addr:  0x7ffef1b45000 remote addr: 0x638000 data: 0xdddd000000000001 data length: 4088 post_id: 0
+post RDMA  client case
+unpack post RDMA  client case
+[nid00004] Rank:    0 GNI_PostRdma      data successful
+[nid00004] Rank:    0 data transfers complete, checking CQ events
+[nid00004] Rank:    0 GNI_CqGetEvent    ERROR no event was received status: 1 retry count: 60
+[nid00004] Rank:    0 GNI_PostRdma      flag transfer:    1 send to:      1 local addr:  0x7ffff7ff66f8 remote addr: 0x638000 flag: 0xffff000000000001 data length:    8
+post RDMA  client case
+unpack post RDMA  client case
+[nid00004] Rank:    0 GNI_PostRdma      flag successful
+[nid00004] Rank:    0 flag transfers complete, checking CQ events
+[nid00004] Rank:    0 GNI_CqGetEvent    ERROR no event was received status: 1 retry count: 60
+[nid00004] Rank:    0 Wait for destination completion queue events recv from:    1
+
+
+
+--------------------------------------------------------------------
+
+
+client 2:
+
+# ./README.launch 
+Attaching to local database (db_addr=0x7ffff2b48000)
+HCQ SEGID = 12128987643937
+[nid00005] Rank:    1 GNI_CdmCreate     inst_id: 0 ptag: 10 cookie: 0x64
+cmd = 2 data size 8
+after NIC attach  cookie : 176947200 ptag :232  rank :9216
+[nid00005] Rank:    1 GNI_CdmAttach     to NIC
+got called in mmap hook 
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+unpack CQ CREATE  client case
+[nid00005] Rank:    1 GNI_CqCreate      source with 1 entries
+got called in mmap hook 
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+unpack CQ CREATE  client case
+[nid00005] Rank:    1 GNI_CqCreate      destination with 2 entries
+[nid00005] Rank:    1 GNI_EpCreate      remote rank:    0 NIC: 0x608470, CQ: 0x6087b0, EP: 0x608730
+[nid00005] Rank:    1 GNI_EpBind        remote rank:    0 EP:  0x608730 remote_address: 0, remote_id: 4294961968
+wg consistency error: string not found in hash during deletion, offset 55152
+[nid00005] Rank:    1 GNI_MemRegister   send_buffer  size: 4096 address: 0x7ffef1b45000
+wg consistency error: string not found in hash during deletion, offset 55152
+[nid00005] Rank:    1 GNI_MemRegister   receive_buffer  size: 33280 address: 0x7ffef1b44000
+wg consistency error: string not found in hash during deletion, offset 55152
+[nid00005] Rank:    1 GNI_PostRdma      data transfer:    1 send to:      0 local addr:  0x7ffef1b45000 remote addr: 0x637000 data: 0xdddd000001000001 data length: 4088 post_id: 0
+post RDMA  client case
+unpack post RDMA  client case
+[nid00005] Rank:    1 GNI_PostRdma      data successful
+[nid00005] Rank:    1 data transfers complete, checking CQ events
+[nid00005] Rank:    1 GNI_CqGetEvent    ERROR no event was received status: 1 retry count: 60
+[nid00005] Rank:    1 GNI_PostRdma      flag transfer:    1 send to:      0 local addr:  0x7ffff7ff66f8 remote addr: 0x637000 flag: 0xffff000001000001 data length:    8
+post RDMA  client case
+unpack post RDMA  client case
+[nid00005] Rank:    1 GNI_PostRdma      flag successful
+[nid00005] Rank:    1 flag transfers complete, checking CQ events
+
+
+[nid00005] Rank:    1 GNI_CqGetEvent    ERROR no event was received status: 1 retry count: 60
+[nid00005] Rank:    1 Wait for destination completion queue events recv from:    0
+

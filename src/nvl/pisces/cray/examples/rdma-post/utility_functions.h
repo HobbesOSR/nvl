@@ -51,6 +51,7 @@ gni_cq_remove_event (IN gni_cq_handle_t cq_hndl,
   /* avoid locking if no event is ready */
   if (!GNII_CQ_HAS_EVENT (cq_hndl))
     {
+      printf ("no event so return first case\n");
       return GNI_RC_NOT_DONE;
     }
 
@@ -394,7 +395,6 @@ gni_getevent (IN gni_cq_handle_t cq_hndl, OUT gni_cq_entry_t * event_data)
   return status;
 }
 
->>>>>>> e87e1eb5aa88831c3f28aaebfc3b948834449bd5
 
 /*
  * get_cq_event will process events from the completion queue.
@@ -855,5 +855,4 @@ gather (void *in, void *out, int len)
   rc =
     ioctl (pmi_fd, PMI_IOC_ALLGATHER, &gather_arg,
 	   sizeof (pmi_allgather_args_t));
-  return PMI_SUCCESS;
 }
