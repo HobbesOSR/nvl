@@ -102,7 +102,7 @@ struct memseg_list* list_add_element(struct memseg_list* s, xemem_segid_t* segid
   else
     {
       /* printf("List not empty, adding element to tail\n"); */
-      s->tail->next = p;
+      s->tail->next =  p;
       s->tail = p;
     }
 

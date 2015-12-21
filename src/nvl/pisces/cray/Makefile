@@ -1,25 +1,31 @@
 #
-# Copyright 2011 Cray Inc.
 #
 
+SHELL   = /bin/sh
 CC=gcc
-#GNI_HEADER=/scratch1/smukher/HEADERS/gni.headers/gni-headers-2.1-1.0400.4156.6.1.gem-include
-GNI_HEADER=./include
-WHITEDB=/scratch1/smukher/libhoobes-dev-may26/hobbes/whitedb-0.7.3
-HOBBS=/scratch1/smukher/libhoobes-dev-may26/hobbes/libhobbes
-XPMEM=/scratch1/smukher/libhoobes-dev-may26/xpmem
-STATIC_UGNI=/scratch1/smukher/FAKE_GNI_REPO/host_code/apps
+#GNI_HEADER=/opt/cray/gni-headers/default/include
+GNI_HEADER=/home/smukher/gni-headers/cray-gni-headers-2.1/include
+WHITEDB=/home/smukher/hobbes/whitedb-0.7.3
+HOBBS=/home/smukher/hobbes/libhobbes
+XPMEM=/home/smukher/xpmem
+UGNI=/opt/cray/ugni/default/lib64
+ALPS=/opt/cray/alps/default
+PMI=/opt/cray/pmi/default
 
 SOURCES=xpmem_chnl_serv.c 
 
+PMI_CFLAGS = $(shell pkg-config --cflags cray-pmi)
+PMI_LIBS = $(shell pkg-config --libs cray-pmi)
+UGNI_CFLAGS = $(shell pkg-config --cflags cray-ugni)
+UGNI_LIBS = $(shell pkg-config --libs cray-ugni)
 
-CFLAGS= -g -c -Wall -static -DCRAY_CONFIG_GHAL_GEMINI 
-INCDIR= -I$(GNI_HEADER) -I$(HOBBS) -I$(WHITEDB)/Db  -I$(XPMEM)/include
-LDFLAGS= -g  -static 
-LIBDIR= -L$(STATIC_UGNI) -L/opt/cray/xt-tools/lgdb/1.4/lib/alps -L/opt/cray/ugni/default/lib64 -L$(HOBBS) -L$(WHITEDB)/Db/.libs -lugni -lalpslli -lDb -lm -lhobbes
+CFLAGS= -g  -Wall -fPIC -DCRAY_CONFIG_GHAL_GEMINI -Wunused-variable -Wunused-variable
+INCDIR= -I$(GNI_HEADER) -I$(ALPS)/include -I$(HOBBS) -I$(WHITEDB)/Db  -I$(XPMEM)/include -I$(PMI)/include
+LDFLAGS= -g  
+LIBDIR=  -L/opt/cray/alps/default/lib64 -L/opt/cray/ugni/default/lib64 -L$(HOBBS) -L$(WHITEDB)/Db/.libs -lugni -lalpslli -lDb -lm -lhobbes
 
 libs :=		$(HOBBS)/libhobbes.a \
-		$(STATIC_UGNI)/libugni.a \
+		$(UGNI)/libugni.a \
 		$(WHITEDB)/Db/.libs/libDb.a \
 		/usr/lib64/libm.a 
 
@@ -41,13 +47,13 @@ all: $(SOURCES) $(OBJS) $(execs)
 
 
 %.o : %.c
-	$(CC) $(CFLAGS) $(INCDIR) -c $<  -o $@
+	$(CC) $(CFLAGS) $(INCDIR) $(PMI_CFLAGS) $(UGNI_CFLAGS) -c $<  -o $@
 
 % : %.o 
-	$(call build,CC,$(CC)   $(LDFLAGS) $(LIBDIR) $<  $(libs) -lm -lhobbes -lalpslli -lDb -lugni -o $@)
+	$(call build,CC,$(CC)   $(LDFLAGS) $(LIBDIR) $(UGNI_LIBS) $(PMI_LIBS) $<  $(libs) -lm -lhobbes -lalpslli -lDb -lugni -lpmi -o $@)
 
 xpmem_chnl_client.so :  xpmem_chnl_client.c
-	$(call build,CC,$(CC) -fPIC -shared -DCRAY_CONFIG_GHAL_GEMINI $(INCDIR) $(LIBDIR) -ldl  -lm -lhobbes -lalpslli -lDb -lugni -o $@ $<)
+	$(call build,CC,$(CC) $(CFLAGS)   -fPIC -shared -DCRAY_CONFIG_GHAL_GEMINI $(INCDIR) $(LIBDIR)  -ldl  -lm -lhobbes -lalpslli -lDb -lugni -o $@ $< $(libs))
 
 clean:
 	rm -f core $(wildcard  $(execs)) *.o *.so
