@@ -5,7 +5,12 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
+// Following hack is neeed to accomodate memory handle gather operation
 
+typedef struct {
+    gni_mem_handle_t mdh;
+    uint64_t        addr;
+} mdh_addr_t;
 
 struct xpmem_seg
 {
@@ -78,9 +83,6 @@ struct memseg_list* list_add_element(struct memseg_list* s, xemem_segid_t *segid
   p->address = addr;
   p->length = len;
   p->next = NULL;
-
-	fprintf(stderr, "add a new seg to list segid %llu, address %p\n", *segid, addr);
-
   if( NULL == s )
     {
       printf("Queue not initialized\n");
@@ -195,11 +197,11 @@ xemem_segid_t   list_find_segid_by_vaddr(const struct memseg_list* ps, uint64_t 
 	{
 		if((p->address == addr) || ((addr > p->address) && (addr <  p->address + p->length)))
 		{
-			printf("found %p segid %llu\n", addr, p->segid);
 			return (p->segid);
 		}
 			
 	}
+	fprintf(stderr, "failed to find segid for addr %p\n", addr);
 	return -1;
     }
 
@@ -217,7 +219,6 @@ uint64_t   list_find_vaddr_by_segid(const struct memseg_list* ps, xemem_segid_t 
 	{
 		if(p->segid == *segid)
 		{
-			printf("found segid %llu\n", segid);
 			return (p->address);
 		}
 			

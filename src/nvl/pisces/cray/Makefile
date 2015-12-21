@@ -4,7 +4,7 @@
 SHELL   = /bin/sh
 CC=gcc
 #GNI_HEADER=/opt/cray/gni-headers/default/include
-GNI_HEADER=/home/smukher/gni-headers/cray-gni-headers-2.1/include
+GNI_HEADER=/home/smukher/gni-headers/cray-gni-headers-4.0/include
 WHITEDB=/home/smukher/hobbes/whitedb-0.7.3
 HOBBS=/home/smukher/hobbes/libhobbes
 XPMEM=/home/smukher/xpmem

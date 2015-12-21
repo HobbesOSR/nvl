@@ -51,25 +51,9 @@
 #define THREAD_NUM_BITS  3
 #define THREAD_NUM_SHIFT (CPU_NUM_SHIFT-THREAD_NUM_BITS)
 #define THREAD_NUM_MASK  0x7
-#define NUMBER_OF_TRANSFERS  10
 
 struct memseg_list *mt = NULL;
-int transfer;
-int global_rank;
 
-
-uint64_t
-now(void) {
-        int rc;
-        struct timeval tv;
-
-        rc = gettimeofday(&tv, NULL);
-        if (rc != 0) abort();
-
-        return (tv.tv_sec * 1e6) + tv.tv_usec;
-}
-
-uint64_t cqserv[NUMBER_OF_TRANSFERS][2];
 
 #ifndef HEXDUMP_COLS
 #define HEXDUMP_COLS 8
@@ -213,7 +197,6 @@ get_cpunum (void)
 #define GNI_INSTID(nic_addr, cpu_num, thr_num) (((nic_addr&NIC_ADDR_MASK)<<NIC_ADDR_SHIFT)|((cpu_num&CPU_NUM_MASK)<<CPU_NUM_SHIFT)|(thr_num&THREAD_NUM_MASK))
 
 #define FMA_WINDOW_SIZE    (1024 * 1024 * 1024L)
-#define FMA_WINDOW_CTRL_SIZE    (0x1000UL)
 
 /*
  * allgather gather the requested information from all of the ranks.
@@ -278,7 +261,6 @@ main (int argc, char *argv[])
   gni_ep_postdata_test_args_t ep_posttest_attr;
   gni_ep_postdata_term_args_t ep_postterm_attr;
   gni_mem_register_args_t *mem_register_attr;
-  gni_mem_register_args_t mem_reg_attr;
   gni_mem_deregister_args_t mem_dereg_attr;
   gni_cq_create_args_t *cq_create_attr;
   gni_cq_wait_event_args_t cq_wait_attr;
@@ -323,6 +305,7 @@ main (int argc, char *argv[])
   xemem_segid_t fma_win, fma_put, fma_nc, fma_get, fma_ctrl;
   xemem_segid_t clean_seg, reg_mem_seg;
   struct xemem_addr r_addr;
+  xemem_apid_t apid;
 /* for PMI */
   int my_rank = malloc (4);
   int job_size = malloc (4);
@@ -341,7 +324,6 @@ main (int argc, char *argv[])
 
   rc = PMI_Get_rank (&my_rank);
   assert (rc == PMI_SUCCESS);
-  global_rank = my_rank;
 
   hobbes_client_init ();
 
@@ -405,11 +387,9 @@ main (int argc, char *argv[])
 	  uint32_t data_len = 0;
 	  char *data_buf = hcq_get_cmd_data (hcq, cmd, &data_len);
 
-
 	  switch (cmd_code)
 	    {
 	    case GNI_IOC_NIC_SETATTR:
-		transfer = 0;
 
 	      nic_set_attr.modes = 0;
 
@@ -446,89 +426,74 @@ main (int argc, char *argv[])
 		xemem_make (nic_set_attr.fma_window_get, FMA_WINDOW_SIZE,
 			    "fma_win_get");
 	      fma_ctrl =
-		xemem_make (nic_set_attr.fma_ctrl, FMA_WINDOW_CTRL_SIZE,
+		xemem_make (nic_set_attr.fma_ctrl, GHAL_FMA_CTRL_SIZE,
 			    "fma_win_ctrl");
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (nic_set_attr),
 			      &nic_set_attr);
 	      break;
 	    case GNI_IOC_MEM_REGISTER:
 
-	      mem_register_attr = (gni_mem_register_args_t *) data_buf;
-	      gni_mem_segment_t *segment;
+		mem_register_attr = (gni_mem_register_args_t *) data_buf;
+		gni_mem_segment_t *segment;
+
 	      if (mem_register_attr->segments_cnt == 1)
 		{
-		  //list_print(mt);
-		  /* one segment to be registered */
+		  fprintf (stderr, "Sever mem register find segment %llu\n",
+			   mem_register_attr->address);
 		  apid = xemem_get (mem_register_attr->address, XEMEM_RDWR);
 		  if (apid <= 0)
 		    {
-		      printf ("could not attach user provided memreg \n");
+		      printf
+			("seg attach from server for MEM REGISTER  failed \n");
 		      return HCQ_INVALID_HANDLE;
 		    }
+		  fprintf (stderr, "Sever mem register got segment \n");
 
 		  r_addr.apid = apid;
 		  r_addr.offset = 0;
 
-		  reg_addr =
+		  buffer =
 		    xemem_attach (r_addr, mem_register_attr->length, NULL);
-		  if (reg_addr == MAP_FAILED)
+		  if (buffer == MAP_FAILED)
 		    {
-		      printf ("xpmem attach for register failed\n");
+		      printf ("xpmem attach for MEM REGISTER failed\n");
 		      xemem_release (apid);
 		      return -1;
 		    }
-
-		  mem_register_attr->address = (uint64_t) reg_addr;
-		  buffer =
-		    (void *) list_find_vaddr_by_segid (mt,
-						       &mem_register_attr->
-						       address);
+		  fprintf (stderr,
+			   "Sever mem register attach seg done new vaddr %p\n",
+			   buffer);
+		  list_add_element (mt, &mem_register_attr->address, buffer,
+				    mem_register_attr->length);
 		  mem_register_attr->address = buffer;
+		  fprintf (stderr, "Sever mem register call ioctl \n");
 		}
 	      else
 		{
 		  segment = mem_register_attr->mem_segments;
 		}
+
 //
-	      my_mem = malloc (mem_register_attr->length);
-	      memset (&mem_reg_attr, 0, sizeof (mem_reg_attr));
-	      mem_reg_attr.address = (uint64_t) my_mem;
-	      printf ("mem register got address %p length %d actual mem %p\n",
-		      reg_addr, mem_register_attr->length, my_mem);
-	      mem_reg_attr.length = mem_register_attr->length;
-	      mem_reg_attr.kern_cq_descr = GNI_INVALID_CQ_DESCR;
-	      mem_reg_attr.segments_cnt = 1;
-	      mem_reg_attr.flags = GNI_MEM_READWRITE;
 	      rc = ioctl (device, GNI_IOC_MEM_REGISTER, mem_register_attr);
 	      if (rc < 0)
 		{
-		  fprintf (stderr, "Failed calling GNI_IOC_MEM_REGISTER\n");
-		  return 0;
+		  fprintf (stderr,
+			   "Failed calling GNI_IOC_MEM_REGISTER return code %d\n",
+			   rc);
+		  return rc;
 		}
 
-	      printf ("Memory is registered\n");
-	      printf
-		("server after registration ioctl : qword1 = 0x%16lx qword2 = 0x%16lx\n",
-		 mem_reg_attr.mem_hndl.qword1, mem_reg_attr.mem_hndl.qword2);
-//
-	      hcq_cmd_return (hcq, cmd, ret, sizeof (gni_mem_register_args_t),
-			      mem_register_attr);
-	      break;
-	    case PMI_IOC_ALLGATHER:
-	      outbuf = (char *) malloc (job_size * data_len);
-	      assert (outbuf);
-/*
 	      printf ("Memory is registered successfully\n");
 	      printf
 		("server after registration ioctl buffer %p: qword1 = 0x%16lx qword2 = 0x%16lx\n",
 		 buffer, mem_register_attr->mem_hndl.qword1,
 		 mem_register_attr->mem_hndl.qword2);
-*/
+//
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (gni_mem_register_args_t),
 			      mem_register_attr);
 	      break;
+
 	    case GNI_IOC_POST_RDMA:
-		cqserv[transfer][0] = now();
 
 	      memcpy (&post_desc, data_buf, sizeof (gni_post_descriptor_t));
 	      buffer = data_buf + sizeof (gni_post_descriptor_t);
@@ -561,8 +526,6 @@ main (int argc, char *argv[])
 		  return 0;
 		}
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (rc), &rc);
-		cqserv[transfer][1] = now();
-		transfer++;
 
 	      break;
 
@@ -612,16 +575,10 @@ main (int argc, char *argv[])
 	    case PMI_IOC_GETSIZE:
 	      rc = PMI_Get_size (&job_size);
 	      hcq_cmd_return (hcq, cmd, ret, 4, &job_size);
-	      fprintf (stderr, "server side after  get size return \n");
 	      break;
 	    case PMI_IOC_FINALIZE:
 	      PMI_Finalize ();
 	      hcq_cmd_return (hcq, cmd, ret, 0, NULL);
-		if(global_rank == 0){
-		for (i=0; i< NUMBER_OF_TRANSFERS; i++) {
-			fprintf(stdout, "transfer #= %d, start = %llu  end %llu  elapsed %llu\n", transfer, cqserv[i][0], cqserv[i][1], cqserv[i][1] - cqserv[i][0]);
-		}
-		}
 	      break;
 	    case PMI_IOC_MALLOC:
 
