@@ -322,6 +322,7 @@ pack_args (unsigned long int request, void *args)
          cq_create_args->mem_hndl.qword1, cq_create_args->mem_hndl.qword2);
        */
       cq_tmpbuf = cq_create_args->queue;	/* preserve cq space */
+	fprintf(stderr, "print seglist in CQ CREATE for vaddr %p\n", cq_create_args->queue);
       cq_seg = list_find_segid_by_vaddr (mt, cq_create_args->queue);
       cq_create_args->queue = (gni_cq_entry_t *) cq_seg;
       cmd =
@@ -337,15 +338,18 @@ pack_args (unsigned long int request, void *args)
       /* If memory is segmented we just loop through the list 
          segments[0].address && segments[0].length
        */
-      mem_reg_attr = args;
-      printf ("client  mem register vaddr: %p, len %d\n",
+      mem_reg_attr = (gni_mem_register_args_t *)args;
+      printf ("client  mem register vaddr before xemem_make: %p, len %d\n",
 	      mem_reg_attr->address, mem_reg_attr->length);
       reg_mem_seg =
 	xemem_make (mem_reg_attr->address, mem_reg_attr->length, NULL);
+      fprintf (stderr, " mem register after xemem make client register  segment %llu address %p\n",
+	       reg_mem_seg, mem_reg_attr->address);
+	list_add_element (mt, &reg_mem_seg, mem_reg_attr->address, mem_reg_attr->length);
+	fprintf(stderr, "print list in MEM REGISTER\n");
+	list_print(mt);
       mem_reg_attr->address = (uint64_t) reg_mem_seg;
       // Now segid actually is 64 bit so push it there
-      fprintf (stderr, "client register  segment %llu address %llu\n",
-	       reg_mem_seg, mem_reg_attr->address);
       cmd =
 	hcq_cmd_issue (hcq, GNI_IOC_MEM_REGISTER,
 		       sizeof (gni_mem_register_args_t),
@@ -400,7 +404,8 @@ pack_args (unsigned long int request, void *args)
 	   */
 	  my_mem_seg = list_find_segid_by_vaddr (mt, clnt_gather_hdl->addr);
 	  clnt_gather_hdl->addr = (uint64_t) my_mem_seg;
-	  //fprintf(stdout, "client  gather after segid found :  %llu\n", clnt_gather_hdl->addr);
+	  fprintf(stdout, "client  gather after segid found :  %llu\n", clnt_gather_hdl->addr);
+		list_print(mt);
 	}
       allgather (gather_arg->in_data, gather_arg->out_data,
 		 gather_arg->in_data_len);
@@ -555,27 +560,6 @@ int
 handle_ioctl (int device, unsigned long int request, void *arg)
 {
 
-  int status;
-  gni_nic_fmaconfig_args_t fma_attr;
-  gni_mem_register_args_t mem_reg_attr;
-  gni_mem_deregister_args_t mem_dereg_attr;
-  gni_post_rdma_args_t post_attr;
-  gni_post_descriptor_t post_desc;
-  gni_mem_handle_t send_mhndl;
-  uint8_t *rcv_data;
-  gni_mem_handle_t rcv_mhndl;
-  gni_mem_handle_t peer_rcv_mhndl;
-  gni_cq_entry_t *event_data;
-  void *fma_window;
-  uint64_t *get_window;
-  uint64_t gcw, get_window_offset;
-  int i, max_rank, j;
-  FILE *hf;
-  gni_post_state_t *state_array;
-  int connected = 0;
-
-  int rc;
-  int ret = -1;
   pack_args (request, arg);
   unpack_args (request, arg);
   return 0;
@@ -623,7 +607,6 @@ unpack_args (unsigned long int request, void *args)
       win_addr.apid = apid;
       win_addr.offset = 0;
 
-      //fma_win = xemem_attach (win_addr, FMA_WINDOW_SIZE, NULL);
       fma_win = xemem_attach_nocache (win_addr, FMA_WINDOW_SIZE, NULL);
 
       if (fma_win == NULL)
@@ -698,8 +681,9 @@ unpack_args (unsigned long int request, void *args)
 	  xemem_remove (fma_ctrl_seg);
 	  return HCQ_INVALID_HANDLE;
 	}
-      printf ("after xemem attach of fma CTRL window %p\n", fma_ctrl);
+      fprintf (stderr, "after xemem attach of 4 FMA window and segments: seglist below \n");
       list_add_element (mt, &fma_ctrl_seg, fma_ctrl, FMA_WINDOW_SIZE);
+	list_print(mt);
 
       nic_set_attr->fma_window = fma_win;
       nic_set_attr->fma_window_nwc = fma_put;

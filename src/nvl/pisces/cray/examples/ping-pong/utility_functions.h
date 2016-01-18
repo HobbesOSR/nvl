@@ -394,7 +394,6 @@ gni_getevent (IN gni_cq_handle_t cq_hndl, OUT gni_cq_entry_t * event_data)
   return status;
 }
 
->>>>>>> e87e1eb5aa88831c3f28aaebfc3b948834449bd5
 
 /*
  * get_cq_event will process events from the completion queue.

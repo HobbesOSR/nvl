@@ -39,18 +39,7 @@ extern "C"
 #include <linux/ioctl.h>
 #endif
 
-/**
- * Atomic type.
- */
-  typedef struct
-  {
-    volatile int counter;
-  } atomic_t;
-
-  typedef struct
-  {
-    volatile long counter;
-  } atomic64_t;
+#ifndef __KERNEL__
 #include <pthread.h>
 #else
 #include <linux/ioctl.h>
@@ -179,7 +168,6 @@ extern "C"
 #define GNII_STAT_MAX(nic_hndl, idx, cmp)  \
 	((nic_hndl)->stats[idx] = MAX((nic_hndl)->stats[idx], (cmp)))
 #endif
->>>>>>> e87e1eb5aa88831c3f28aaebfc3b948834449bd5
 
 /* IOCTL Arguments */
 #define GNI_INVALID_CQ_DESCR    (-1L)
@@ -567,12 +555,6 @@ extern "C"
     uint32_t modes;		/* not used in 1st impl. */
   } gni_vce_mgmt_args_t;
 
-  typedef enum
-  {
-    GNI_CE_CHILD_UNUSED,
-    GNI_CE_CHILD_VCE,
-    GNI_CE_CHILD_PE
-  } gni_ce_child_t;
 
 /* Collective engine modes */
 #define GNI_CE_MODE_ROUND_UP            0x00000001	/* Rounding mode, specify 1 */
@@ -2012,8 +1994,6 @@ extern "C"
       }
     return 1;
   }
->>>>>>> e87e1eb5aa88831c3f28aaebfc3b948834449bd5
-
 #ifdef __cplusplus
 }				/* extern "C" */
 #endif
