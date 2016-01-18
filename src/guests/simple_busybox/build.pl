@@ -9,7 +9,8 @@ my $SRCDIR     = "src";
 my $CONFIGDIR  = "config";
 my $OVERLAYDIR = "overlays";
 my $IMAGEDIR   = "image";
-my $ISOPATH = "\$(find /usr/ -name isolinux.bin)";
+my $ISOLINUX   = "\$(find /usr/ -name isolinux.bin)";
+my $LDLINUX    = "\$(find /usr/ -name ldlinux.c32)";
     
 if (! -d $SRCDIR)     { mkdir $SRCDIR; }
 if (! -d $IMAGEDIR)   { mkdir $IMAGEDIR; }
@@ -19,7 +20,7 @@ my @packages;
 
 my %kernel;
 $kernel{package_type}   = "tarball";
-$kernel{version}	= "3.12.29";
+$kernel{version}	= "3.19.8";
 $kernel{basename}	= "linux-$kernel{version}";
 $kernel{tarball}	= "$kernel{basename}.tar.gz";
 $kernel{url}		= "http://www.kernel.org/pub/linux/kernel/v3.x/$kernel{tarball}";
@@ -248,8 +249,8 @@ if ($program_args{build_kernel}) {
 		system ("make oldconfig") == 0 or die "failed to make oldconfig";
 	}
 	system ("make -j 4 bzImage modules") == 0 or die "failed to make bzImage or modules";
-#	system ("INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install";
-	system ("sudo make modules_install") == 0 or die "failed to make modules_install";
+	system ("INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install") == 0 or die "failed to make modules_install";
+#	system ("sudo make modules_install") == 0 or die "failed to make modules_install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -314,7 +315,7 @@ if ($program_args{build_hwloc}) {
 	system ("./configure --prefix=/usr") == 0 or die "failed to configure";
 	system ("make") == 0 or die "failed to make";
 	system ("make install DESTDIR=$BASEDIR/$SRCDIR/$hwloc{basename}/_install") == 0
-          or die "failed ot install";
+	  or die "failed ot install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -334,7 +335,8 @@ if ($program_args{build_ompi}) {
 	# This is a horrible hack. We're installing OpenMPI into /opt on the host.
 	# This means we need to be root to do a make install and will possibly screw up the host.
 	# We should really be using chroot or something better.
-	system ("LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static --with-verbs=yes") == 0
+	#system ("LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static --with-verbs=yes") == 0
+	system ("LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static") == 0
           or die "failed to configure";
 	system ("make -j 2") == 0 or die "failed to make";
 	system ("sudo make install") == 0 or die "failed to install";
@@ -506,8 +508,8 @@ if ($program_args{build_image}) {
 		or die "Failed to rsync skeleton directory to $IMAGEDIR";	
 
 	# Instal linux kernel modules
-	#system("rsync -a $SRCDIR/$kernel{basename}/_install/\* $IMAGEDIR/") == 0
-	system("rsync -a /lib/modules/$kernel{version} $IMAGEDIR/lib/modules/") == 0
+	system("rsync -a $SRCDIR/$kernel{basename}/_install/\* $IMAGEDIR/") == 0
+	#system("rsync -a /lib/modules/$kernel{version} $IMAGEDIR/lib/modules/") == 0
 		or die "Failed to rsync linux modules to $IMAGEDIR";
 
 	# Install numactl into image
@@ -599,7 +601,8 @@ if ($program_args{build_image}) {
 ##############################################################################
 if ($program_args{build_isoimage}) {
 	system ("mkdir -p isoimage");
-	system ("cp $ISOPATH isoimage");
+	system ("cp $ISOLINUX isoimage");
+	system ("cp $LDLINUX isoimage");
 	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage");
 	system ("cp initramfs.gz isoimage/initrd.img");
 	system ("echo 'default bzImage initrd=initrd.img console=ttyS0 console=tty0' > isoimage/isolinux.cfg");

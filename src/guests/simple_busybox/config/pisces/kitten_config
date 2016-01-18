@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # LWK kernel version: 1.3.0Kitten
-# Fri Nov  7 15:07:53 2014
+# Fri Jan  8 16:04:47 2016
 #
 CONFIG_X86_64=y
 CONFIG_X86=y
@@ -88,7 +88,12 @@ CONFIG_FORCED_INLINING=y
 # CONFIG_ACPI_DEBUG is not set
 
 #
-# Linux Compatibility Layer
+# OFED
 #
-# CONFIG_LINUX is not set
-CONFIG_X86_IO_APIC=y
+# CONFIG_OFED is not set
+# CONFIG_OFED_COMPAT is not set
+# CONFIG_INFINIBAND is not set
+# CONFIG_INFINIBAND_USER_ACCESS is not set
+# CONFIG_INFINIBAND_MTHCA is not set
+# CONFIG_MLX4_INFINIBAND is not set
+# CONFIG_INFINIBAND_IPOIB is not set

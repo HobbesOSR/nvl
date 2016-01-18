@@ -35,30 +35,35 @@ Steps for building Pisces with Leviathan
      cd src/nvl/pisces/pisces
      make XPMEM=y
 
+7. Configure and build WhiteDB
+     cd src/nvl/pisces/hobbes/whitedb-0.7.3
+     autoreconf -fvi
+     ./configure --enable-locking=wpspin --no-create --no-recursion
+     make
 
-7. Configure and build Leviathan / libhobbes.a
+8. Configure and build Leviathan / libhobbes.a
      # Edit build.cfg, set PARENT_PATH to root of hobbes directory
      cd src/nvl/pisces/hobbes/libhobbes
      ./setup_leviathan.sh
      make
 
 
-8. Configure and build Leviathan / hobbes shell
+9. Configure and build Leviathan / hobbes shell
      cd src/nvl/pisces/hobbes/shell
      make
 
 
-9. Configure and build Leviathan / lwk_init
+10. Configure and build Leviathan / lwk_init
      cd src/nvl/pisces/hobbes/lwk_inittask
      make
 
 
-10. Configure and build Leviathan / lnx_init
+11. Configure and build Leviathan / lnx_init
      cd src/nvl/pisces/hobbes/lnx_inittask
      make
 
 
-11. Copy everything to your host image, or somewhere accessible from your host:
+12. Copy everything to your host image, or somewhere accessible from your host:
 
      SRCDIR=.
      IMAGEDIR=.
@@ -76,7 +81,7 @@ Steps for building Pisces with Leviathan
      cp -R $SRCDIR/hobbes/examples/apps/pmi/test_pmi_hello $IMAGEDIR/opt/hobbes
 
 
-12. Boot your host OS, load Pisces module, use Pisces tools to create envlaves
+13. Boot your host OS, load Pisces module, use Pisces tools to create envlaves
 
      echo "Loading xpmem.ko ns=1"
      /sbin/rmmod xpmem
@@ -107,10 +112,25 @@ so it needs to be recompiled, which is a royal pain.  Cray's Gemini
 kGNI driver also needs to be recompiled.  Recompiling Lustre and Gemini
 kernel modules appears to be enough to get a compute node to boot.
 
+
 To rebuild KGNI driver:
     cd cray-gni-1.0/gemini/kgni
     # Edit Kbuild to set appropriate paths
     make -C /home/ktpedre/cray_cnos/linux-3.0.101-0.31.1_1.0502.8394 M=$PWD
+
+
+To rebuild a new cpio boot image:
+    xtbootimg  -L ./CNL0.load -L ./SNL0.load -c /bootimagedir/new_boot_image.cpio
+    scp /bootimagedir/new_boot_image.cpio root@boot:/bootimagedir/
+
+
+To reboot nid 6 on LANL Cray into new_boot_image.cpio:
+
+    export PATH=${PATH}:/opt/cray/hss/default/bin
+    xtbounce --partition p0 -o cpio_path=/bootimagedir/new_boot_image.cpio -s c0-0c0s3n0
+    xtclear_alert c0-0c0s3n0
+    xtclear_warn c0-0c0s3n0
+    xtcli -s boot CNL0 -o compute -i /bootimagedir/new_boot_image.cpio c0-0c0s3n0
 
 
 ==========================================================================
