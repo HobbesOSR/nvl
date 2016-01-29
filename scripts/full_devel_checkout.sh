@@ -15,7 +15,7 @@ cd ../../../
 
 # Change from free-floating branch to devel branch
 cd src/nvl/pisces/palacios
-git checkout devel
+git checkout -f devel
 cd ../../../../
 
 # Change from free-floating branch to devel branch
