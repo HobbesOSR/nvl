@@ -74,10 +74,10 @@ push(@packages, \%ofed);
 
 my %ompi;
 $ompi{package_type}	= "tarball";
-$ompi{version}		= "1.8.3";
+$ompi{version}		= "1.10.2";
 $ompi{basename}		= "openmpi-$ompi{version}";
 $ompi{tarball}		= "$ompi{basename}.tar.bz2";
-$ompi{url}		= "http://www.open-mpi.org/software/ompi/v1.8/downloads//$ompi{tarball}";
+$ompi{url}		= "http://www.open-mpi.org/software/ompi/v1.10/downloads/$ompi{tarball}";
 push(@packages, \%ompi);
 
 my %pisces;
@@ -92,6 +92,42 @@ $pisces{clone_cmd}[4]	= "git clone http://essex.cs.pitt.edu/git/palacios.git";
 $pisces{clone_cmd}[5]	= "git clone http://essex.cs.pitt.edu/git/hobbes.git";
 push(@packages, \%pisces);
 
+my %curl;
+$curl{package_type}	= "tarball";
+$curl{version}		= "7.47.1";
+$curl{basename}		= "curl-$curl{version}";
+$curl{tarball}		= "$curl{basename}.tar.bz2";
+$curl{url}		= "https://curl.haxx.se/download/$curl{tarball}";
+push(@packages, \%curl);
+
+my %hdf5;
+$hdf5{package_type}	= "tarball";
+$hdf5{version}		= "1.8.16";
+$hdf5{basename}		= "hdf5-$hdf5{version}";
+$hdf5{tarball}		= "$hdf5{basename}.tar.bz2";
+$hdf5{url}		= "https://www.hdfgroup.org/ftp/HDF5/current/src/$hdf5{tarball}";
+push(@packages, \%hdf5);
+
+my %netcdf;
+$netcdf{package_type}	= "tarball";
+$netcdf{version}	= "4.4.0";
+$netcdf{basename}	= "netcdf-$netcdf{version}";
+$netcdf{tarball}	= "$netcdf{basename}.tar.gz";
+$netcdf{url}		= "ftp://ftp.unidata.ucar.edu/pub/netcdf/$netcdf{tarball}";
+push(@packages, \%netcdf);
+
+my %dtk;
+$dtk{package_type}	= "git";
+$dtk{basename}		= "Trilinos";
+$dtk{src_subdir}	= "dtk";
+$dtk{clone_cmd}[0]	= "git clone https://github.com/trilinos/Trilinos.git";
+$dtk{clone_cmd}[1]	= "git clone https://github.com/ORNL-CEES/DataTransferKit.git";
+$dtk{clone_cmd}[2]	= "git clone https://github.com/ORNL-CEES/DTKData.git";
+push(@packages, \%dtk);
+
+
+
+
 my %program_args = (
 	build_kernel		=> 0,
 	build_busybox		=> 0,
@@ -102,6 +138,10 @@ my %program_args = (
 	build_ofed		=> 0,
 	build_ompi		=> 0,
 	build_pisces		=> 0,
+	build_curl		=> 0,
+	build_hdf5		=> 0,
+	build_netcdf		=> 0,
+	build_dtk		=> 0,
 
 	build_image		=> 0,
 	build_isoimage		=> 0,
@@ -124,6 +164,10 @@ GetOptions(
 	"build-ofed"		=> sub { $program_args{'build_ofed'} = 1; },
 	"build-ompi"		=> sub { $program_args{'build_ompi'} = 1; },
 	"build-pisces"		=> sub { $program_args{'build_pisces'} = 1; },
+	"build-curl"		=> sub { $program_args{'build_curl'} = 1; },
+	"build-hdf5"		=> sub { $program_args{'build_hdf5'} = 1; },
+	"build-netcdf"		=> sub { $program_args{'build_netcdf'} = 1; },
+	"build-dtk"		=> sub { $program_args{'build_dtk'} = 1; },
 	"build-image"		=> sub { $program_args{'build_image'} = 1; },
 	"build-isoimage"        => sub { $program_args{'build_isoimage'} = 1; },
 	"build-nvl-guest"	=> sub { $program_args{'build_nvl_guest'} = 1; },
@@ -312,7 +356,7 @@ if ($program_args{build_hwloc}) {
 	print "CNL: Building hwloc $hwloc{basename}\n";
 	chdir "$SRCDIR/$hwloc{basename}" or die;
 	system ("rm -rf ./_install") == 0 or die;
-	system ("./configure --prefix=/usr") == 0 or die "failed to configure";
+	system ("./configure --prefix=/usr --enable-static --disable-shared") == 0 or die "failed to configure";
 	system ("make") == 0 or die "failed to make";
 	system ("make install DESTDIR=$BASEDIR/$SRCDIR/$hwloc{basename}/_install") == 0
 	  or die "failed ot install";
@@ -336,10 +380,10 @@ if ($program_args{build_ompi}) {
 	# This means we need to be root to do a make install and will possibly screw up the host.
 	# We should really be using chroot or something better.
 	#system ("LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static --with-verbs=yes") == 0
-	system ("LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static") == 0
+	system ("LDFLAGS=-static ./configure --prefix=/opt/simple_busybox/$ompi{basename} --disable-shared --enable-static --disable-dlopen --without-memory-manager --disable-vt") == 0
           or die "failed to configure";
-	system ("make -j 2") == 0 or die "failed to make";
-	system ("sudo make install") == 0 or die "failed to install";
+	system ("make -j 4 LDFLAGS=-all-static") == 0 or die "failed to make";
+	system ("make install") == 0 or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -467,6 +511,80 @@ if ($program_args{build_pisces}) {
 }
 
 
+# Build Curl
+if ($program_args{build_curl}) {
+	print "CNL: Building Curl $curl{basename}\n";
+	chdir "$SRCDIR/$curl{basename}" or die;
+	# This is a horrible hack. We're installing into /opt/simple_busybox/install on the host.
+	# This means we need to be root to do a make install and will possibly screw up the host.
+	# We should really be using chroot or something better.
+	system ("LDFLAGS=-static ./configure --prefix=/opt/simple_busybox/install --disable-shared --enable-static") == 0
+          or die "failed to configure";
+	system ("make V=1 curl_LDFLAGS=-all-static") == 0 or die "failed to make";
+	system ("make install") == 0 or die "failed to install";
+	chdir "$BASEDIR" or die;
+}
+
+
+# Build HDF5
+if ($program_args{build_hdf5}) {
+	print "CNL: Building HDF5 $hdf5{basename}\n";
+	chdir "$SRCDIR/$hdf5{basename}" or die;
+	# This is a horrible hack. We're installing into /opt/simple_busybox/install on the host.
+	# This means we need to be root to do a make install and will possibly screw up the host.
+	# We should really be using chroot or something better.
+	system ("LDFLAGS=-static ./configure --prefix=/opt/simple_busybox/install --enable-parallel --disable-shared --enable-static") == 0
+          or die "failed to configure";
+	system ("make V=1 LDFLAGS=-all-static") == 0 or die "failed to make";
+	system ("make install") == 0 or die "failed to install";
+	chdir "$BASEDIR" or die;
+}
+
+
+# Build NetCDF
+if ($program_args{build_netcdf}) {
+	print "CNL: Building NetCDF $netcdf{basename}\n";
+	chdir "$SRCDIR/$netcdf{basename}" or die;
+	# This is a horrible hack. We're installing into /opt/simple_busybox/install on the host.
+	# This means we need to be root to do a make install and will possibly screw up the host.
+	# We should really be using chroot or something better.
+	system ("LDFLAGS=-static ./configure --prefix=/opt/simple_busybox/install --disable-option-checking --with-hdf5=/opt/simple_busybox/install --disable-testsets CXX=mpicxx CC=mpicc F77=mpif77 FC=mpif90 CPPFLAGS=\"-I/opt/simple_busybox/install/include\" LIBS=\"-L/opt/simple_busybox/install/lib -lhdf5 -Wl,-rpath,/opt/simple_busybox/install/lib -ldl\" --cache-file=/dev/null --enable-static --disable-shared") == 0
+          or die "failed to configure";
+	system ("make V=1 LDFLAGS=-all-static") == 0 or die "failed to make";
+	system ("make install") == 0 or die "failed to install";
+	chdir "$BASEDIR" or die;
+}
+
+
+# Build DTK
+if ($program_args{build_dtk}) {
+	print "CNL: Building Data Transfer Kit\n";
+
+	my $DTK_BASEDIR  = "$BASEDIR/$SRCDIR/$dtk{src_subdir}";
+	my $DTK_BUILDDIR = "$BASEDIR/$SRCDIR/$dtk{src_subdir}/BUILD";
+
+	# Steup symbolic links
+	system ("ln -sf $DTK_BASEDIR/DataTransferKit $DTK_BASEDIR/Trilinos/DataTransferKit");
+	system ("ln -sf $DTK_BASEDIR/DTKData $DTK_BASEDIR/Trilinos/DataTransferKit/DTKData");
+
+	# Create BUILD directory
+	system("mkdir -p $DTK_BUILDDIR");
+	copy "$BASEDIR/$CONFIGDIR/dtk/configure_dtk.sh", "$DTK_BUILDDIR" or die;
+	system ("chmod +x $DTK_BUILDDIR/configure_dtk.sh");
+
+	# Setup Build directory (run cmake)
+	chdir "$DTK_BUILDDIR" or die;
+	system "PATH_TO_TRILINOS=$DTK_BASEDIR/Trilinos ./configure_dtk.sh";
+
+	# Build Trilinos and DTK
+	system ("make -j 4") == 0 or die "failed to make";
+
+	chdir "$BASEDIR" or die;
+}
+
+
+
+
 ##############################################################################
 # Build Initramfs Image
 ##############################################################################
@@ -492,15 +610,15 @@ if ($program_args{build_image}) {
 	system ("cp $SRCDIR/$dropbear{basename}/dropbearmulti $IMAGEDIR/bin");
 	system ("cp -R $CONFIGDIR/dropbear_files/etc/dropbear $IMAGEDIR/etc");
 	chdir  "$BASEDIR/$IMAGEDIR/bin" or die;
-	system ("ln -s dropbearmulti dropbearconvert");
-	system ("ln -s dropbearmulti dropbearkey");
+	system ("ln -sf dropbearmulti dropbearconvert");
+	system ("ln -sf dropbearmulti dropbearkey");
 	# Use OpenSSH clients, rather than dropbear clients so that OpenSSH generated keys work.
-	system ("ln -s /usr/bin/scp scp");
-	system ("ln -s /usr/bin/ssh ssh");
+	system ("ln -sf /usr/bin/scp scp");
+	system ("ln -sf /usr/bin/ssh ssh");
 	chdir  "$BASEDIR/$IMAGEDIR/sbin" or die;
-	system ("ln -s ../bin/dropbearmulti dropbear");
+	system ("ln -sf ../bin/dropbearmulti dropbear");
 	chdir  "$BASEDIR/$IMAGEDIR/usr/bin" or die;
-	system ("ln -s ../../bin/dropbearmulti dbclient");
+	system ("ln -sf ../../bin/dropbearmulti dbclient");
 	chdir  "$BASEDIR" or die;
 
 	# Use rsync to merge in skeleton overlay
@@ -525,7 +643,8 @@ if ($program_args{build_image}) {
 		or die "Failed to rsync libhugetlbfs to $IMAGEDIR";
 
 	# Install OpenMPI into image
-	system("cp -R /opt/$ompi{basename} $IMAGEDIR/opt") == 0
+	mkdir "$IMAGEDIR/opt/simple_busybox";
+	system("cp -R /opt/simple_busybox/$ompi{basename} $IMAGEDIR/opt/simple_busybox") == 0
 		or die "Failed to rsync OpenMPI to $IMAGEDIR";
 
 	# Install Pisces / Hobbes / Leviathan into image
@@ -552,6 +671,12 @@ if ($program_args{build_image}) {
 	system("cp -R $SRCDIR/pisces/hobbes/examples/apps/pmi/test_pmi_hello $IMAGEDIR/opt/hobbes") == 0
 		or die "error 11";
 
+	# Install Hobbes Enclave DTK demo files
+	system("cp -R $SRCDIR/dtk/BUILD/DataTransferKit/packages/Adapters/STKMesh/example/DataTransferKitSTKMeshAdapters_STKInlineInterpolation.exe $IMAGEDIR/opt/hobbes_enclave_demo");
+	system("cp -R $SRCDIR/dtk/BUILD/DataTransferKit/packages/Adapters/STKMesh/example/input.xml $IMAGEDIR/opt/hobbes_enclave_demo");
+	system("cp -R $SRCDIR/dtk/BUILD/DataTransferKit/packages/Adapters/STKMesh/example/cube_mesh.exo $IMAGEDIR/opt/hobbes_enclave_demo");
+	system("cp -R $SRCDIR/dtk/BUILD/DataTransferKit/packages/Adapters/STKMesh/example/pincell_mesh.exo $IMAGEDIR/opt/hobbes_enclave_demo");
+
 	# Files copied from build host
 	system ("cp /etc/localtime $IMAGEDIR/etc");
 	system ("cp /lib64/libnss_files.so.* $IMAGEDIR/lib64");
@@ -562,17 +687,17 @@ if ($program_args{build_image}) {
 	system ("cp -R /usr/share/terminfo $IMAGEDIR/usr/share");
 
 	# Infiniband files copied from build host
-	system ("cp -R /etc/libibverbs.d $IMAGEDIR/etc");
-	system ("cp /usr/lib64/libcxgb4-rdmav2.so $IMAGEDIR/usr/lib64");
-	system ("cp /usr/lib64/libocrdma-rdmav2.so $IMAGEDIR/usr/lib64");
-	system ("cp /usr/lib64/libcxgb3-rdmav2.so $IMAGEDIR/usr/lib64");
-	system ("cp /usr/lib64/libnes-rdmav2.so $IMAGEDIR/usr/lib64");
-	system ("cp /usr/lib64/libmthca-rdmav2.so $IMAGEDIR/usr/lib64");
-	system ("cp /usr/lib64/libmlx4-rdmav2.so $IMAGEDIR/usr/lib64");
-	system ("cp /usr/lib64/libmlx5-rdmav2.so $IMAGEDIR/usr/lib64");
-	system ("cp /usr/bin/ibv_devices $IMAGEDIR/usr/bin");
-	system ("cp /usr/bin/ibv_devinfo $IMAGEDIR/usr/bin");
-	system ("cp /usr/bin/ibv_rc_pingpong $IMAGEDIR/usr/bin");
+	#system ("cp -R /etc/libibverbs.d $IMAGEDIR/etc");
+	#system ("cp /usr/lib64/libcxgb4-rdmav2.so $IMAGEDIR/usr/lib64");
+	#system ("cp /usr/lib64/libocrdma-rdmav2.so $IMAGEDIR/usr/lib64");
+	#system ("cp /usr/lib64/libcxgb3-rdmav2.so $IMAGEDIR/usr/lib64");
+	#system ("cp /usr/lib64/libnes-rdmav2.so $IMAGEDIR/usr/lib64");
+	#system ("cp /usr/lib64/libmthca-rdmav2.so $IMAGEDIR/usr/lib64");
+	#system ("cp /usr/lib64/libmlx4-rdmav2.so $IMAGEDIR/usr/lib64");
+	#system ("cp /usr/lib64/libmlx5-rdmav2.so $IMAGEDIR/usr/lib64");
+	#system ("cp /usr/bin/ibv_devices $IMAGEDIR/usr/bin");
+	#system ("cp /usr/bin/ibv_devinfo $IMAGEDIR/usr/bin");
+	#system ("cp /usr/bin/ibv_rc_pingpong $IMAGEDIR/usr/bin");
 
 	# Find and copy all shared library dependencies
 	copy_libs($IMAGEDIR);

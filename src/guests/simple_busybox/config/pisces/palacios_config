@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 #Palacios: 
-# Fri Jan  8 16:05:52 2016
+# Sun Feb  7 09:45:13 2016
 #
 
 #
@@ -71,7 +71,7 @@ V3_CONFIG_BUILT_IN_STDLIB=y
 # V3_CONFIG_BUILT_IN_STRCMP is not set
 V3_CONFIG_BUILT_IN_STRCASECMP=y
 # V3_CONFIG_BUILT_IN_STRNCMP is not set
-V3_CONFIG_BUILT_IN_STRNCASECMP=y
+# V3_CONFIG_BUILT_IN_STRNCASECMP is not set
 # V3_CONFIG_BUILT_IN_STRCAT is not set
 # V3_CONFIG_BUILT_IN_STRNCAT is not set
 # V3_CONFIG_BUILT_IN_STRCPY is not set
