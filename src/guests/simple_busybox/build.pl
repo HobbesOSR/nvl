@@ -391,6 +391,10 @@ if ($program_args{build_ompi}) {
 if ($program_args{build_pisces}) {
 	print "CNL: Building Pisces\n";
 
+	# Step 0: Add a convenience script to the base pisces dir that updates all pisces repos to the latest
+	copy "$BASEDIR/$CONFIGDIR/pisces/update_pisces.sh", "$SRCDIR/$pisces{src_subdir}" or die;
+	system ("chmod +x $SRCDIR/$pisces{src_subdir}/update_pisces.sh");
+
 	# STEP 1: Configure and build Kitten... this will fail because
 	# Palacios has not been built yet, but Palacios can't be built
 	# until Kitten is configured in built. TODO: FIXME
