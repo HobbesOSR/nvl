@@ -87,7 +87,7 @@ $pisces{src_subdir}	= "pisces";
 $pisces{clone_cmd}[0]	= "git clone http://essex.cs.pitt.edu/git/pisces.git";
 $pisces{clone_cmd}[1]	= "git clone http://essex.cs.pitt.edu/git/petlib.git";
 $pisces{clone_cmd}[2]	= "git clone http://essex.cs.pitt.edu/git/xpmem.git";
-$pisces{clone_cmd}[3]	= "git clone https://github.com/ktpedre/kitten";
+$pisces{clone_cmd}[3]	= "git clone https://github.com/hobbesosr/kitten";
 $pisces{clone_cmd}[4]	= "git clone http://essex.cs.pitt.edu/git/palacios.git";
 $pisces{clone_cmd}[5]	= "git clone http://essex.cs.pitt.edu/git/hobbes.git";
 push(@packages, \%pisces);
