@@ -1,3 +1,2 @@
 language: c
-script: echo -n
-
+script: cd src/guests/simple_busybox/ && sudo ./build.pl --build-ompi --build-kernel --build-busybox --build-dropbear --build-libhugetlbfs --build-numactl --build-hwloc   --build-pisces --build-image --build-isoimage

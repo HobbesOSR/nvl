@@ -235,7 +235,7 @@ for (my $i=0; $i < @packages; $i++) {
 	if ($pkg{package_type} eq "tarball") {
 		if (! -e "$SRCDIR/$pkg{tarball}") {
 			print "CNL: Downloading $pkg{tarball}\n";
-			system ("wget --directory-prefix=$SRCDIR $pkg{url} -O $SRCDIR\/$pkg{tarball}") == 0 
+			system ("wget --no-check-certificate --directory-prefix=$SRCDIR $pkg{url} -O $SRCDIR\/$pkg{tarball}") == 0 
                           or die "failed to wget $pkg{tarball}";
 		}
 	} elsif ($pkg{package_type} eq "git") {
