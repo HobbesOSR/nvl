@@ -69,6 +69,7 @@ CONFIG_DEVFS=y
 CONFIG_XPMEM=y
 # CONFIG_XPMEM_NS is not set
 CONFIG_XPMEM_FWD=y
+# CONFIG_RCR=n
 
 #
 # Kernel hacking
