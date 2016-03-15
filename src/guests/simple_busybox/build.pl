@@ -45,7 +45,7 @@ push(@packages, \%dropbear);
 my %libhugetlbfs;
 $libhugetlbfs{package_type} = "git";
 $libhugetlbfs{basename}	= "libhugetlbfs";
-$libhugetlbfs{clone_cmd}[0] = "git clone https://github.com/libhugetlbfs/libhugetlbfs.git";
+$libhugetlbfs{clone_cmd}[0] = "git clone https://github.com/npe9/libhugetlbfs.git";
 push(@packages, \%libhugetlbfs);
 
 my %numactl;
