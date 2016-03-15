@@ -267,13 +267,13 @@ for (my $i=0; $i < @packages; $i++) {
 	if (! -d "$SRCDIR/$pkg{basename}") {
 		print "CNL: Unpacking $pkg{tarball}\n";
 		if ($pkg{tarball} =~ m/tar\.gz/) {
-			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball}") == 0
+			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball} >/dev/null") == 0
                           or die "failed to unpack tar $pkg{tarball}";
 		} elsif ($pkg{tarball} =~ m/tar\.bz2/) {
-			system ("tar --directory $SRCDIR -jxvf $SRCDIR/$pkg{tarball}") == 0
+			system ("tar --directory $SRCDIR -jxvf $SRCDIR/$pkg{tarball} >/dev/null") == 0
                           or die "failed to unpack tar $pkg{tarball}";
 		} elsif ($pkg{tarball} =~ m/tgz/) {
-			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball}") == 0
+			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball} >/dev/null") == 0
                           or die "failed to unpack tar $pkg{tarball}";
 		} else {
 			die "Unknown tarball type: $pkg{basename}";
