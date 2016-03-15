@@ -307,10 +307,10 @@ if ($program_args{build_busybox}) {
 	} else {
 		print "CNL: Using default .config\n";
 		copy "$BASEDIR/$CONFIGDIR/busybox_config", ".config" or die;
-		system ("make oldconfig") == 0 or die "failed to make oldconfig";
+		system ("make oldconfig >/dev/null") == 0 or die "failed to make oldconfig";
 	}
-	system ("make") == 0 or die "failed to make";
-	system ("make install") == 0 or die "failed to install";
+	system ("make >/dev/null") == 0 or die "failed to make";
+	system ("make install >/dev/null") == 0 or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -319,7 +319,7 @@ if ($program_args{build_dropbear}) {
 	print "CNL: Building Dropbear $dropbear{basename}\n";
 	chdir "$SRCDIR/$dropbear{basename}" or die;
 	system ("./configure --prefix=/") == 0 or die "failed to configure";
-	system ("make PROGRAMS=\"dropbear dbclient dropbearkey dropbearconvert scp\" MULTI=1") == 0 or die
+	system ("make PROGRAMS=\"dropbear dbclient dropbearkey dropbearconvert scp\" MULTI=1 >/dev/null") == 0 or die
           "failed to make";
 	chdir "$BASEDIR" or die;
 }
@@ -329,8 +329,8 @@ if ($program_args{build_libhugetlbfs}) {
 	print "CNL: Building libhugetlbfs $libhugetlbfs{basename}\n";
 	chdir "$SRCDIR/$libhugetlbfs{basename}" or die;
 	system ("rm -rf ./_install") == 0 or die;
-	system ("BUILDTYPE=NATIVEONLY make") == 0 or die "failed to make";
-	system ("BUILDTYPE=NATIVEONLY make install DESTDIR=$BASEDIR/$SRCDIR/$libhugetlbfs{basename}/_install") == 0
+	system ("BUILDTYPE=NATIVEONLY make >/dev/null") == 0 or die "failed to make";
+	system ("BUILDTYPE=NATIVEONLY make install DESTDIR=$BASEDIR/$SRCDIR/$libhugetlbfs{basename}/_install >/dev/null") == 0
           or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
@@ -344,8 +344,8 @@ if ($program_args{build_numactl}) {
 	system ("sed '/^prefix/s/\\/usr/$DESTDIR/' Makefile > Makefile.cnl") == 0 or die;
 	system ("mv Makefile Makefile.orig") == 0 or die;
 	system ("cp Makefile.cnl Makefile") == 0 or die;
-	system ("make") == 0 or die "failed to make";
-	system ("make install") == 0 or die "failed to install";
+	system ("make >/dev/null") == 0 or die "failed to make";
+	system ("make install >/dev/null") == 0 or die "failed to install";
 	system ("mv Makefile.orig Makefile") == 0 or die;
 	system ("rm -rf ./_install/share") == 0 or die;  # don't need manpages
 	chdir "$BASEDIR" or die;
