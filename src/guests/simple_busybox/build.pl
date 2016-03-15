@@ -290,10 +290,10 @@ if ($program_args{build_kernel}) {
 	} else {
 		print "CNL: Using default .config\n";
 		copy "$BASEDIR/$CONFIGDIR/linux_config", ".config" or die;
-		system ("make oldconfig") == 0 or die "failed to make oldconfig";
+		system ("make oldconfig >/dev/null") == 0 or die "failed to make oldconfig";
 	}
-	system ("make -j 4 bzImage modules") == 0 or die "failed to make bzImage or modules";
-	system ("INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install") == 0 or die "failed to make modules_install";
+	system ("make -j 4 bzImage modules >/dev/null") == 0 or die "failed to make bzImage or modules";
+	system ("INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install >/dev/null") == 0 or die "failed to make modules_install";
 #	system ("sudo make modules_install") == 0 or die "failed to make modules_install";
 	chdir "$BASEDIR" or die;
 }
