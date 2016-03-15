@@ -318,7 +318,7 @@ if ($program_args{build_busybox}) {
 if ($program_args{build_dropbear}) {
 	print "CNL: Building Dropbear $dropbear{basename}\n";
 	chdir "$SRCDIR/$dropbear{basename}" or die;
-	system ("./configure --prefix=/") == 0 or die "failed to configure";
+	system ("./configure --prefix=/ >/dev/null") == 0 or die "failed to configure";
 	system ("make PROGRAMS=\"dropbear dbclient dropbearkey dropbearconvert scp\" MULTI=1 >/dev/null") == 0 or die
           "failed to make";
 	chdir "$BASEDIR" or die;
