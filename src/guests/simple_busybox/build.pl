@@ -356,9 +356,9 @@ if ($program_args{build_hwloc}) {
 	print "CNL: Building hwloc $hwloc{basename}\n";
 	chdir "$SRCDIR/$hwloc{basename}" or die;
 	system ("rm -rf ./_install") == 0 or die;
-	system ("./configure --prefix=/usr --enable-static --disable-shared") == 0 or die "failed to configure";
-	system ("make") == 0 or die "failed to make";
-	system ("make install DESTDIR=$BASEDIR/$SRCDIR/$hwloc{basename}/_install") == 0
+	system ("./configure --prefix=/usr --enable-static --disable-shared >/dev/null") == 0 or die "failed to configure";
+	system ("make >/dev/null") == 0 or die "failed to make";
+	system ("make install DESTDIR=$BASEDIR/$SRCDIR/$hwloc{basename}/_install >/dev/null") == 0
 	  or die "failed ot install";
 	chdir "$BASEDIR" or die;
 }
@@ -380,10 +380,10 @@ if ($program_args{build_ompi}) {
 	# This means we need to be root to do a make install and will possibly screw up the host.
 	# We should really be using chroot or something better.
 	#system ("LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static --with-verbs=yes") == 0
-	system ("LDFLAGS=-static ./configure --prefix=/opt/simple_busybox/$ompi{basename} --disable-shared --enable-static --disable-dlopen --without-memory-manager --disable-vt") == 0
+	system ("LDFLAGS=-static ./configure --prefix=/opt/simple_busybox/$ompi{basename} --disable-shared --enable-static --disable-dlopen --without-memory-manager --disable-vt >/dev/null") == 0
           or die "failed to configure";
-	system ("make -j 4 LDFLAGS=-all-static") == 0 or die "failed to make";
-	system ("make install") == 0 or die "failed to install";
+	system ("make -j 4 LDFLAGS=-all-static >/dev/null") == 0 or die "failed to make";
+	system ("make install >/dev/null") == 0 or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
 
