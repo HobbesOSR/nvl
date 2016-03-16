@@ -422,7 +422,7 @@ if ($program_args{build_pisces}) {
 		system ("make oldconfig") == 0 or die "failed to make oldconfig";
 	}
 	system "make clean";
-	system ("make") == 0 or die "failed to make";
+	system ("CFLAGS=\" -Wno-missing-field-initializers \" make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 2: Done building pisces/palacios\n";
 
