@@ -1,3 +1,9 @@
+if sudo apt-get install -y genisoimage syslinux isolinux live-image-rescue; then
+    exit 0
+fi
+
+
+
 SLC=syslinux-common_4.05+dfsg-6+deb8u1_all.deb
 SL=syslinux_4.05+dfsg-6+deb8u1_amd64.deb
 GI=genisoimage_1.1.11-2ubuntu2_amd64.deb
