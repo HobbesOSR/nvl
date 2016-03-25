@@ -1,7 +1,7 @@
 language: c
 sudo: required
 dist: trusty
-script: cd src/guests/simple_busybox/ && sudo ./build.pl --build-ompi --build-kernel --build-busybox --build-dropbear --build-libhugetlbfs --build-numactl --build-hwloc   --build-pisces --build-image --build-isoimage
+script: cd src/guests/simple_busybox/ && sudo ./build.pl --build-ompi --build-kernel --build-busybox --build-dropbear --build-libhugetlbfs --build-numactl --build-hwloc   --build-pisces --build-image --build-isoimage && qemu-system-x86_64 -cdrom ./image.iso -m 2048 -smp 4 -serial stdio -monitor /dev/null -nographic
 compiler:
 - gcc-4.8
 before_install: ci/before_install.sh
