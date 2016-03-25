@@ -17,3 +17,5 @@ addons:
     - isolinux
     - qemu
     - live-image-rescue
+    - libdevel-trace-perl
+
