@@ -15,3 +15,5 @@ addons:
     - genisoimage
     - syslinux
     - isolinux
+    - qemu
+    - live-image-rescue
