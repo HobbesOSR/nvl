@@ -734,7 +734,7 @@ if ($program_args{build_isoimage}) {
 	system ("cp $LDLINUX isoimage");
 	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage");
 	system ("cp initramfs.gz isoimage/initrd.img");
-	system ("echo 'default bzImage initrd=initrd.img console=ttyS0 console=tty0' > isoimage/isolinux.cfg");
+	system ("echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg");
 #	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
 	system ("genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage");
 }
