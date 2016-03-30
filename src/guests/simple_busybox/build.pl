@@ -683,7 +683,13 @@ if ($program_args{build_image}) {
 
 	# Files copied from build host
 	system ("cp /etc/localtime $IMAGEDIR/etc");
-	system ("cp /lib64/libnss_files.so.* $IMAGEDIR/lib64");
+	if ( -e "/etc/redhat-release" ) {
+		system ("cp /lib64/libnss_files.so.* $IMAGEDIR/lib64");
+	} elsif ( -e "/etc/debian_version" ) {
+		system ("cp /lib/x86_64-linux-gnu/libnss_files.so.* $IMAGEDIR/lib/x86_64-linux-gnu");
+	} else {
+		die "unknown linux distribution"
+	}
 	system ("cp /usr/bin/ldd $IMAGEDIR/usr/bin");
 	system ("cp /usr/bin/strace $IMAGEDIR/usr/bin");
 	system ("cp /usr/bin/ssh $IMAGEDIR/usr/bin");
