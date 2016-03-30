@@ -1,8 +1,11 @@
+cp src/guests/simple_busybox/overlays/skel/home/user/.ssh/id_dsa ~/.ssh
+chmod 0600 ~/.ssh/id_dsa
+eval `ssh-agent`
+ssh-add ~/.ssh/id_dsa
+
 if sudo apt-get install -y genisoimage syslinux isolinux live-image-rescue; then
     exit 0
 fi
-
-
 
 SLC=syslinux-common_4.05+dfsg-6+deb8u1_all.deb
 SL=syslinux_4.05+dfsg-6+deb8u1_amd64.deb
