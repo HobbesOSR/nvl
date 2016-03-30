@@ -14,7 +14,6 @@ addons:
     - mtools
     - genisoimage
     - syslinux
-    - isolinux
     - qemu
     - live-image-rescue
     - libdevel-trace-perl

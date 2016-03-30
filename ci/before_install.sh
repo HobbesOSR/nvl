@@ -3,7 +3,7 @@ chmod 0600 ~/.ssh/id_dsa
 eval `ssh-agent`
 ssh-add ~/.ssh/id_dsa
 
-if sudo apt-get install -y genisoimage syslinux isolinux live-image-rescue; then
+if sudo apt-get install -y genisoimage syslinux live-image-rescue; then
     exit 0
 fi
 
