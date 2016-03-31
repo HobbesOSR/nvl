@@ -6,11 +6,6 @@
 cd /opt/hobbes
 ./start_hobbes.sh
 sleep 10
-./hobbes create_enclave ./kitten_enclave.xml || crash
+./hobbes create_enclave ./kitten_enclave.xml || exit 1 
 # want to know which enclave I created a posteriori
-./hobbes launch_app enclave-1 /opt/hobbes/null || crash
-# need to see if it completes correctly.
-# how do I handle hangs forever?
-
-
-# how do I call this? call it via ssh?
+./hobbes launch_app enclave-1 /opt/hobbes/null || exit 1 

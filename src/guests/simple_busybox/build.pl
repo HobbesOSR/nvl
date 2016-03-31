@@ -512,6 +512,15 @@ if ($program_args{build_pisces}) {
 	system ("make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 12: Done building pisces/hobbes/examples/apps/pmi/test_pmi_hello\n";
+
+  # Step 13: Build NULL test app
+	print "CNL: STEP 13: Building pisces/test/null\n";
+	chdir "$SRCDIR/$pisces{src_subdir}/test/null" or die;
+	system ("make clean") == 0 or die "failed to clean";
+	system ("make") == 0 or die "failed to make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 13: Done building pisces/hobbes/test\n";
+
 }
 
 
@@ -674,6 +683,8 @@ if ($program_args{build_image}) {
 		or die "error 10";
 	system("cp -R $SRCDIR/pisces/hobbes/examples/apps/pmi/test_pmi_hello $IMAGEDIR/opt/hobbes") == 0
 		or die "error 11";
+  system("cp -R $SRCDIR/pisces/test/null/null $IMAGEDIR/opt/hobbes") == 0
+      or die "error 12";
 
 	# Install Hobbes Enclave DTK demo files
 	system("cp -R $SRCDIR/dtk/BUILD/DataTransferKit/packages/Adapters/STKMesh/example/DataTransferKitSTKMeshAdapters_STKInlineInterpolation.exe $IMAGEDIR/opt/hobbes_enclave_demo");
