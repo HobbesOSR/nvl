@@ -45,7 +45,7 @@ push(@packages, \%dropbear);
 my %libhugetlbfs;
 $libhugetlbfs{package_type} = "git";
 $libhugetlbfs{basename}	= "libhugetlbfs";
-$libhugetlbfs{clone_cmd}[0] = "git clone https://github.com/libhugetlbfs/libhugetlbfs.git";
+$libhugetlbfs{clone_cmd}[0] = "git clone https://github.com/npe9/libhugetlbfs.git";
 push(@packages, \%libhugetlbfs);
 
 my %numactl;
@@ -235,7 +235,7 @@ for (my $i=0; $i < @packages; $i++) {
 	if ($pkg{package_type} eq "tarball") {
 		if (! -e "$SRCDIR/$pkg{tarball}") {
 			print "CNL: Downloading $pkg{tarball}\n";
-			system ("wget --directory-prefix=$SRCDIR $pkg{url} -O $SRCDIR\/$pkg{tarball}") == 0 
+			system ("wget --no-check-certificate --directory-prefix=$SRCDIR $pkg{url} -O $SRCDIR\/$pkg{tarball}") == 0 
                           or die "failed to wget $pkg{tarball}";
 		}
 	} elsif ($pkg{package_type} eq "git") {
@@ -267,13 +267,13 @@ for (my $i=0; $i < @packages; $i++) {
 	if (! -d "$SRCDIR/$pkg{basename}") {
 		print "CNL: Unpacking $pkg{tarball}\n";
 		if ($pkg{tarball} =~ m/tar\.gz/) {
-			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball}") == 0
+			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball} >/dev/null") == 0
                           or die "failed to unpack tar $pkg{tarball}";
 		} elsif ($pkg{tarball} =~ m/tar\.bz2/) {
-			system ("tar --directory $SRCDIR -jxvf $SRCDIR/$pkg{tarball}") == 0
+			system ("tar --directory $SRCDIR -jxvf $SRCDIR/$pkg{tarball} >/dev/null") == 0
                           or die "failed to unpack tar $pkg{tarball}";
 		} elsif ($pkg{tarball} =~ m/tgz/) {
-			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball}") == 0
+			system ("tar --directory $SRCDIR -zxvf $SRCDIR/$pkg{tarball} >/dev/null") == 0
                           or die "failed to unpack tar $pkg{tarball}";
 		} else {
 			die "Unknown tarball type: $pkg{basename}";
@@ -290,10 +290,10 @@ if ($program_args{build_kernel}) {
 	} else {
 		print "CNL: Using default .config\n";
 		copy "$BASEDIR/$CONFIGDIR/linux_config", ".config" or die;
-		system ("make oldconfig") == 0 or die "failed to make oldconfig";
+		system ("make oldconfig >/dev/null") == 0 or die "failed to make oldconfig";
 	}
-	system ("make -j 4 bzImage modules") == 0 or die "failed to make bzImage or modules";
-	system ("INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install") == 0 or die "failed to make modules_install";
+	system ("make -j 4 bzImage modules >/dev/null") == 0 or die "failed to make bzImage or modules";
+	system ("INSTALL_MOD_PATH=$BASEDIR/$SRCDIR/$kernel{basename}/_install/ make modules_install >/dev/null") == 0 or die "failed to make modules_install";
 #	system ("sudo make modules_install") == 0 or die "failed to make modules_install";
 	chdir "$BASEDIR" or die;
 }
@@ -307,10 +307,10 @@ if ($program_args{build_busybox}) {
 	} else {
 		print "CNL: Using default .config\n";
 		copy "$BASEDIR/$CONFIGDIR/busybox_config", ".config" or die;
-		system ("make oldconfig") == 0 or die "failed to make oldconfig";
+		system ("make oldconfig >/dev/null") == 0 or die "failed to make oldconfig";
 	}
-	system ("make") == 0 or die "failed to make";
-	system ("make install") == 0 or die "failed to install";
+	system ("make >/dev/null") == 0 or die "failed to make";
+	system ("make install >/dev/null") == 0 or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -318,8 +318,8 @@ if ($program_args{build_busybox}) {
 if ($program_args{build_dropbear}) {
 	print "CNL: Building Dropbear $dropbear{basename}\n";
 	chdir "$SRCDIR/$dropbear{basename}" or die;
-	system ("./configure --prefix=/") == 0 or die "failed to configure";
-	system ("make PROGRAMS=\"dropbear dbclient dropbearkey dropbearconvert scp\" MULTI=1") == 0 or die
+	system ("./configure --prefix=/ >/dev/null") == 0 or die "failed to configure";
+	system ("make PROGRAMS=\"dropbear dbclient dropbearkey dropbearconvert scp\" MULTI=1 >/dev/null") == 0 or die
           "failed to make";
 	chdir "$BASEDIR" or die;
 }
@@ -329,8 +329,8 @@ if ($program_args{build_libhugetlbfs}) {
 	print "CNL: Building libhugetlbfs $libhugetlbfs{basename}\n";
 	chdir "$SRCDIR/$libhugetlbfs{basename}" or die;
 	system ("rm -rf ./_install") == 0 or die;
-	system ("BUILDTYPE=NATIVEONLY make") == 0 or die "failed to make";
-	system ("BUILDTYPE=NATIVEONLY make install DESTDIR=$BASEDIR/$SRCDIR/$libhugetlbfs{basename}/_install") == 0
+	system ("BUILDTYPE=NATIVEONLY make >/dev/null") == 0 or die "failed to make";
+	system ("BUILDTYPE=NATIVEONLY make install DESTDIR=$BASEDIR/$SRCDIR/$libhugetlbfs{basename}/_install >/dev/null") == 0
           or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
@@ -344,8 +344,8 @@ if ($program_args{build_numactl}) {
 	system ("sed '/^prefix/s/\\/usr/$DESTDIR/' Makefile > Makefile.cnl") == 0 or die;
 	system ("mv Makefile Makefile.orig") == 0 or die;
 	system ("cp Makefile.cnl Makefile") == 0 or die;
-	system ("make") == 0 or die "failed to make";
-	system ("make install") == 0 or die "failed to install";
+	system ("make >/dev/null") == 0 or die "failed to make";
+	system ("make install >/dev/null") == 0 or die "failed to install";
 	system ("mv Makefile.orig Makefile") == 0 or die;
 	system ("rm -rf ./_install/share") == 0 or die;  # don't need manpages
 	chdir "$BASEDIR" or die;
@@ -356,9 +356,9 @@ if ($program_args{build_hwloc}) {
 	print "CNL: Building hwloc $hwloc{basename}\n";
 	chdir "$SRCDIR/$hwloc{basename}" or die;
 	system ("rm -rf ./_install") == 0 or die;
-	system ("./configure --prefix=/usr --enable-static --disable-shared") == 0 or die "failed to configure";
-	system ("make") == 0 or die "failed to make";
-	system ("make install DESTDIR=$BASEDIR/$SRCDIR/$hwloc{basename}/_install") == 0
+	system ("./configure --prefix=/usr --enable-static --disable-shared >/dev/null") == 0 or die "failed to configure";
+	system ("make >/dev/null") == 0 or die "failed to make";
+	system ("make install DESTDIR=$BASEDIR/$SRCDIR/$hwloc{basename}/_install >/dev/null") == 0
 	  or die "failed ot install";
 	chdir "$BASEDIR" or die;
 }
@@ -380,10 +380,10 @@ if ($program_args{build_ompi}) {
 	# This means we need to be root to do a make install and will possibly screw up the host.
 	# We should really be using chroot or something better.
 	#system ("LD_LIBRARY_PATH=$BASEDIR/$SRCDIR/slurm-install/lib ./configure --prefix=/opt/$ompi{basename} --disable-shared --enable-static --with-verbs=yes") == 0
-	system ("LDFLAGS=-static ./configure --prefix=/opt/simple_busybox/$ompi{basename} --disable-shared --enable-static --disable-dlopen --without-memory-manager --disable-vt") == 0
+	system ("LDFLAGS=-static ./configure --prefix=/opt/simple_busybox/$ompi{basename} --disable-shared --enable-static --disable-dlopen --without-memory-manager --disable-vt >/dev/null") == 0
           or die "failed to configure";
-	system ("make -j 4 LDFLAGS=-all-static") == 0 or die "failed to make";
-	system ("make install") == 0 or die "failed to install";
+	system ("make -j 4 LDFLAGS=-all-static >/dev/null") == 0 or die "failed to make";
+	system ("make install >/dev/null") == 0 or die "failed to install";
 	chdir "$BASEDIR" or die;
 }
 
@@ -422,7 +422,7 @@ if ($program_args{build_pisces}) {
 		system ("make oldconfig") == 0 or die "failed to make oldconfig";
 	}
 	system "make clean";
-	system ("make") == 0 or die "failed to make";
+	system ("CFLAGS=\" -Wno-missing-field-initializers \" make \"V=1\"") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 2: Done building pisces/palacios\n";
 
@@ -683,7 +683,13 @@ if ($program_args{build_image}) {
 
 	# Files copied from build host
 	system ("cp /etc/localtime $IMAGEDIR/etc");
-	system ("cp /lib64/libnss_files.so.* $IMAGEDIR/lib64");
+	if ( -e "/etc/redhat-release" ) {
+		system ("cp /lib64/libnss_files.so.* $IMAGEDIR/lib64");
+	} elsif ( -e "/etc/debian_version" ) {
+		system ("cp /lib/x86_64-linux-gnu/libnss_files.so.* $IMAGEDIR/lib/x86_64-linux-gnu");
+	} else {
+		die "unknown linux distribution"
+	}
 	system ("cp /usr/bin/ldd $IMAGEDIR/usr/bin");
 	system ("cp /usr/bin/strace $IMAGEDIR/usr/bin");
 	system ("cp /usr/bin/ssh $IMAGEDIR/usr/bin");
@@ -734,7 +740,7 @@ if ($program_args{build_isoimage}) {
 	system ("cp $LDLINUX isoimage");
 	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage");
 	system ("cp initramfs.gz isoimage/initrd.img");
-	system ("echo 'default bzImage initrd=initrd.img console=ttyS0 console=tty0' > isoimage/isolinux.cfg");
+	system ("echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg");
 #	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
 	system ("genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage");
 }
