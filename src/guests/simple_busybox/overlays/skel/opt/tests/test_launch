@@ -1,0 +1,16 @@
+# test basic app launching and reaping.
+#!/bin/sh
+
+. test_framework
+
+cd /opt/hobbes
+./start_hobbes.sh
+sleep 10
+./hobbes create_enclave ./kitten_enclave.xml || crash
+# want to know which enclave I created a posteriori
+./hobbes launch_app enclave-1 /opt/hobbes/null || crash
+# need to see if it completes correctly.
+# how do I handle hangs forever?
+
+
+# how do I call this? call it via ssh?
