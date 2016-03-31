@@ -9,7 +9,7 @@ PID=$!
 sleep 20
 ssh-keyscan -t rsa,dsa localhost -p 2222 2>&1 | sort -u - ~/.ssh/known_hosts > ~/.ssh/tmp_hosts
 mv ~/.ssh/tmp_hosts ~/.ssh/known_hosts
-cssh root@localhost -p 2222 echo worked
+cssh root@localhost -p 2222 "cd /opt/tests/ && test_launch"
 cssh root@localhost -p 2222 halt
 # want a way to make qemu exit with the halt
 kill $PID
