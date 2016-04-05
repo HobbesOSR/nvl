@@ -267,6 +267,7 @@ main (int argc, char *argv[])
   gni_cq_destroy_args_t cq_destroy_attr;
   gni_post_rdma_args_t post_attr;
   gni_post_descriptor_t post_desc;
+  gni_nic_fmaconfig_args_t *fmaconf_arg;
   uint8_t *send_data;
   gni_mem_handle_t send_mhndl;
   uint8_t *rcv_data;
@@ -428,18 +429,25 @@ main (int argc, char *argv[])
 	      fma_ctrl =
 		xemem_make (nic_set_attr.fma_ctrl, GHAL_FMA_CTRL_SIZE,
 			    "fma_win_ctrl");
+	      //hexdump (nic_set_attr.fma_ctrl, 64);
+	      // Put the segid instead of vaddresses
+	      nic_set_attr.fma_window = (uint64_t) fma_win;
+	      nic_set_attr.fma_window_nwc = (uint64_t) fma_put;
+	      nic_set_attr.fma_window_get = (uint64_t) fma_get;
+	      nic_set_attr.fma_ctrl = (uint64_t) fma_ctrl;
+	      fprintf (stderr,
+		       "dump server segids  win put get ctrl %llu %llu %llu %llu\n",
+		       fma_win, fma_put, fma_get, fma_ctrl);
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (nic_set_attr),
 			      &nic_set_attr);
 	      break;
 	    case GNI_IOC_MEM_REGISTER:
 
-		mem_register_attr = (gni_mem_register_args_t *) data_buf;
-		gni_mem_segment_t *segment;
+	      mem_register_attr = (gni_mem_register_args_t *) data_buf;
+	      gni_mem_segment_t *segment;
 
 	      if (mem_register_attr->segments_cnt == 1)
 		{
-		  fprintf (stderr, "Sever mem register find segment %llu\n",
-			   mem_register_attr->address);
 		  apid = xemem_get (mem_register_attr->address, XEMEM_RDWR);
 		  if (apid <= 0)
 		    {
@@ -447,7 +455,6 @@ main (int argc, char *argv[])
 			("seg attach from server for MEM REGISTER  failed \n");
 		      return HCQ_INVALID_HANDLE;
 		    }
-		  fprintf (stderr, "Sever mem register got segment \n");
 
 		  r_addr.apid = apid;
 		  r_addr.offset = 0;
@@ -460,13 +467,9 @@ main (int argc, char *argv[])
 		      xemem_release (apid);
 		      return -1;
 		    }
-		  fprintf (stderr,
-			   "Sever mem register attach seg done new vaddr %p\n",
-			   buffer);
 		  list_add_element (mt, &mem_register_attr->address, buffer,
 				    mem_register_attr->length);
 		  mem_register_attr->address = buffer;
-		  fprintf (stderr, "Sever mem register call ioctl \n");
 		}
 	      else
 		{
@@ -483,7 +486,6 @@ main (int argc, char *argv[])
 		  return rc;
 		}
 
-	      printf ("Memory is registered successfully\n");
 	      printf
 		("server after registration ioctl buffer %p: qword1 = 0x%16lx qword2 = 0x%16lx\n",
 		 buffer, mem_register_attr->mem_hndl.qword1,
@@ -531,11 +533,9 @@ main (int argc, char *argv[])
 
 	    case GNI_IOC_CQ_CREATE:
 	      cq_create_attr = (gni_cq_create_args_t *) data_buf;
-	      /* one segment to be registered */
 	      buffer =
 		(void *) list_find_vaddr_by_segid (mt,
 						   &cq_create_attr->queue);
-	      //fprintf (stderr, " CQ create server side actual vaddr is: %p\n", buffer);
 	      cq_create_attr->queue = buffer;
 	      rc = ioctl (device, GNI_IOC_CQ_CREATE, cq_create_attr);
 	      if (rc < 0)
@@ -543,11 +543,21 @@ main (int argc, char *argv[])
 		  fprintf (stderr, "Failed calling GNI_IOC_CQ_CREATE\n");
 		  return 0;
 		}
-//
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (gni_cq_create_args_t),
 			      cq_create_attr);
 	      break;
 
+	    case GNI_IOC_NIC_FMA_CONFIG:
+	      fmaconf_arg = (gni_nic_fmaconfig_args_t *) data_buf;
+	      rc = ioctl (device, GNI_IOC_NIC_FMA_CONFIG, fmaconf_arg);
+	      if (rc < 0)
+		{
+		  fprintf (stderr, "Failed calling GNI_IOC_NIC_FMA_CONFIG\n");
+		  return 0;
+		}
+	      hcq_cmd_return (hcq, cmd, ret,
+			      sizeof (gni_nic_fmaconfig_args_t), fmaconf_arg);
+	      break;
 	    case PMI_IOC_ALLGATHER:
 	      outbuf = (char *) malloc (job_size * data_len);
 	      assert (outbuf);
