@@ -11,6 +11,7 @@ my $OVERLAYDIR = "overlays";
 my $IMAGEDIR   = "image";
 chomp(my $ISOLINUX = `find /usr/ -name isolinux.bin`);
 chomp(my $LDLINUX = `find /usr/ -name ldlinux.c32`);
+$LDLINUX eq "" && chomp($LDLINUX = `find /usr/ -name linux.c32`);
 
 if (! -d $SRCDIR)     { mkdir $SRCDIR; }
 if (! -d $IMAGEDIR)   { mkdir $IMAGEDIR; }
@@ -746,14 +747,14 @@ if ($program_args{build_image}) {
 # Build an ISO Image
 ##############################################################################
 if ($program_args{build_isoimage}) {
-	-d "isoimage" || system ("mkdir -p isoimage") || die "couldn't make isoimage directory";
-	system ("cp $ISOLINUX isoimage") || die "couldn't find isolinux.bin in ".$ISOLINUX;
-	system ("cp $LDLINUX isoimage") || die "couldn't find ldlinux in ".$LDLINUX;
-	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage") || die "couldn't copy bzImage to isoimage directory";
-	system ("cp initramfs.gz isoimage/initrd.img") || die "couldn't copy initramfs.gz to isoimage/initrd.img";
-	system ("echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg") || die "couldn't create isoimage configuration file";
+	-d "isoimage" || system ("mkdir -p isoimage") == 0 || die "couldn't make isoimage directory";
+	system ("cp $ISOLINUX isoimage") == 0 || die "couldn't copy isolinux.bin to isoimage: $?";
+	system ("cp $LDLINUX isoimage") == 0 || die "couldn't copy ldlinux.c32 to isoimage: $?";
+	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage") == 0 || die "couldn't copy bzImage to isoimage directory";
+	system ("cp initramfs.gz isoimage/initrd.img") == 0 || die "couldn't copy initramfs.gz to isoimage/initrd.img";
+	system ("echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg") == 0 || die "couldn't create isoimage configuration file";
 #	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
-	system ("genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage") || die "couldn't make isoimage";
+	system ("genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage") == 0 || die "couldn't make isoimage";
 }
 
 
