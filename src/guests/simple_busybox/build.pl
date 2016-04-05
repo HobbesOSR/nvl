@@ -9,9 +9,10 @@ my $SRCDIR     = "src";
 my $CONFIGDIR  = "config";
 my $OVERLAYDIR = "overlays";
 my $IMAGEDIR   = "image";
-my $ISOLINUX   = "\$(find /usr/ -name isolinux.bin)";
-my $LDLINUX    = "\$(find /usr/ -name ldlinux.c32)";
-    
+chomp(my $ISOLINUX = `find /usr/ -name isolinux.bin`);
+chomp(my $LDLINUX = `find /usr/ -name ldlinux.c32`);
+$LDLINUX eq "" && chomp($LDLINUX = `find /usr/ -name linux.c32`);
+
 if (! -d $SRCDIR)     { mkdir $SRCDIR; }
 if (! -d $IMAGEDIR)   { mkdir $IMAGEDIR; }
 
@@ -512,6 +513,15 @@ if ($program_args{build_pisces}) {
 	system ("make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
 	print "CNL: STEP 12: Done building pisces/hobbes/examples/apps/pmi/test_pmi_hello\n";
+
+  # Step 13: Build NULL test app
+	print "CNL: STEP 13: Building pisces/test/null\n";
+	chdir "$SRCDIR/test/null" or die;
+	system ("make clean") == 0 or die "failed to clean";
+	system ("make") == 0 or die "failed to make";
+	chdir "$BASEDIR" or die;
+	print "CNL: STEP 13: Done building pisces/hobbes/test\n";
+
 }
 
 
@@ -674,6 +684,8 @@ if ($program_args{build_image}) {
 		or die "error 10";
 	system("cp -R $SRCDIR/pisces/hobbes/examples/apps/pmi/test_pmi_hello $IMAGEDIR/opt/hobbes") == 0
 		or die "error 11";
+  system("cp -R $SRCDIR/test/null/null $IMAGEDIR/opt/hobbes") == 0
+      or die "error 12";
 
 	# Install Hobbes Enclave DTK demo files
 	system("cp -R $SRCDIR/dtk/BUILD/DataTransferKit/packages/Adapters/STKMesh/example/DataTransferKitSTKMeshAdapters_STKInlineInterpolation.exe $IMAGEDIR/opt/hobbes_enclave_demo");
@@ -735,14 +747,14 @@ if ($program_args{build_image}) {
 # Build an ISO Image
 ##############################################################################
 if ($program_args{build_isoimage}) {
-	system ("mkdir -p isoimage");
-	system ("cp $ISOLINUX isoimage");
-	system ("cp $LDLINUX isoimage");
-	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage");
-	system ("cp initramfs.gz isoimage/initrd.img");
-	system ("echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg");
+	-d "isoimage" || system ("mkdir -p isoimage") == 0 || die "couldn't make isoimage directory";
+	system ("cp $ISOLINUX isoimage") == 0 || die "couldn't copy isolinux.bin to isoimage: $?";
+	system ("cp $LDLINUX isoimage") == 0 || die "couldn't copy ldlinux.c32 to isoimage: $?";
+	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage") == 0 || die "couldn't copy bzImage to isoimage directory";
+	system ("cp initramfs.gz isoimage/initrd.img") == 0 || die "couldn't copy initramfs.gz to isoimage/initrd.img";
+	system ("echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg") == 0 || die "couldn't create isoimage configuration file";
 #	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
-	system ("genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage");
+	system ("genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage") == 0 || die "couldn't make isoimage";
 }
 
 
