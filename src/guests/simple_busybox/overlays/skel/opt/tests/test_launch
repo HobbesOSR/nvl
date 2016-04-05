@@ -1,8 +1,6 @@
 # test basic app launching and reaping.
 #!/bin/sh
 
-. test_framework
-
 cd /opt/hobbes
 ./start_hobbes.sh
 sleep 10
