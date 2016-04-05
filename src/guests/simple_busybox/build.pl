@@ -515,7 +515,7 @@ if ($program_args{build_pisces}) {
 
   # Step 13: Build NULL test app
 	print "CNL: STEP 13: Building pisces/test/null\n";
-	chdir "$SRCDIR/$pisces{src_subdir}/test/null" or die;
+	chdir "$SRCDIR/test/null" or die;
 	system ("make clean") == 0 or die "failed to clean";
 	system ("make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
@@ -683,7 +683,7 @@ if ($program_args{build_image}) {
 		or die "error 10";
 	system("cp -R $SRCDIR/pisces/hobbes/examples/apps/pmi/test_pmi_hello $IMAGEDIR/opt/hobbes") == 0
 		or die "error 11";
-  system("cp -R $SRCDIR/pisces/test/null/null $IMAGEDIR/opt/hobbes") == 0
+  system("cp -R $SRCDIR/test/null/null $IMAGEDIR/opt/hobbes") == 0
       or die "error 12";
 
 	# Install Hobbes Enclave DTK demo files
