@@ -9,9 +9,9 @@ my $SRCDIR     = "src";
 my $CONFIGDIR  = "config";
 my $OVERLAYDIR = "overlays";
 my $IMAGEDIR   = "image";
-my $ISOLINUX   = "\$(find /usr/ -name isolinux.bin)";
-my $LDLINUX    = "\$(find /usr/ -name ldlinux.c32)";
-    
+chomp(my $ISOLINUX = `find /usr/ -name isolinux.bin`);
+chomp(my $LDLINUX = `find /usr/ -name ldlinux.c32`);
+
 if (! -d $SRCDIR)     { mkdir $SRCDIR; }
 if (! -d $IMAGEDIR)   { mkdir $IMAGEDIR; }
 
@@ -746,14 +746,14 @@ if ($program_args{build_image}) {
 # Build an ISO Image
 ##############################################################################
 if ($program_args{build_isoimage}) {
-	system ("mkdir -p isoimage");
-	system ("cp $ISOLINUX isoimage");
-	system ("cp $LDLINUX isoimage");
-	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage");
-	system ("cp initramfs.gz isoimage/initrd.img");
-	system ("echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg");
+	-d "isoimage" || system ("mkdir -p isoimage") || die "couldn't make isoimage directory";
+	system ("cp $ISOLINUX isoimage") || die "couldn't find isolinux.bin in ".$ISOLINUX;
+	system ("cp $LDLINUX isoimage") || die "couldn't find ldlinux in ".$LDLINUX;
+	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage") || die "couldn't copy bzImage to isoimage directory";
+	system ("cp initramfs.gz isoimage/initrd.img") || die "couldn't copy initramfs.gz to isoimage/initrd.img";
+	system ("echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg") || die "couldn't create isoimage configuration file";
 #	system "echo 'default bzImage initrd=initrd.img' > isoimage/isolinux.cfg";
-	system ("genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage");
+	system ("genisoimage -J -r -o image.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table isoimage") || die "couldn't make isoimage";
 }
 
 
