@@ -11,7 +11,7 @@ execs=null
 	$(CC) $(CFLAGS)  -c $<  -o $@
 
 null : $(OBJS)
-	gcc $(LDFLAGS) -o $@ $^
+	gcc $(LDFLAGS) -static -o $@ $^
 
 clean:
 	rm -f core $(wildcard  $(execs)) *.o *.so
