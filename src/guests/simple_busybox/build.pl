@@ -9,8 +9,8 @@ my $SRCDIR     = "src";
 my $CONFIGDIR  = "config";
 my $OVERLAYDIR = "overlays";
 my $IMAGEDIR   = "image";
-chomp(my $ISOLINUX = `find /usr/ -name isolinux.bin`);
-chomp(my $LDLINUX = `find /usr/ -name ldlinux.c32`);
+chomp(my $ISOLINUX = split(" ",`find /usr/ -name isolinux.bin`)[1]);
+chomp(my $LDLINUX = split(" ", `find /usr/ -name ldlinux.c32`)[1]);
 $LDLINUX eq "" && chomp($LDLINUX = `find /usr/ -name linux.c32`);
 
 if (! -d $SRCDIR)     { mkdir $SRCDIR; }
