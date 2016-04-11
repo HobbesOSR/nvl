@@ -1,0 +1,4 @@
+
+#LD_PRELOAD=/home/smukher/nvl/src/nvl/pisces/cray/xpmem_chnl_client.so ./ping_pong -vv
+ ./ping_pong -vvv
+
