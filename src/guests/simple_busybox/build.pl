@@ -746,10 +746,12 @@ if ($program_args{build_image}) {
 ##############################################################################
 # Build an ISO Image
 ##############################################################################
+
 if ($program_args{build_isoimage}) {
-	-d "isoimage" || system ("mkdir -p isoimage") == 0 || die "couldn't make isoimage directory";
-	system ("cp $ISOLINUX isoimage") == 0 || die "couldn't copy isolinux.bin to isoimage: $?";
-	system ("cp $LDLINUX isoimage") == 0 || die "couldn't copy ldlinux.c32 to isoimage: $?";
+  -d "isoimage" || system ("mkdir -p isoimage") == 0 || die "couldn't make isoimage directory";
+  print $ISOLINUX;
+	system ("cp -L $ISOLINUX isoimage") == 0 || die "couldn't copy isolinux.bin to isoimage: $?";
+	system ("cp -L $LDLINUX isoimage") == 0 || die "couldn't copy ldlinux.c32 to isoimage: $?";
 	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage") == 0 || die "couldn't copy bzImage to isoimage directory";
 	system ("cp initramfs.gz isoimage/initrd.img") == 0 || die "couldn't copy initramfs.gz to isoimage/initrd.img";
 	system ("echo 'default bzImage initrd=initrd.img console=ttyS0' > isoimage/isolinux.cfg") == 0 || die "couldn't create isoimage configuration file";
