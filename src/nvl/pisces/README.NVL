@@ -18,52 +18,51 @@ Steps for building Pisces with Leviathan
      make
 
 
-4. Build Petlib
-     cd src/nvl/pisces/petos
-     make
-
-
-5. Build XEMEM kernel module
+4. Build XEMEM kernel module
      # Edit Makefile, set KERN_PATH to point to your kernel build tree.
      cd src/nvl/pisces/xpmem/mod
      make
 
 
-6. Configure and build Pisces
+5. Configure and build Pisces
      # Edit Makefile, set KERN_PATH to point to your kernel build tree.
      # Be sure to add XPMEM=y to make line.
      cd src/nvl/pisces/pisces
      make XPMEM=y
 
-7. Configure and build WhiteDB
+
+6. Configure and build WhiteDB
      cd src/nvl/pisces/hobbes/whitedb-0.7.3
      autoreconf -fvi
      ./configure --enable-locking=wpspin --no-create --no-recursion
      make
 
-8. Configure and build Leviathan / libhobbes.a
+
+7. Configure and build Leviathan / libhobbes.a
      # Edit build.cfg, set PARENT_PATH to root of hobbes directory
-     cd src/nvl/pisces/hobbes/libhobbes
+     cd src/nvl/pisces/hobbes
      ./setup_leviathan.sh
+     cd libhobbes
      make
 
 
-9. Configure and build Leviathan / hobbes shell
+8. Configure and build Leviathan / hobbes shell
      cd src/nvl/pisces/hobbes/shell
      make
 
 
-10. Configure and build Leviathan / lwk_init
+9. Configure and build Leviathan / lwk_init
+     # Edit init.c, uncomment CRAY_UGNI_SUPPORT if building for Cray
      cd src/nvl/pisces/hobbes/lwk_inittask
      make
 
 
-11. Configure and build Leviathan / lnx_init
+10. Configure and build Leviathan / lnx_init
      cd src/nvl/pisces/hobbes/lnx_inittask
      make
 
 
-12. Copy everything to your host image, or somewhere accessible from your host:
+11. Copy everything to your host image, or somewhere accessible from your host:
 
      SRCDIR=.
      IMAGEDIR=.
@@ -81,7 +80,7 @@ Steps for building Pisces with Leviathan
      cp -R $SRCDIR/hobbes/examples/apps/pmi/test_pmi_hello $IMAGEDIR/opt/hobbes
 
 
-13. Boot your host OS, load Pisces module, use Pisces tools to create envlaves
+12. Boot your host OS, load Pisces module, use Pisces tools to create envlaves
 
      echo "Loading xpmem.ko ns=1"
      /sbin/rmmod xpmem
