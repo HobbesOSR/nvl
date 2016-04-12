@@ -11,11 +11,11 @@ my $OVERLAYDIR = "overlays";
 my $IMAGEDIR   = "image";
 chomp(my $ISOLINUX = `find /usr/ -name isolinux.bin`);
 $ISOLINUX ne "" || die "couldn't find isolinux.bin";
-$ISOLINUX =~ /^(.*?)\s/; 
+($ISOLINUX) = $ISOLINUX =~ /^(.*?)\s/; 
 chomp(my $LDLINUX = `find /usr/ -name ldlinux.c32`);
 $LDLINUX eq "" && chomp($LDLINUX = `find /usr/ -name linux.c32`);
 $LDLINUX ne "" || die "couldn't find ldlinux.c32";
-$LDLINUX =~ /^(.*?)\s/; 
+($LDLINUX) = $LDLINUX =~ /^(.*?)\s/; 
 
 if (! -d $SRCDIR)     { mkdir $SRCDIR; }
 if (! -d $IMAGEDIR)   { mkdir $IMAGEDIR; }
