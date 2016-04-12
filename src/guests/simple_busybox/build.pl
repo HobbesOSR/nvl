@@ -9,9 +9,13 @@ my $SRCDIR     = "src";
 my $CONFIGDIR  = "config";
 my $OVERLAYDIR = "overlays";
 my $IMAGEDIR   = "image";
-chomp(my $ISOLINUX = split(" ",`find /usr/ -name isolinux.bin`)[1]);
-chomp(my $LDLINUX = split(" ", `find /usr/ -name ldlinux.c32`)[1]);
+chomp(my $ISOLINUX = `find /usr/ -name isolinux.bin`);
+$ISOLINUX ne "" || die "couldn't find isolinux.bin";
+$ISOLINUX =~ /^(.*?)\s/; 
+chomp(my $LDLINUX = `find /usr/ -name ldlinux.c32`);
 $LDLINUX eq "" && chomp($LDLINUX = `find /usr/ -name linux.c32`);
+$LDLINUX ne "" || die "couldn't find ldlinux.c32";
+$LDLINUX =~ /^(.*?)\s/; 
 
 if (! -d $SRCDIR)     { mkdir $SRCDIR; }
 if (! -d $IMAGEDIR)   { mkdir $IMAGEDIR; }
@@ -516,7 +520,7 @@ if ($program_args{build_pisces}) {
 
   # Step 13: Build NULL test app
 	print "CNL: STEP 13: Building pisces/test/null\n";
-	chdir "$SRCDIR/test/null" or die;
+	chdir "$SRCDIR/test/null" or die "couldn't find test/null directory";
 	system ("make clean") == 0 or die "failed to clean";
 	system ("make") == 0 or die "failed to make";
 	chdir "$BASEDIR" or die;
