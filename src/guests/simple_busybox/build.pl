@@ -753,7 +753,6 @@ if ($program_args{build_image}) {
 
 if ($program_args{build_isoimage}) {
   -d "isoimage" || system ("mkdir -p isoimage") == 0 || die "couldn't make isoimage directory";
-  print $ISOLINUX;
 	system ("cp -L $ISOLINUX isoimage") == 0 || die "couldn't copy isolinux.bin to isoimage: $?";
 	system ("cp -L $LDLINUX isoimage") == 0 || die "couldn't copy ldlinux.c32 to isoimage: $?";
 	system ("cp $SRCDIR/$kernel{basename}/arch/x86/boot/bzImage isoimage") == 0 || die "couldn't copy bzImage to isoimage directory";
