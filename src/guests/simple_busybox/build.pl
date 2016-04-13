@@ -145,7 +145,12 @@ $dtk{clone_cmd}[1]	= "git clone https://github.com/ORNL-CEES/DataTransferKit.git
 $dtk{clone_cmd}[2]	= "git clone https://github.com/ORNL-CEES/DTKData.git";
 push(@packages, \%dtk);
 
-
+my %hpl;
+$hpl{package_type}	= "git";
+$hpl{basename}		= "hpl";
+$hpl{clone_cmd}[0]	= "git clone https://github.com/npe9/hpl.git";
+$hpl{clone_cmd}[1]	= "cd $hpl{basename} && git checkout kitten";
+push(@packages, \%hpl);
 
 
 my %program_args = (
@@ -161,7 +166,8 @@ my %program_args = (
 	build_curl		=> 0,
 	build_hdf5		=> 0,
 	build_netcdf		=> 0,
-	build_dtk		=> 0,
+  build_dtk		=> 0,
+  build_hpl  => 0,
 
 	build_image		=> 0,
 	build_isoimage		=> 0,
@@ -188,6 +194,7 @@ GetOptions(
 	"build-hdf5"		=> sub { $program_args{'build_hdf5'} = 1; },
 	"build-netcdf"		=> sub { $program_args{'build_netcdf'} = 1; },
 	"build-dtk"		=> sub { $program_args{'build_dtk'} = 1; },
+  "build-hpl"		=> sub { $program_args{'build_hpl'} = 1; },
 	"build-image"		=> sub { $program_args{'build_image'} = 1; },
 	"build-isoimage"        => sub { $program_args{'build_isoimage'} = 1; },
 	"build-nvl-guest"	=> sub { $program_args{'build_nvl_guest'} = 1; },
@@ -613,6 +620,22 @@ if ($program_args{build_dtk}) {
 	system ("make -j 4") == 0 or die "failed to make";
 
 	chdir "$BASEDIR" or die;
+}
+
+
+# Build DTK
+if ($program_args{build_hpl}) {
+    print "CNL: Building Hpl\n";
+
+    my $HPL_BASEDIR  = "$BASEDIR/$SRCDIR/$hpl{basename}";
+
+    chdir "$HPL_BASEDIR" or die "couldn't find hpl makefile";
+    print $HPL_BASEDIR."\n";
+    system("ls -algs");
+    # Build HPL or die 
+    system ("make arch=Kitten") == 0 or die "failed to make";
+
+    chdir "$BASEDIR" or die;
 }
 
 
