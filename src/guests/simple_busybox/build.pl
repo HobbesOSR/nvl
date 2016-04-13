@@ -150,6 +150,8 @@ $hpl{package_type}	= "git";
 $hpl{basename}		= "hpl";
 $hpl{clone_cmd}[0]	= "git clone https://github.com/npe9/hpl.git";
 $hpl{clone_cmd}[1]	= "cd $hpl{basename} && git checkout kitten";
+$hpl{clone_cmd}[2]  = "echo sed -i 's%\\(TOPdir.*\=\\).*\$%\\1 $BASEDIR/$SRCDIR/$hpl{basename}%'  $hpl{basename}/Make.Kitten";
+$hpl{clone_cmd}[3]  = "sed -i 's%\\(TOPdir.*\=\\).*\$%\\1 $BASEDIR/$SRCDIR/$hpl{basename}%'  $hpl{basename}/Make.Kitten";
 push(@packages, \%hpl);
 
 
@@ -623,7 +625,7 @@ if ($program_args{build_dtk}) {
 }
 
 
-# Build DTK
+# Build Hpl
 if ($program_args{build_hpl}) {
     print "CNL: Building Hpl\n";
 
