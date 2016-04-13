@@ -3,19 +3,34 @@
 use strict;
 use Getopt::Long;
 use File::Copy;
+use File::Find;
 
 my $BASEDIR    = `pwd`; chomp($BASEDIR);
 my $SRCDIR     = "src";
 my $CONFIGDIR  = "config";
 my $OVERLAYDIR = "overlays";
 my $IMAGEDIR   = "image";
-chomp(my $ISOLINUX = `find -L /usr/ -name isolinux.bin`);
+
+use vars qw/*name *dir *prune/;
+*name   = *File::Find::name;
+*dir    = *File::Find::dir;
+*prune  = *File::Find::prune;
+
+my $ISOLINUX = "";
+my $LDLINUX = "";
+sub wanted {
+  if(!-l && $name =~ "/isolinux.bin" && $ISOLINUX eq ""){
+    print $name."\n";
+    $ISOLINUX = $name;
+  }
+  if(!-l && ($name =~ "/ldlinux.c32" || $name =~ "/linux.c32") && $LDLINUX eq ""){
+    print $name."\n";
+    $LDLINUX = $name;
+  }
+}
+find({wanted => \&wanted}, '/usr/');
 $ISOLINUX ne "" || die "couldn't find isolinux.bin";
-($ISOLINUX) = $ISOLINUX =~ /^(.*?)\s/; 
-chomp(my $LDLINUX = `find -L /usr/ -name ldlinux.c32`);
-$LDLINUX eq "" && chomp($LDLINUX = `find /usr/ -name linux.c32`);
 $LDLINUX ne "" || die "couldn't find ldlinux.c32";
-($LDLINUX) = $LDLINUX =~ /^(.*?)\s/; 
 
 if (! -d $SRCDIR)     { mkdir $SRCDIR; }
 if (! -d $IMAGEDIR)   { mkdir $IMAGEDIR; }
