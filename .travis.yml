@@ -17,4 +17,6 @@ addons:
     - qemu
     - live-image-rescue
     - libdevel-trace-perl
+notifications:
+    - hobbes-virt@elist.ornl.gov
 
