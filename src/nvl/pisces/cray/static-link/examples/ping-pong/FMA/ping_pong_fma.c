@@ -563,11 +563,10 @@ main(int argc, char **argv)
             remote_memory_handle_array[send_to].addr;
         fma_data_desc[i].remote_mem_hndl =
             remote_memory_handle_array[send_to].mdh;
-        fma_data_desc[i].length = 20;
+        fma_data_desc[i].length = TRANSFER_LENGTH;
 	fma_data_desc[i].post_id = send_post_id;
 	transfer_size = fma_data_desc[i].length;
 
-	fprintf(stdout, "calling FMA now\n");	
 	cltime[i][0] = now();
         status =
             GNI_PostFma(endpoint_handles_array[send_to],
@@ -578,7 +577,6 @@ main(int argc, char **argv)
                     uts_info.nodename, rank_id, gni_err_str[status], status);
             continue;
         }
-	fprintf(stdout, "after FMA post\n");	
 
 
         if (v_option > 2) {
@@ -638,7 +636,7 @@ main(int argc, char **argv)
 		    	cltime[i][1] = now();
 			elapsed = cltime[i][1] - cltime[i][0];
 			speed = (transfer_size / elapsed) * 1000000;
-			fprintf (stdout, "FMA trial rank: %d  bytes :%ld  time delta(microsec) = %llu FMA bandwidth: %6.2lf \n", my_rank, transfer_size, elapsed, (speed / 1e9));  /* make microsec to sec, bytes to MB */
+			fprintf (stdout, "FMA from rank: %d  bytes :%ld  time delta(microsec) = %llu FMA bandwidth: %6.2lf \n", my_rank, transfer_size, elapsed, (speed / 1e9));  /* make microsec to sec, bytes to MB */
             fflush (stdout);
 /*
 
