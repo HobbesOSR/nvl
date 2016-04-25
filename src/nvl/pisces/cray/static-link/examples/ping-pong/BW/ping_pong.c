@@ -522,8 +522,8 @@ main (int argc, char **argv)
 	    }
 	}
       t1 = now ();
-      elapsed = t1 - t0;
-      speed = (2 * transfer_size) / 1e6 * elapsed;	/* send & receive */
+      elapsed = t1 - t0 ;
+      speed = (2 * transfer_size)  * 1e6 / elapsed;	/* send & receive */
       fprintf (stdout,
 	       "rank: %d  bytes :%ld time delta(microsec) =%llu bandwidth : %6.2lf  \n",
 	       rank_id, transfer_size, elapsed, speed);
