@@ -29,11 +29,11 @@
 #define CACHELINE_MASK           0x3F	/* 64 byte cacheline */
 #define CDM_ID_MULTIPLIER        1000
 #define LOCAL_EVENT_ID_BASE      10000000
-#define NUMBER_OF_TRANSFERS      10
+#define NUMBER_OF_TRANSFERS      100
 #define POST_ID_MULTIPLIER       1000
 #define REMOTE_EVENT_ID_BASE     11000000
 #define SEND_DATA                0xdddd000000000000
-#define TRANSFER_LENGTH          4194304
+#define TRANSFER_LENGTH          (1<<22)
 
 typedef struct
 {
@@ -76,6 +76,7 @@ main (int argc, char **argv)
   gni_cq_entry_t current_event;
   uint64_t data = SEND_DATA;
   int data_transfers_sent = 0;
+  int data_transfers_recvd = 0;
   gni_cq_handle_t destination_cq_handle = NULL;
   int device_id = 0;
   gni_ep_handle_t *endpoint_handles_array;
@@ -116,7 +117,7 @@ main (int argc, char **argv)
   gni_return_t status = GNI_RC_SUCCESS;
   char *text_pointer;
   uint32_t transfers = NUMBER_OF_TRANSFERS;
-  int transfer_size;
+  uint64_t transfer_size;
   int use_event_id = 0;
   uint64_t t0, t1, elapsed;
   double speed;
@@ -326,15 +327,13 @@ main (int argc, char **argv)
 	}
     }
 
-  rc = posix_memalign ((void **) &send_buffer, 4096,
-		       TRANSFER_LENGTH);
+  rc = posix_memalign ((void **) &send_buffer, 4096, TRANSFER_LENGTH);
   assert (rc == 0);
 
   memset (send_buffer, 0, TRANSFER_LENGTH);
 
   status = GNI_MemRegister (nic_handle, (uint64_t) send_buffer,
-			    TRANSFER_LENGTH
-			     , NULL,
+			    TRANSFER_LENGTH, NULL,
 			    GNI_MEM_READWRITE, -1, &source_memory_handle);
   if (status != GNI_RC_SUCCESS)
     {
@@ -344,8 +343,7 @@ main (int argc, char **argv)
       INCREMENT_ABORTED;
     }
 
-  rc = posix_memalign ((void **) &receive_buffer, 4096,
-		       TRANSFER_LENGTH);
+  rc = posix_memalign ((void **) &receive_buffer, 4096, TRANSFER_LENGTH);
   assert (rc == 0);
 
   memset (receive_buffer, 0, TRANSFER_LENGTH);
@@ -392,143 +390,148 @@ main (int argc, char **argv)
       expected_local_event_id = (rank_id * BIND_ID_MULTIPLIER) + send_to;
       expected_remote_event_id = CDM_ID_MULTIPLIER * receive_from;
     }
+  rdma_data_desc[0].type = GNI_POST_RDMA_PUT;
+  if (create_destination_cq != 0)
+    {
+      rdma_data_desc[0].cq_mode = GNI_CQMODE_GLOBAL_EVENT |
+	GNI_CQMODE_REMOTE_EVENT;
+    }
+  else
+    {
+      rdma_data_desc[0].cq_mode = GNI_CQMODE_GLOBAL_EVENT;
+    }
+  rdma_data_desc[0].dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  rdma_data_desc[0].local_addr = (uint64_t) send_buffer;
+  rdma_data_desc[0].local_mem_hndl = source_memory_handle;
+  rdma_data_desc[0].remote_addr = remote_memory_handle_array[send_to].addr;
+  rdma_data_desc[0].remote_mem_hndl = remote_memory_handle_array[send_to].mdh;
+  rdma_data_desc[0].rdma_mode = 0;
+  rdma_data_desc[0].src_cq_hndl = cq_handle;
   for (size = 8; size <= TRANSFER_LENGTH; size *= 2)
     {
-      transfer_size = 0;
-      t0 = now ();
-      for (i = 0; i < transfers; i++)
+      if (rank_id == 0)
 	{
-	  send_post_id =
-	    ((uint64_t) expected_local_event_id * POST_ID_MULTIPLIER) + i + 1;
-
-	  rdma_data_desc[i].type = GNI_POST_RDMA_PUT;
-	  if (create_destination_cq != 0)
+	  transfer_size = size;
+	  elapsed = t1 = t0 = 0;
+	  t0 = now ();
+	  for (i = 0; i < transfers; i++)
 	    {
-	      rdma_data_desc[i].cq_mode = GNI_CQMODE_GLOBAL_EVENT |
-		GNI_CQMODE_REMOTE_EVENT;
-	    }
-	  else
-	    {
-	      rdma_data_desc[i].cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-	    }
-	  rdma_data_desc[i].dlvr_mode = GNI_DLVMODE_PERFORMANCE;
-	  rdma_data_desc[i].local_addr = (uint64_t) send_buffer;
-	  rdma_data_desc[i].local_mem_hndl = source_memory_handle;
-	  rdma_data_desc[i].remote_addr =
-	    remote_memory_handle_array[send_to].addr;
-	  rdma_data_desc[i].remote_mem_hndl =
-	    remote_memory_handle_array[send_to].mdh;
-	  rdma_data_desc[i].length = size;
-	  transfer_size += rdma_data_desc[i].length;
-	  rdma_data_desc[i].rdma_mode = 0;
-	  rdma_data_desc[i].src_cq_hndl = cq_handle;
-	  rdma_data_desc[i].post_id = send_post_id;
-
-	  status =
-	    GNI_PostRdma (endpoint_handles_array[send_to],
-			  &rdma_data_desc[i]);
-	  if (status != GNI_RC_SUCCESS)
-	    {
-	      fprintf (stdout,
-		       "[%s] Rank: %4i GNI_PostRdma      data ERROR status: %s (%d)\n",
-		       uts_info.nodename, rank_id, gni_err_str[status],
-		       status);
-	      INCREMENT_FAILED;
-	      continue;
-	    }
-
-	  data_transfers_sent++;
-
-	  rc =
-	    get_cq_event (cq_handle, uts_info, rank_id, 1, 1, &current_event);
-	  if (rc == 0)
-	    {
+	      send_post_id =
+		((uint64_t) expected_local_event_id * POST_ID_MULTIPLIER) +
+		i + 1;
+	      rdma_data_desc[0].post_id = send_post_id;
+	      rdma_data_desc[0].length = size;
 
 	      status =
-		GNI_GetCompleted (cq_handle, current_event,
-				  &event_post_desc_ptr);
+		GNI_PostRdma (endpoint_handles_array[send_to],
+			      &rdma_data_desc[0]);
 	      if (status != GNI_RC_SUCCESS)
 		{
 		  fprintf (stdout,
-			   "[%s] Rank: %4i GNI_GetCompleted  data ERROR status: %s (%d)\n",
+			   "[%s] Rank: %4i GNI_PostRdma      data ERROR status: %s (%d)\n",
 			   uts_info.nodename, rank_id, gni_err_str[status],
 			   status);
-
 		  INCREMENT_FAILED;
+		  continue;
+		}
+	      data_transfers_sent++;
+	      rc =
+		get_cq_event (cq_handle, uts_info, rank_id, 1, 1,
+			      &current_event);
+	      if (rc == 0)
+		{
+		  status =
+		    GNI_GetCompleted (cq_handle, current_event,
+				      &event_post_desc_ptr);
+		  if (status != GNI_RC_SUCCESS)
+		    {
+		      fprintf (stdout,
+			       "[%s] Rank: %4i GNI_GetCompleted  data ERROR status: %s (%d)\n",
+			       uts_info.nodename, rank_id,
+			       gni_err_str[status], status);
+
+		      INCREMENT_FAILED;
+		      fflush (stdout);
+		      return -1;
+		    }
+		}
+	    }			/* sent 100 RDMA PUT, get pong */
+	  if (create_destination_cq != 0)
+	    {
+
+	      rc = get_cq_event (destination_cq_handle, uts_info,
+				 rank_id, 0, 1, &current_event);
+	      if (rc == 0)
+		{
+		  INCREMENT_PASSED;
 		}
 	      else
 		{
 
-		  if (send_post_id != event_post_desc_ptr->post_id)
-		    {
-		      fprintf (stdout,
-			       "[%s] Rank: %4i Completed data ERROR received post_id: %lu, expected post_id: %lu\n",
-			       uts_info.nodename, rank_id,
-			       event_post_desc_ptr->post_id, send_post_id);
-
-		      INCREMENT_FAILED;
-		    }
-		  else
-		    {
-		      INCREMENT_PASSED;
-		      if (create_destination_cq != 0)
-			{
-
-			  rc = get_cq_event (destination_cq_handle, uts_info,
-					     rank_id, 0, 1, &current_event);
-			  if (rc == 0)
-			    {
-			      event_inst_id =
-				GNI_CQ_GET_INST_ID (current_event);
-			      if (event_inst_id != expected_remote_event_id)
-				{
-				  fprintf (stdout,
-					   "[%s] Rank: %4i CQ Event destination ERROR received inst_id: %u, expected inst_id: %u in event_data\n",
-					   uts_info.nodename, rank_id,
-					   event_inst_id,
-					   expected_remote_event_id);
-
-				  INCREMENT_FAILED;
-				}
-			      else
-				{
-
-				  INCREMENT_PASSED;
-				}
-			    }
-			  else
-			    {
-			      fprintf (stdout,
-				       "[%s] Rank: %4i CQ Event ERROR destination queue did not receieve"
-				       " flag or data event\n",
-				       uts_info.nodename, rank_id);
-
-			      INCREMENT_FAILED;
-			      goto EXIT_WAIT_BARRIER;
-			    }
-
-			  fflush (stdout);
-			}
-
-
-		    }
-
+		  INCREMENT_FAILED;
+		  return -1;
 		}
+
+	      fflush (stdout);
+
 	    }
-	  else
+	  /* got pong */
+
+	  t1 = now ();
+	  elapsed = t1 - t0;
+	  speed = (transfer_size * NUMBER_OF_TRANSFERS) * 1e6 / elapsed;	/* send & receive */
+	  fprintf (stdout,
+		   "rank: %d  bytes :%llu time delta(microsec) =%llu bandwidth : %6.2lf  \n",
+		   rank_id, transfer_size, elapsed / NUMBER_OF_TRANSFERS,
+		   speed);
+	}
+      else if (rank_id == 1)
+	{
+	  data_transfers_recvd = 0;
+	  for (i = 0; i < transfers; i++)
 	    {
-	      INCREMENT_FAILED;
-	      continue;
+
+	      rc = get_cq_event (destination_cq_handle, uts_info,
+				 rank_id, 0, 1, &current_event);
+	      if (rc == 0)
+		{
+		  data_transfers_recvd++;
+		  INCREMENT_PASSED;
+		}
+	      else
+		{
+		  INCREMENT_FAILED;
+		  return (-1);
+		}
+
+	      fflush (stdout);
+
+	    }
+	  /* Send a pong after loop cnt recv */
+	  if (data_transfers_recvd == transfers)
+	    {
+	      send_post_id =
+		((uint64_t) expected_local_event_id * POST_ID_MULTIPLIER) +
+		0 + 1;
+
+	      rdma_data_desc[0].length = 4;
+	      rdma_data_desc[0].post_id = send_post_id;
+	      status =
+		GNI_PostRdma (endpoint_handles_array[send_to],
+			      &rdma_data_desc[0]);
+	      if (status != GNI_RC_SUCCESS)
+		{
+		  fprintf (stdout,
+			   "[%s] Rank: %4i GNI_PostRdma      data ERROR status: %s (%d)\n",
+			   uts_info.nodename, rank_id, gni_err_str[status],
+			   status);
+		  INCREMENT_FAILED;
+		  return -1;
+		}
+
 	    }
 	}
-      t1 = now ();
-      elapsed = t1 - t0 ;
-      speed = (2 * transfer_size)  * 1e6 / elapsed;	/* send & receive */
-      fprintf (stdout,
-	       "rank: %d  bytes :%ld time delta(microsec) =%llu bandwidth : %6.2lf  \n",
-	       rank_id, transfer_size, elapsed, speed);
     }
-
 
 EXIT_WAIT_BARRIER:
 
