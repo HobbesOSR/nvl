@@ -1,0 +1,56 @@
+### Code available here for Raw ugni BW test, similar to MPI osu_bw.c, it will send 100 RDMA PUT and waits a 
+response  after receiver acknowledges all recv and sends a pong.
+
+#curie2:/lscratch2/smukher/scratch1-backup/UGNI_SRC_EXAMPLE-NEW/examples> aprun -n2 -N1 ./ping_pong -s 8
+
+rank: 0  bytes :8 time delta(microsec) =2 bandwidth : 3212851.41  
+rank: 0  bytes :16 time delta(microsec) =2 bandwidth : 6349206.35  
+rank: 0  bytes :32 time delta(microsec) =2 bandwidth : 12749003.98  
+rank: 0  bytes :64 time delta(microsec) =2 bandwidth : 24521072.80  
+rank: 0  bytes :128 time delta(microsec) =2 bandwidth : 50592885.38  
+rank: 0  bytes :256 time delta(microsec) =2 bandwidth : 98084291.19  
+rank: 0  bytes :512 time delta(microsec) =2 bandwidth : 194676806.08  
+rank: 0  bytes :1024 time delta(microsec) =2 bandwidth : 383520599.25  
+rank: 0  bytes :2048 time delta(microsec) =2 bandwidth : 716083916.08  
+rank: 0  bytes :4096 time delta(microsec) =3 bandwidth : 1342950819.67  
+rank: 0  bytes :8192 time delta(microsec) =3 bandwidth : 2226086956.52  
+rank: 0  bytes :16384 time delta(microsec) =4 bandwidth : 3420459290.19  
+rank: 0  bytes :32768 time delta(microsec) =7 bandwidth : 4532226832.64  
+rank: 0  bytes :65536 time delta(microsec) =12 bandwidth : 5112012480.50  
+rank: 0  bytes :131072 time delta(microsec) =23 bandwidth : 5681491114.00  
+rank: 0  bytes :262144 time delta(microsec) =43 bandwidth : 5974111212.40  
+rank: 0  bytes :524288 time delta(microsec) =85 bandwidth : 6100628345.36  
+rank: 0  bytes :1048576 time delta(microsec) =170 bandwidth : 6155421191.66  
+rank: 0  bytes :2097152 time delta(microsec) =337 bandwidth : 6209919753.63  
+rank: 0  bytes :4194304 time delta(microsec) =672 bandwidth : 6235585156.99 
+
+
+OSU MPU BW:
+
+smukher@curie2:/lscratch2/smukher/scratch1-backup/KELPIE_TESTS/OSU_MPI_TESTS/osu-micro-benchmarks-3.8-July12/mpi/pt2pt> aprun -n2 -N1 ./osu_bw
+# OSU MPI Bandwidth Test v3.8
+# Size      Bandwidth (MB/s)
+1                       1.49
+2                       2.99
+4                       6.02
+8                      12.21
+16                     24.11
+32                     48.21
+64                     96.22
+128                   188.62
+256                   365.14
+512                   692.46
+1024                 1271.29
+2048                 2213.99
+4096                 2987.40
+8192                 2287.98
+16384                4364.44
+32768                4530.45
+65536                4761.66
+131072               5359.63
+262144               5367.93
+524288               5703.87
+1048576              6323.30
+2097152              6631.72
+4194304              6866.72
+Application 921656 resources: utime ~4s, stime ~0s, Rss ~16552, inblocks ~10818, outblocks ~26829 
