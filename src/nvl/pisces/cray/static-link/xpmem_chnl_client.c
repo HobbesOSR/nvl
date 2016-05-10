@@ -505,11 +505,13 @@ pack_args (unsigned long int request, void *args)
       break;
     case GNI_IOC_POST_RDMA:
       post_rdma_args = args;
+/*
       fprintf (stdout,
 	       "client side POST RDMA  local addr 0x%lx    word1 0x%016lx   word2  0x%016lx\n",
 	       post_rdma_args->post_desc->local_addr,
 	       post_rdma_args->post_desc->local_mem_hndl.qword1,
 	       post_rdma_args->post_desc->local_mem_hndl.qword2);
+*/
       rdma_post_seg =
 	list_find_segid_by_vaddr (mt, post_rdma_args->post_desc->local_addr);
       post_rdma_args->post_desc->local_addr = (uint64_t) rdma_post_seg;
