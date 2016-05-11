@@ -476,14 +476,12 @@ pack_args (unsigned long int request, void *args)
       break;
 
     case GNI_IOC_NIC_FMA_CONFIG:
-      fprintf (stdout, "FMA config client called for FMA post\n");
       fmaconfig_args = (gni_nic_fmaconfig_args_t *) args;
       cmd =
 	hcq_cmd_issue (hcq, GNI_IOC_NIC_FMA_CONFIG,
 		       sizeof (gni_nic_fmaconfig_args_t), fmaconfig_args);
       fmaconfig_args = hcq_get_ret_data (hcq, cmd, &len);
       hcq_cmd_complete (hcq, cmd);
-      fprintf (stdout, "FMA config client after ioctl\n");
       memcpy (args, (void *) fmaconfig_args,
 	      sizeof (gni_nic_fmaconfig_args_t));
       break;
@@ -625,13 +623,10 @@ unpack_args (unsigned long int request, void *args)
     {
     case GNI_IOC_NIC_SETATTR:
 
-      fprintf (stdout, "NIC set ATTR unpack case\n");
       break;
     case GNI_IOC_NIC_FMA_CONFIG:
-      fprintf (stdout, "FMA config client unpacking case\n");
       break;
     case GNI_IOC_EP_POSTDATA:
-      fprintf (stdout, "unpack EP POSTDATA client case\n");
       break;
     case GNI_IOC_EP_POSTDATA_TEST:
       fprintf (stdout, "unpack EP POSTDATA test client case\n");

@@ -486,10 +486,6 @@ main (int argc, char *argv[])
 		  return rc;
 		}
 
-	      printf
-		("server after registration ioctl buffer %p: qword1 = 0x%16lx qword2 = 0x%16lx\n",
-		 buffer, mem_register_attr->mem_hndl.qword1,
-		 mem_register_attr->mem_hndl.qword2);
 //
 	      hcq_cmd_return (hcq, cmd, ret, sizeof (gni_mem_register_args_t),
 			      mem_register_attr);

@@ -18,9 +18,9 @@ GNI_HEADER=/home/smukher/gni-headers/cray-gni-headers-4.0/include
 CC=gcc -v
 CFLAGS= -g -c -fPIC   -Wall -DCRAY_CONFIG_GHAL_GEMINI  -I. -I/usr/include -I../../include  -I/opt/cray/alps/default/include  -I/opt/cray/pmi/default/include -I$(GNI_HEADER) -I$(GNI_HEADER)/gemini
 LDFLAGS= -g -fPIC -static  -L/opt/cray/alps/default/lib64 -L/opt/cray/ugni/default/lib64/  -L/opt/cray/alps/default/lib64  -L$(HOBBS) -L$(XPMEM) -L$(WHITEDB) -lugni -lalpslli    -lalpslli -lugni -lhobbes 
-SOURCES=ping_pong_fma.c
+SOURCES=ping_pong_fma.c fma_bi_bw.c
 OBJECTS=$(SOURCES:.c=.o)
-EXECUTABLE=ping_pong_fma
+EXECUTABLE=ping_pong_fma fma_bi_bw
 
 libs :=         $(HOBBS)/libhobbes.a \
                 $(UGNI)/libugni.a \
@@ -32,8 +32,11 @@ all: $(SOURCES) $(EXECUTABLE)
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 
-$(EXECUTABLE): $(OBJECTS) 
-	$(CC)  $(LDFLAGS) $(OBJECTS) -Wl,-wrap,open -Wl,-wrap=open -Wl,-wrap=ioctl $(INTERCEPT_CLIENT_OBJ)/xpmem_chnl_client.o  -o $@ $(libs) -lalpslli -lugni -lpthread  -lugni -lalpslli 
+ping_pong_fma: ping_pong_fma.o 
+	$(CC)  $(LDFLAGS)  ping_pong_fma.o -Wl,-wrap,open -Wl,-wrap=open -Wl,-wrap=ioctl $(INTERCEPT_CLIENT_OBJ)/xpmem_chnl_client.o  -o $@ $(libs) -lalpslli -lugni -lpthread  -lugni -lalpslli 
+
+fma_bi_bw: fma_bi_bw.o 
+	$(CC)  $(LDFLAGS)  fma_bi_bw.o -Wl,-wrap,open -Wl,-wrap=open -Wl,-wrap=ioctl $(INTERCEPT_CLIENT_OBJ)/xpmem_chnl_client.o  -o $@ $(libs) -lalpslli -lugni -lpthread  -lugni -lalpslli 
 
 clean:
 	rm -f *.o  ping_pong_fma
