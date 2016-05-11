@@ -1,0 +1,46 @@
+# ./ping_pong_fma
+cmd = 2 data size 8
+after NIC attach  dump segids 17072495001635  17072495001636 17072495001637 17072495001638
+FMA from rank: 0  bytes :8192  time delta(microsec) = 1035408 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 1000025 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 1000054 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 1000073 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 1000067 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 1000067 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 1000074 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 1000067 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 1000050 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 1000069 FMA bandwidth:   0.00 
+Clean up later exit now for rank 0
+
+/**** RDMA bi-directional */
+
+# pwd
+/home/smukher/nvl/src/nvl/pisces/cray/static-link/examples/ping-pong/RDMA
+
+
+# ./ping_pong_bw -s 8192 -n 10
+cmd = 2 data size 8
+after NIC attach  dump segids 22741851832355  22741851832356 22741851832357 22741851832358
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+rank: 0  bytes :8192 time delta(microsec) =100010 bandwidth : 81911.15  
+rank: 0  bytes :8192 time delta(microsec) =200024 bandwidth : 40954.92  
+rank: 0  bytes :8192 time delta(microsec) =300034 bandwidth : 27303.54  
+rank: 0  bytes :8192 time delta(microsec) =400043 bandwidth : 20477.79  
+rank: 0  bytes :8192 time delta(microsec) =500057 bandwidth : 16382.13  
+rank: 0  bytes :8192 time delta(microsec) =600067 bandwidth : 13651.81  
+rank: 0  bytes :8192 time delta(microsec) =800084 bandwidth : 10238.92  
+rank: 0  bytes :8192 time delta(microsec) =900098 bandwidth : 9101.23  
+rank: 0  bytes :8192 time delta(microsec) =1000108 bandwidth : 8191.11  
+rank: 0  bytes :8192 time delta(microsec) =1100122 bandwidth : 7446.45  
+Clean up later exit now for rank 0
+# pwd
+/home/smukher/nvl/src/nvl/pisces/cray/static-link/examples/ping-pong/RDMA
+
+

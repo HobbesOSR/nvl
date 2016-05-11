@@ -561,9 +561,6 @@ main (int argc, char **argv)
 		  data_transfers_sent++;
 		}
 
-	    }
-	  if (data_transfers_sent == transfers)
-	    {
 	      rc = get_cq_event (destination_cq_handle, uts_info,
 				 rank_id, 0, 1, &current_event);
 
@@ -597,11 +594,6 @@ main (int argc, char **argv)
 		  data_transfers_recvd++;
 
 		}
-
-	    }
-	  if (data_transfers_recvd == transfers)
-	    {
-
 	      rdma_data_desc[0].length = 4;
 	      status =
 		GNI_PostRdma (endpoint_handles_array[send_to],
@@ -613,6 +605,13 @@ main (int argc, char **argv)
 			   uts_info.nodename, my_rank, gni_err_str[status],
 			   status);
 		  return -1;
+		}
+	      rc =
+		get_cq_event (cq_handle, uts_info, rank_id, 1, 1,
+			      &current_event);
+	      if (rc == 0)
+		{
+		  data_transfers_sent++;
 		}
 
 	    }

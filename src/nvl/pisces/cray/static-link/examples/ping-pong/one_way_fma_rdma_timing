@@ -1,0 +1,63 @@
+# ./ping_pong_fma
+cmd = 2 data size 8
+after NIC attach  dump segids 14456859918371  14456859918372 14456859918373 14456859918374
+NIC set ATTR unpack case
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+FMA config client called for FMA post
+FMA config client after ioctl
+FMA config client unpacking case
+[nid00004] Rank:    0 GNI_CqGetEvent    source      type: POST(0) inst_id: 1 tid: 1 event: 0x0100000100000001
+FMA from rank: 0  bytes :8192  time delta(microsec) = 35426 FMA bandwidth:   0.00 
+[nid00004] Rank:    0 GNI_CqGetEvent    source      type: POST(0) inst_id: 1 tid: 2 event: 0x0100000200000001
+FMA from rank: 0  bytes :8192  time delta(microsec) = 15 FMA bandwidth:   0.55 
+[nid00004] Rank:    0 GNI_CqGetEvent    source      type: POST(0) inst_id: 1 tid: 3 event: 0x0100000300000001
+FMA from rank: 0  bytes :8192  time delta(microsec) = 11 FMA bandwidth:   0.74 
+[nid00004] Rank:    0 GNI_CqGetEvent    source      type: POST(0) inst_id: 1 tid: 4 event: 0x0100000400000001
+FMA from rank: 0  bytes :8192  time delta(microsec) = 14 FMA bandwidth:   0.58 
+[nid00004] Rank:    0 GNI_CqGetEvent    source      type: POST(0) inst_id: 1 tid: 5 event: 0x0100000500000001
+FMA from rank: 0  bytes :8192  time delta(microsec) = 14 FMA bandwidth:   0.58 
+[nid00004] Rank:    0 GNI_CqGetEvent    source      type: POST(0) inst_id: 1 tid: 6 event: 0x0100000600000001
+FMA from rank: 0  bytes :8192  time delta(microsec) = 18 FMA bandwidth:   0.46 
+[nid00004] Rank:    0 GNI_CqGetEvent    source      type: POST(0) inst_id: 1 tid: 7 event: 0x0100000700000001
+FMA from rank: 0  bytes :8192  time delta(microsec) = 13 FMA bandwidth:   0.63 
+[nid00004] Rank:    0 GNI_CqGetEvent    source      type: POST(0) inst_id: 1 tid: 8 event: 0x0100000800000001
+FMA from rank: 0  bytes :8192  time delta(microsec) = 16 FMA bandwidth:   0.51 
+[nid00004] Rank:    0 GNI_CqGetEvent    source      type: POST(0) inst_id: 1 tid: 9 event: 0x0100000900000001
+FMA from rank: 0  bytes :8192  time delta(microsec) = 13 FMA bandwidth:   0.63 
+[nid00004] Rank:    0 GNI_CqGetEvent    source      type: POST(0) inst_id: 1 tid: 10 event: 0x0100000a00000001
+FMA from rank: 0  bytes :8192  time delta(microsec) = 14 FMA bandwidth:   0.58 
+Clean up later exit now for rank 0
+
+
+========================================================================
+
+# cd ../RDMA
+# ./ping_pong
+cmd = 2 data size 8
+after NIC attach  dump segids 15826954485795  15826954485796 15826954485797 15826954485798
+NIC set ATTR unpack case
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+wg consistency error: string not found in hash during deletion, offset 55152
+rank: 0  bytes :8192  time delta(microsec) = 43 bandwidth:   0.19 
+rank: 0  bytes :8192  time delta(microsec) = 37 bandwidth:   0.22 
+rank: 0  bytes :8192  time delta(microsec) = 35 bandwidth:   0.23 
+rank: 0  bytes :8192  time delta(microsec) = 34 bandwidth:   0.24 
+rank: 0  bytes :8192  time delta(microsec) = 35 bandwidth:   0.23 
+rank: 0  bytes :8192  time delta(microsec) = 36 bandwidth:   0.23 
+rank: 0  bytes :8192  time delta(microsec) = 35 bandwidth:   0.23 
+rank: 0  bytes :8192  time delta(microsec) = 35 bandwidth:   0.23 
+rank: 0  bytes :8192  time delta(microsec) = 34 bandwidth:   0.24 
+rank: 0  bytes :8192  time delta(microsec) = 32 bandwidth:   0.26 
+Clean up later exit now for rank 0
+

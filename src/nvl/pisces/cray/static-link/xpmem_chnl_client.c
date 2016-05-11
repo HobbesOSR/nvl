@@ -219,6 +219,7 @@ pack_args (unsigned long int request, void *args)
   xemem_segid_t cq_seg;
   xemem_segid_t rdma_post_seg;
   uint32_t len = 0;
+  uint64_t save_local_addr;
   int *rc;
 
   /* PMI ioctls args */
@@ -510,6 +511,7 @@ pack_args (unsigned long int request, void *args)
 	       post_rdma_args->post_desc->local_mem_hndl.qword1,
 	       post_rdma_args->post_desc->local_mem_hndl.qword2);
 */
+      save_local_addr = post_rdma_args->post_desc->local_addr;
       rdma_post_seg =
 	list_find_segid_by_vaddr (mt, post_rdma_args->post_desc->local_addr);
       post_rdma_args->post_desc->local_addr = (uint64_t) rdma_post_seg;
@@ -529,6 +531,7 @@ pack_args (unsigned long int request, void *args)
 
       rc = hcq_get_ret_data (hcq, cmd, &len);
       hcq_cmd_complete (hcq, cmd);
+      post_rdma_args->post_desc->local_addr = (uint64_t) save_local_addr;
       free (rdma_post_tmpbuf);
       break;
 
