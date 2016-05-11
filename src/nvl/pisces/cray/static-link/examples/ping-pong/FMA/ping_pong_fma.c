@@ -600,80 +600,15 @@ main(int argc, char **argv)
 
         rc = get_cq_event(cq_handle, uts_info, rank_id, 1, 1, &current_event);
         if (rc == 0) {
-
-            /*
-             * An event was received.
-             *
-             * Complete the event, which removes the current event's post
-             * descriptor from the event queue.
-             */
-
-            status = gni_getcompleted(cq_handle, current_event, &event_post_desc_ptr);
-            if (status != GNI_RC_SUCCESS) {
-                fprintf(stdout,
-                        "[%s] Rank: %4i GNI_GetCompleted  data ERROR status: %s (%d)\n",
-                        uts_info.nodename, rank_id, gni_err_str[status], status);
-
-            } else {
-
-                /*
-                 * Validate the completed request's post id with the expected id.
-                 */
-
-                if (send_post_id != event_post_desc_ptr->post_id) {
-
-                    /*
-                     * The event's inst_id was not the expected inst_id
-                     * value.
-                     */
-
-                    fprintf(stdout,
-                            "[%s] Rank: %4i Completed data ERROR received post_id: %lu, expected post_id: %lu\n",
-                            uts_info.nodename, rank_id, event_post_desc_ptr->post_id,
-                            send_post_id);
-
-                } else {
 		    	cltime[i][1] = now();
 			elapsed = cltime[i][1] - cltime[i][0];
 			speed = (transfer_size / elapsed) * 1000000;
 			fprintf (stdout, "FMA from rank: %d  bytes :%ld  time delta(microsec) = %llu FMA bandwidth: %6.2lf \n", my_rank, transfer_size, elapsed, (speed / 1e9));  /* make microsec to sec, bytes to MB */
             fflush (stdout);
-/*
-
-                    if (v_option) {
-                        fprintf(stdout,
-                                "[%s] Rank: %4i GNI_GetCompleted  data transfer: %4i send to:   %4i remote addr: 0x%lx post_id: %lu\n",
-                                uts_info.nodename, rank_id, (i + 1), send_to,
-                                event_post_desc_ptr->remote_addr,
-                                event_post_desc_ptr->post_id);
-                    }
-*/
 
                 }
-
-                /*
-                 * Validate the current event's instance id with the expected id.
-                 */
-
-                event_inst_id = GNI_CQ_GET_INST_ID(current_event);
-                if (event_inst_id != expected_local_event_id) {
-
-                    /*
-                     * The event's inst_id was not the expected inst_id
-                     * value.
-                     */
-
-                    fprintf(stdout,
-                            "[%s] Rank: %4i CQ Event data ERROR received inst_id: %u, expected inst_id: %u in event_data\n",
-                            uts_info.nodename, rank_id, event_inst_id, expected_local_event_id);
-
-                } 
-
-            }
-        } 
-
     }
-	}
+  }
 
     if (v_option) {
 

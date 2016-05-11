@@ -8,8 +8,8 @@
 WHITEDB=/home/smukher/hobbes/whitedb-0.7.3
 HOBBS=/home/smukher/hobbes/libhobbes
 XPMEM=/home/smukher/xpmem
-#UGNI=/opt/cray/ugni/default/lib64
-UGNI=/home/smukher/nvl/src/nvl/pisces/cray/static-link/examples/ping-pong/FMA
+UGNI=/opt/cray/ugni/default/lib64
+#UGNI=/home/smukher/nvl/src/nvl/pisces/cray/static-link/examples/ping-pong/FMA
 # Define where static client *.o is located which intercept libc calls open, ioctl
 INTERCEPT_CLIENT_OBJ=/home/smukher/nvl/src/nvl/pisces/cray/static-link
 

@@ -146,6 +146,7 @@ main (int argc, char **argv)
   char *text_pointer;
   uint32_t transfers = NUMBER_OF_TRANSFERS;
   uint32_t transfer_size = 0;
+  uint32_t size = 0;
   int use_event_id = 0;
   uint64_t t0, t1, elapsed;
   double speed;
@@ -511,116 +512,113 @@ main (int argc, char **argv)
   expected_local_event_id = send_to;
   expected_remote_event_id = receive_from;
 
-  if(transfer_size == 0)
-	transfer_size = 4096;
+  if (transfer_size == 0)
+    transfer_size = 4096;
 
-  if (my_rank == 0)
+
+  for (i = 0; i < transfers; i++)
     {
-
-      elapsed = t1 = t0 = 0;
-      for (i = 0; i < transfers; i++)
-	{
-
-
-  rdma_data_desc[i].type = GNI_POST_RDMA_PUT;
-  rdma_data_desc[i].cq_mode = GNI_CQMODE_GLOBAL_EVENT |
-    GNI_CQMODE_REMOTE_EVENT;
-  rdma_data_desc[i].local_addr = send_buffer;
-  rdma_data_desc[i].local_mem_hndl = source_memory_handle;
-  rdma_data_desc[i].remote_addr = remote_memory_handle_array[send_to].addr;
-  rdma_data_desc[i].remote_mem_hndl = remote_memory_handle_array[send_to].mdh;
-  rdma_data_desc[i].rdma_mode = 0;
-  rdma_data_desc[i].src_cq_hndl = cq_handle;
-  send_post_id = ((uint64_t) expected_local_event_id * POST_ID_MULTIPLIER) + i + 1;
-  rdma_data_desc[i].post_id = send_post_id;
-	  rdma_data_desc[i].length = transfer_size;
-      t0 = now ();
-	  status =
-	    GNI_PostRdma (endpoint_handles_array[send_to],
-			  &rdma_data_desc[i]);
-	  if (status != GNI_RC_SUCCESS)
-	    {
-	      fprintf (stdout,
-		       "[%s] Rank: %4i GNI_PostRdma      data ERROR status: %s (%d)\n",
-		       uts_info.nodename, rank_id, gni_err_str[status],
-		       status);
-	      continue;
-	    }
-	  rc =
-	    get_cq_event (cq_handle, uts_info, rank_id, 1, 1, &current_event);
-	  if (rc == 0)
-	    {
-	      data_transfers_sent++;
-	    }
-
-	}
-      if (data_transfers_sent == transfers)
-	{
-	  rc = get_cq_event (destination_cq_handle, uts_info,
-			     rank_id, 0, 1, &current_event);
-
-	  if (rc == 0)
-	    {
-
-	      t1 = now ();
-	      elapsed = t1 - t0;
-	      speed = (transfer_size * NUMBER_OF_TRANSFERS) * 1e6 / elapsed;
-	      fprintf (stdout,
-                   "rank: %d  bytes :%llu time delta(microsec) =%llu bandwidth : %6.2lf  \n",
-                   my_rank, transfer_size, elapsed / NUMBER_OF_TRANSFERS,
-                   speed);
-	      fflush (stdout);
-
-	    }
-	}
+      rdma_data_desc[i].type = GNI_POST_RDMA_PUT;
+      rdma_data_desc[i].cq_mode = GNI_CQMODE_GLOBAL_EVENT |
+	GNI_CQMODE_REMOTE_EVENT;
+      rdma_data_desc[i].local_addr = send_buffer;
+      rdma_data_desc[i].local_mem_hndl = source_memory_handle;
+      rdma_data_desc[i].remote_addr =
+	remote_memory_handle_array[send_to].addr;
+      rdma_data_desc[i].remote_mem_hndl =
+	remote_memory_handle_array[send_to].mdh;
+      rdma_data_desc[i].rdma_mode = 0;
+      rdma_data_desc[i].src_cq_hndl = cq_handle;
+      send_post_id =
+	((uint64_t) expected_local_event_id * POST_ID_MULTIPLIER) + i + 1;
+      rdma_data_desc[i].post_id = send_post_id;
+      rdma_data_desc[i].length = transfer_size;
     }
 
-  if (my_rank == 1)
-    {
-	data_transfers_recvd = 0;
-
-      for (i = 0; i < transfers; i++)
+      if (my_rank == 0)
 	{
-	  rc = get_cq_event (destination_cq_handle, uts_info,
-			     rank_id, 0, 1, &current_event);
-	  if (rc == 0)
+
+	  elapsed = t1 = t0 = 0;
+	  t0 = now ();
+	  for (i = 0; i < transfers; i++)
 	    {
-		 data_transfers_recvd++;
+	      status =
+		GNI_PostRdma (endpoint_handles_array[send_to],
+			      &rdma_data_desc[i]);
+	      if (status != GNI_RC_SUCCESS)
+		{
+		  fprintf (stdout,
+			   "[%s] Rank: %4i GNI_PostRdma      data ERROR status: %s (%d)\n",
+			   uts_info.nodename, rank_id, gni_err_str[status],
+			   status);
+		  continue;
+		}
+	      rc =
+		get_cq_event (cq_handle, uts_info, rank_id, 1, 1,
+			      &current_event);
+	      if (rc == 0)
+		{
+		  data_transfers_sent++;
+		}
 
 	    }
+	  if (data_transfers_sent == transfers)
+	    {
+	      rc = get_cq_event (destination_cq_handle, uts_info,
+				 rank_id, 0, 1, &current_event);
 
+	      if (rc == 0)
+		{
+
+		  t1 = now ();
+		  elapsed = t1 - t0;
+		  speed =
+		    (transfer_size * NUMBER_OF_TRANSFERS) * 1e6 / elapsed;
+		  fprintf (stdout,
+			   "rank: %d  bytes :%llu time delta(microsec) =%llu bandwidth : %6.2lf  \n",
+			   my_rank, transfer_size,
+			   elapsed / NUMBER_OF_TRANSFERS, speed);
+		  fflush (stdout);
+
+		}
+	    }
 	}
-	if (data_transfers_recvd == transfers)
-            {
 
-  rdma_data_desc[0].type = GNI_POST_RDMA_PUT;
-  rdma_data_desc[0].cq_mode = GNI_CQMODE_GLOBAL_EVENT |
-    GNI_CQMODE_REMOTE_EVENT;
-  rdma_data_desc[0].local_addr = send_buffer;
-  rdma_data_desc[0].local_mem_hndl = source_memory_handle;
-  rdma_data_desc[0].remote_addr = remote_memory_handle_array[send_to].addr;
-  rdma_data_desc[0].remote_mem_hndl = remote_memory_handle_array[send_to].mdh;
-  rdma_data_desc[0].rdma_mode = 0;
-  rdma_data_desc[0].src_cq_hndl = cq_handle;
-  send_post_id = ((uint64_t) expected_local_event_id * POST_ID_MULTIPLIER) + i + 1;
-  rdma_data_desc[0].post_id = send_post_id;
-              rdma_data_desc[0].length = 4;
-              status =
-                GNI_PostRdma (endpoint_handles_array[send_to],
-                              &rdma_data_desc[0]);
-              if (status != GNI_RC_SUCCESS)
-                {
-                  fprintf (stdout,
-                           "[%s] Rank: %4i GNI_PostRdma      data ERROR status: %s (%d)\n",
-                           uts_info.nodename, my_rank, gni_err_str[status],
-                           status);
-                  return -1;
-                }
+      if (my_rank == 1)
+	{
+	  data_transfers_recvd = 0;
 
-            }
-    }
+	  for (i = 0; i < transfers; i++)
+	    {
+	      rc = get_cq_event (destination_cq_handle, uts_info,
+				 rank_id, 0, 1, &current_event);
+	      if (rc == 0)
+		{
+		  data_transfers_recvd++;
+
+		}
+
+	    }
+	  if (data_transfers_recvd == transfers)
+	    {
+
+	      rdma_data_desc[0].length = 4;
+	      status =
+		GNI_PostRdma (endpoint_handles_array[send_to],
+			      &rdma_data_desc[0]);
+	      if (status != GNI_RC_SUCCESS)
+		{
+		  fprintf (stdout,
+			   "[%s] Rank: %4i GNI_PostRdma      data ERROR status: %s (%d)\n",
+			   uts_info.nodename, my_rank, gni_err_str[status],
+			   status);
+		  return -1;
+		}
+
+	    }
+	}
   fprintf (stdout, "Clean up later exit now for rank 0\n");
-  fflush(stdout);
+  fflush (stdout);
   PMI_Finalize ();
   return 0;
 
