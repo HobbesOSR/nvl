@@ -518,6 +518,136 @@ get_cq_event (gni_cq_handle_t cq_handle, struct utsname uts_info,
 	{
 	  return 0;
 	}
+      else if (status != GNI_RC_NOT_DONE)
+	{
+	  int error_code = 1;
+/*
+             * An error occurred getting the event.
+             */
+
+	  char *cqErrorStr;
+	  char *cqOverrunErrorStr = "";
+	  gni_return_t tmp_status = GNI_RC_SUCCESS;
+#ifdef CRAY_CONFIG_GHAL_ARIES
+	  uint32_t status_code;
+
+	  status_code = GNI_CQ_GET_STATUS (event_data);
+	  if (status_code == A_STATUS_AT_PROTECTION_ERR)
+	    {
+	      return 1;
+	    }
+#endif
+
+	  /*
+	   * Did the event queue overrun condition occurred?
+	   * This means that all of the event queue entries were used up
+	   * and another event occurred, i.e. there was no entry available
+	   * to put the new event into.
+	   */
+
+	  if (GNI_CQ_OVERRUN (event_data))
+	    {
+	      cqOverrunErrorStr = "CQ_OVERRUN detected ";
+	      error_code = 2;
+
+	      fprintf (stdout,
+		       "[%s] Rank: %4i ERROR CQ_OVERRUN detected\n",
+		       uts_info.nodename, rank_id);
+	    }
+
+	  cqErrorStr = (char *) malloc (256);
+	  if (cqErrorStr != NULL)
+	    {
+
+	      /*
+	       * Print a user understandable error message.
+	       */
+
+	      tmp_status = GNI_CqErrorStr (event_data, cqErrorStr, 256);
+	      if (tmp_status == GNI_RC_SUCCESS)
+		{
+		  fprintf (stdout,
+			   "[%s] Rank: %4i GNI_CqGetEvent    ERROR %sstatus: %s (%d) inst_id: %lu event: 0x%16.16lx GNI_CqErrorStr: %s\n",
+			   uts_info.nodename, rank_id, cqOverrunErrorStr,
+			   gni_err_str[status], status,
+			   GNI_CQ_GET_INST_ID (event_data), event_data,
+			   cqErrorStr);
+		}
+	      else
+		{
+
+		  /*
+		   * Print the error number.
+		   */
+
+		  fprintf (stdout,
+			   "[%s] Rank: %4i GNI_CqGetEvent    ERROR %sstatus: %s (%d) inst_id: %lu event: 0x%16.16lx\n",
+			   uts_info.nodename, rank_id, cqOverrunErrorStr,
+			   gni_err_str[status], status,
+			   GNI_CQ_GET_INST_ID (event_data), event_data);
+		}
+
+	      free (cqErrorStr);
+	    }
+	  else
+	    {
+	      /*
+	       * Print the error number.
+	       */
+
+	      fprintf (stdout,
+		       "[%s] Rank: %4i GNI_CqGetEvent    ERROR %sstatus: %s (%d) inst_id: %lu event: 0x%16.16lx\n",
+		       uts_info.nodename, rank_id, cqOverrunErrorStr,
+		       gni_err_str[status], status,
+		       GNI_CQ_GET_INST_ID (event_data), event_data);
+	    }
+	  return error_code;
+	}
+      else if (retry == 0)
+	{
+	  return 3;
+	}
+      else
+	{
+
+	  /*
+	   * An event has not been received yet.
+	   */
+
+	  wait_count++;
+
+	  if (wait_count >= MAXIMUM_CQ_RETRY_COUNT)
+	    {
+	      /*
+	       * This prevents an indefinite retry, which could hang the
+	       * application.
+	       */
+
+	      fprintf (stdout,
+		       "[%s] Rank: %4i GNI_CqGetEvent    ERROR no event was received status: %d retry count: %d\n",
+		       uts_info.nodename, rank_id, status, wait_count);
+	      return 3;
+	    }
+
+	  /*
+	   * Release the cpu to allow the event to be received.
+	   * This is basically a sleep, if other processes need to do some work.
+	   */
+
+	  if ((wait_count % (MAXIMUM_CQ_RETRY_COUNT / 10)) == 0)
+	    {
+	      /*
+	       * Sometimes it takes a little longer for
+	       * the datagram to arrive.
+	       */
+
+	      sleep (1);
+	    }
+	  else
+	    {
+	      sched_yield ();
+	    }
+	}
     }
 
   return 1;
