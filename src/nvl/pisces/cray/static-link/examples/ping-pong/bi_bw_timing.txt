@@ -1,17 +1,3 @@
-# ./ping_pong_fma
-cmd = 2 data size 8
-after NIC attach  dump segids 17072495001635  17072495001636 17072495001637 17072495001638
-FMA from rank: 0  bytes :8192  time delta(microsec) = 1035408 FMA bandwidth:   0.00 
-FMA from rank: 0  bytes :8192  time delta(microsec) = 1000025 FMA bandwidth:   0.00 
-FMA from rank: 0  bytes :8192  time delta(microsec) = 1000054 FMA bandwidth:   0.00 
-FMA from rank: 0  bytes :8192  time delta(microsec) = 1000073 FMA bandwidth:   0.00 
-FMA from rank: 0  bytes :8192  time delta(microsec) = 1000067 FMA bandwidth:   0.00 
-FMA from rank: 0  bytes :8192  time delta(microsec) = 1000067 FMA bandwidth:   0.00 
-FMA from rank: 0  bytes :8192  time delta(microsec) = 1000074 FMA bandwidth:   0.00 
-FMA from rank: 0  bytes :8192  time delta(microsec) = 1000067 FMA bandwidth:   0.00 
-FMA from rank: 0  bytes :8192  time delta(microsec) = 1000050 FMA bandwidth:   0.00 
-FMA from rank: 0  bytes :8192  time delta(microsec) = 1000069 FMA bandwidth:   0.00 
-Clean up later exit now for rank 0
 
 /**** RDMA bi-directional */
 
@@ -19,28 +5,277 @@ Clean up later exit now for rank 0
 /home/smukher/nvl/src/nvl/pisces/cray/static-link/examples/ping-pong/RDMA
 
 
-# ./ping_pong_bw -s 8192 -n 10
-cmd = 2 data size 8
-after NIC attach  dump segids 22741851832355  22741851832356 22741851832357 22741851832358
-wg consistency error: string not found in hash during deletion, offset 55152
-wg consistency error: string not found in hash during deletion, offset 55152
-wg consistency error: string not found in hash during deletion, offset 55152
-wg consistency error: string not found in hash during deletion, offset 55152
-wg consistency error: string not found in hash during deletion, offset 55152
-wg consistency error: string not found in hash during deletion, offset 55152
-wg consistency error: string not found in hash during deletion, offset 55152
-rank: 0  bytes :8192 time delta(microsec) =100010 bandwidth : 81911.15  
-rank: 0  bytes :8192 time delta(microsec) =200024 bandwidth : 40954.92  
-rank: 0  bytes :8192 time delta(microsec) =300034 bandwidth : 27303.54  
-rank: 0  bytes :8192 time delta(microsec) =400043 bandwidth : 20477.79  
-rank: 0  bytes :8192 time delta(microsec) =500057 bandwidth : 16382.13  
-rank: 0  bytes :8192 time delta(microsec) =600067 bandwidth : 13651.81  
-rank: 0  bytes :8192 time delta(microsec) =800084 bandwidth : 10238.92  
-rank: 0  bytes :8192 time delta(microsec) =900098 bandwidth : 9101.23  
-rank: 0  bytes :8192 time delta(microsec) =1000108 bandwidth : 8191.11  
-rank: 0  bytes :8192 time delta(microsec) =1100122 bandwidth : 7446.45  
-Clean up later exit now for rank 0
-# pwd
-/home/smukher/nvl/src/nvl/pisces/cray/static-link/examples/ping-pong/RDMA
+# ./ping_pong_bw -s 16384 -n 10
+rank: 0  bytes :16384 time delta(microsec) =56 bandwidth : 292571428.57  
+rank: 0  bytes :16384 time delta(microsec) =45 bandwidth : 364088888.89  
+rank: 0  bytes :16384 time delta(microsec) =38 bandwidth : 431157894.74  
+rank: 0  bytes :16384 time delta(microsec) =40 bandwidth : 409600000.00  
+rank: 0  bytes :16384 time delta(microsec) =40 bandwidth : 409600000.00  
+rank: 0  bytes :16384 time delta(microsec) =40 bandwidth : 409600000.00  
+rank: 0  bytes :16384 time delta(microsec) =40 bandwidth : 409600000.00  
+rank: 0  bytes :16384 time delta(microsec) =40 bandwidth : 409600000.00  
+rank: 0  bytes :16384 time delta(microsec) =41 bandwidth : 399609756.10  
+rank: 0  bytes :16384 time delta(microsec) =36 bandwidth : 455111111.11  
 
+
+# ./ping_pong_bw -s 32768 -n 10
+rank: 0  bytes :32768 time delta(microsec) =63 bandwidth : 520126984.13  
+rank: 0  bytes :32768 time delta(microsec) =45 bandwidth : 728177777.78  
+rank: 0  bytes :32768 time delta(microsec) =47 bandwidth : 697191489.36  
+rank: 0  bytes :32768 time delta(microsec) =45 bandwidth : 728177777.78  
+rank: 0  bytes :32768 time delta(microsec) =43 bandwidth : 762046511.63  
+rank: 0  bytes :32768 time delta(microsec) =44 bandwidth : 744727272.73  
+rank: 0  bytes :32768 time delta(microsec) =44 bandwidth : 744727272.73  
+rank: 0  bytes :32768 time delta(microsec) =41 bandwidth : 799219512.20  
+rank: 0  bytes :32768 time delta(microsec) =45 bandwidth : 728177777.78  
+rank: 0  bytes :32768 time delta(microsec) =40 bandwidth : 819200000.00  
+
+
+# ./ping_pong_bw -s 65536 -n 10
+rank: 0  bytes :65536 time delta(microsec) =67 bandwidth : 978149253.73  
+rank: 0  bytes :65536 time delta(microsec) =56 bandwidth : 1170285714.29  
+rank: 0  bytes :65536 time delta(microsec) =51 bandwidth : 1285019607.84  
+rank: 0  bytes :65536 time delta(microsec) =51 bandwidth : 1285019607.84  
+rank: 0  bytes :65536 time delta(microsec) =48 bandwidth : 1365333333.33  
+rank: 0  bytes :65536 time delta(microsec) =48 bandwidth : 1365333333.33  
+rank: 0  bytes :65536 time delta(microsec) =50 bandwidth : 1310720000.00  
+rank: 0  bytes :65536 time delta(microsec) =49 bandwidth : 1337469387.76  
+rank: 0  bytes :65536 time delta(microsec) =51 bandwidth : 1285019607.84  
+rank: 0  bytes :65536 time delta(microsec) =50 bandwidth : 1310720000.00  
+
+
+# ./ping_pong_bw -s 131072 -n 10
+rank: 0  bytes :131072 time delta(microsec) =84 bandwidth : 1560380952.38  
+rank: 0  bytes :131072 time delta(microsec) =70 bandwidth : 1872457142.86  
+rank: 0  bytes :131072 time delta(microsec) =71 bandwidth : 1846084507.04  
+rank: 0  bytes :131072 time delta(microsec) =69 bandwidth : 1899594202.90  
+rank: 0  bytes :131072 time delta(microsec) =68 bandwidth : 1927529411.76  
+rank: 0  bytes :131072 time delta(microsec) =69 bandwidth : 1899594202.90  
+rank: 0  bytes :131072 time delta(microsec) =69 bandwidth : 1899594202.90  
+rank: 0  bytes :131072 time delta(microsec) =68 bandwidth : 1927529411.76  
+rank: 0  bytes :131072 time delta(microsec) =68 bandwidth : 1927529411.76  
+rank: 0  bytes :131072 time delta(microsec) =69 bandwidth : 1899594202.90  
+
+
+# ./ping_pong_bw -s 262144 -n 10
+rank: 0  bytes :262144 time delta(microsec) =110 bandwidth : 2383127272.73  
+rank: 0  bytes :262144 time delta(microsec) =96 bandwidth : 2730666666.67  
+rank: 0  bytes :262144 time delta(microsec) =92 bandwidth : 2849391304.35  
+rank: 0  bytes :262144 time delta(microsec) =94 bandwidth : 2788765957.45  
+rank: 0  bytes :262144 time delta(microsec) =92 bandwidth : 2849391304.35  
+rank: 0  bytes :262144 time delta(microsec) =92 bandwidth : 2849391304.35  
+rank: 0  bytes :262144 time delta(microsec) =93 bandwidth : 2818752688.17  
+rank: 0  bytes :262144 time delta(microsec) =91 bandwidth : 2880703296.70  
+rank: 0  bytes :262144 time delta(microsec) =92 bandwidth : 2849391304.35  
+rank: 0  bytes :262144 time delta(microsec) =91 bandwidth : 2880703296.70  
+
+
+# ./ping_pong_bw -s 524288 -n 10
+rank: 0  bytes :524288 time delta(microsec) =181 bandwidth : 2896618784.53  
+rank: 0  bytes :524288 time delta(microsec) =168 bandwidth : 3120761904.76  
+rank: 0  bytes :524288 time delta(microsec) =169 bandwidth : 3102295857.99  
+rank: 0  bytes :524288 time delta(microsec) =163 bandwidth : 3216490797.55  
+rank: 0  bytes :524288 time delta(microsec) =161 bandwidth : 3256447204.97  
+rank: 0  bytes :524288 time delta(microsec) =166 bandwidth : 3158361445.78  
+rank: 0  bytes :524288 time delta(microsec) =165 bandwidth : 3177503030.30  
+rank: 0  bytes :524288 time delta(microsec) =168 bandwidth : 3120761904.76  
+rank: 0  bytes :524288 time delta(microsec) =165 bandwidth : 3177503030.30  
+rank: 0  bytes :524288 time delta(microsec) =165 bandwidth : 3177503030.30  
+Clean up later exit now for rank 0
+
+
+# ./ping_pong_bw -s 1048576 -n 10
+rank: 0  bytes :1048576 time delta(microsec) =272 bandwidth : 3855058823.53  
+rank: 0  bytes :1048576 time delta(microsec) =260 bandwidth : 4032984615.38  
+rank: 0  bytes :1048576 time delta(microsec) =259 bandwidth : 4048555984.56  
+rank: 0  bytes :1048576 time delta(microsec) =259 bandwidth : 4048555984.56  
+rank: 0  bytes :1048576 time delta(microsec) =254 bandwidth : 4128251968.50  
+rank: 0  bytes :1048576 time delta(microsec) =256 bandwidth : 4096000000.00  
+rank: 0  bytes :1048576 time delta(microsec) =258 bandwidth : 4064248062.02  
+rank: 0  bytes :1048576 time delta(microsec) =254 bandwidth : 4128251968.50  
+rank: 0  bytes :1048576 time delta(microsec) =255 bandwidth : 4112062745.10  
+rank: 0  bytes :1048576 time delta(microsec) =257 bandwidth : 4080062256.81  
+
+
+
+# ./ping_pong_bw -s 2097152 -n 10
+rank: 0  bytes :2097152 time delta(microsec) =574 bandwidth : 3653574912.89  
+rank: 0  bytes :2097152 time delta(microsec) =563 bandwidth : 3724959147.42  
+rank: 0  bytes :2097152 time delta(microsec) =565 bandwidth : 3711773451.33  
+rank: 0  bytes :2097152 time delta(microsec) =558 bandwidth : 3758336917.56  
+rank: 0  bytes :2097152 time delta(microsec) =559 bandwidth : 3751613595.71  
+rank: 0  bytes :2097152 time delta(microsec) =554 bandwidth : 3785472924.19  
+rank: 0  bytes :2097152 time delta(microsec) =553 bandwidth : 3792318264.01  
+rank: 0  bytes :2097152 time delta(microsec) =558 bandwidth : 3758336917.56  
+rank: 0  bytes :2097152 time delta(microsec) =554 bandwidth : 3785472924.19  
+rank: 0  bytes :2097152 time delta(microsec) =556 bandwidth : 3771856115.11
+
+
+
+# ./ping_pong_bw -s 4194304 -n 10
+rank: 0  bytes :4194304 time delta(microsec) =1088 bandwidth : 3855058823.53  
+rank: 0  bytes :4194304 time delta(microsec) =1086 bandwidth : 3862158379.37  
+rank: 0  bytes :4194304 time delta(microsec) =1089 bandwidth : 3851518824.61  
+rank: 0  bytes :4194304 time delta(microsec) =1082 bandwidth : 3876436229.21  
+rank: 0  bytes :4194304 time delta(microsec) =1085 bandwidth : 3865717972.35  
+rank: 0  bytes :4194304 time delta(microsec) =1088 bandwidth : 3855058823.53  
+rank: 0  bytes :4194304 time delta(microsec) =1080 bandwidth : 3883614814.81  
+rank: 0  bytes :4194304 time delta(microsec) =1081 bandwidth : 3880022201.67  
+rank: 0  bytes :4194304 time delta(microsec) =1086 bandwidth : 3862158379.37  
+rank: 0  bytes :4194304 time delta(microsec) =1090 bandwidth : 3847985321.10  
+Clean up later exit now for rank 0
+
+
+
+
+
+*************************** FMA timing bidirectional, no pipelining ********************************
+
+
+
+# ./fma_bi_bw -s 8 -n 10
+FMA from rank: 0  bytes :8  time delta(microsec) = 47162 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8  time delta(microsec) = 3 FMA bandwidth: 2000000.00 
+FMA from rank: 0  bytes :8  time delta(microsec) = 2 FMA bandwidth: 4000000.00 
+FMA from rank: 0  bytes :8  time delta(microsec) = 3 FMA bandwidth: 2000000.00 
+FMA from rank: 0  bytes :8  time delta(microsec) = 3 FMA bandwidth: 2000000.00 
+FMA from rank: 0  bytes :8  time delta(microsec) = 2 FMA bandwidth: 4000000.00 
+FMA from rank: 0  bytes :8  time delta(microsec) = 2 FMA bandwidth: 4000000.00 
+FMA from rank: 0  bytes :8  time delta(microsec) = 3 FMA bandwidth: 2000000.00 
+FMA from rank: 0  bytes :8  time delta(microsec) = 2 FMA bandwidth: 4000000.00 
+FMA from rank: 0  bytes :8  time delta(microsec) = 2 FMA bandwidth: 4000000.00 
+
+
+
+# ./fma_bi_bw -s 16 -n 10
+FMA from rank: 0  bytes :16  time delta(microsec) = 47158 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :16  time delta(microsec) = 3 FMA bandwidth: 5000000.00 
+FMA from rank: 0  bytes :16  time delta(microsec) = 2 FMA bandwidth: 8000000.00 
+FMA from rank: 0  bytes :16  time delta(microsec) = 3 FMA bandwidth: 5000000.00 
+FMA from rank: 0  bytes :16  time delta(microsec) = 2 FMA bandwidth: 8000000.00 
+FMA from rank: 0  bytes :16  time delta(microsec) = 2 FMA bandwidth: 8000000.00 
+FMA from rank: 0  bytes :16  time delta(microsec) = 2 FMA bandwidth: 8000000.00 
+FMA from rank: 0  bytes :16  time delta(microsec) = 3 FMA bandwidth: 5000000.00 
+FMA from rank: 0  bytes :16  time delta(microsec) = 2 FMA bandwidth: 8000000.00 
+FMA from rank: 0  bytes :16  time delta(microsec) = 3 FMA bandwidth: 5000000.00 
+
+
+
+
+# ./fma_bi_bw -s 32 -n 10
+FMA from rank: 0  bytes :32  time delta(microsec) = 47163 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :32  time delta(microsec) = 3 FMA bandwidth: 10000000.00 
+FMA from rank: 0  bytes :32  time delta(microsec) = 2 FMA bandwidth: 16000000.00 
+FMA from rank: 0  bytes :32  time delta(microsec) = 2 FMA bandwidth: 16000000.00 
+FMA from rank: 0  bytes :32  time delta(microsec) = 2 FMA bandwidth: 16000000.00 
+FMA from rank: 0  bytes :32  time delta(microsec) = 2 FMA bandwidth: 16000000.00 
+FMA from rank: 0  bytes :32  time delta(microsec) = 3 FMA bandwidth: 10000000.00 
+FMA from rank: 0  bytes :32  time delta(microsec) = 2 FMA bandwidth: 16000000.00 
+FMA from rank: 0  bytes :32  time delta(microsec) = 2 FMA bandwidth: 16000000.00 
+FMA from rank: 0  bytes :32  time delta(microsec) = 2 FMA bandwidth: 16000000.00 
+
+
+# pwd
+/home/smukher/nvl/src/nvl/pisces/cray/static-link/examples/ping-pong/FMA
+# ./fma_bi_bw -s 64 -n 10
+FMA from rank: 0  bytes :64  time delta(microsec) = 47163 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :64  time delta(microsec) = 3 FMA bandwidth: 21000000.00 
+FMA from rank: 0  bytes :64  time delta(microsec) = 3 FMA bandwidth: 21000000.00 
+FMA from rank: 0  bytes :64  time delta(microsec) = 2 FMA bandwidth: 32000000.00 
+FMA from rank: 0  bytes :64  time delta(microsec) = 2 FMA bandwidth: 32000000.00 
+FMA from rank: 0  bytes :64  time delta(microsec) = 3 FMA bandwidth: 21000000.00 
+FMA from rank: 0  bytes :64  time delta(microsec) = 2 FMA bandwidth: 32000000.00 
+FMA from rank: 0  bytes :64  time delta(microsec) = 3 FMA bandwidth: 21000000.00 
+FMA from rank: 0  bytes :64  time delta(microsec) = 2 FMA bandwidth: 32000000.00 
+FMA from rank: 0  bytes :64  time delta(microsec) = 2 FMA bandwidth: 32000000.00 
+
+# ./fma_bi_bw -s 128 -n 10
+FMA from rank: 0  bytes :128  time delta(microsec) = 47162 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :128  time delta(microsec) = 4 FMA bandwidth: 32000000.00 
+FMA from rank: 0  bytes :128  time delta(microsec) = 3 FMA bandwidth: 42000000.00 
+FMA from rank: 0  bytes :128  time delta(microsec) = 2 FMA bandwidth: 64000000.00 
+FMA from rank: 0  bytes :128  time delta(microsec) = 2 FMA bandwidth: 64000000.00 
+FMA from rank: 0  bytes :128  time delta(microsec) = 2 FMA bandwidth: 64000000.00 
+FMA from rank: 0  bytes :128  time delta(microsec) = 2 FMA bandwidth: 64000000.00 
+FMA from rank: 0  bytes :128  time delta(microsec) = 3 FMA bandwidth: 42000000.00 
+FMA from rank: 0  bytes :128  time delta(microsec) = 2 FMA bandwidth: 64000000.00 
+FMA from rank: 0  bytes :128  time delta(microsec) = 2 FMA bandwidth: 64000000.00 
+
+
+# ./fma_bi_bw -s 256 -n 10
+FMA from rank: 0  bytes :256  time delta(microsec) = 47161 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :256  time delta(microsec) = 2 FMA bandwidth: 128000000.00 
+FMA from rank: 0  bytes :256  time delta(microsec) = 3 FMA bandwidth: 85000000.00 
+FMA from rank: 0  bytes :256  time delta(microsec) = 2 FMA bandwidth: 128000000.00 
+FMA from rank: 0  bytes :256  time delta(microsec) = 3 FMA bandwidth: 85000000.00 
+FMA from rank: 0  bytes :256  time delta(microsec) = 3 FMA bandwidth: 85000000.00 
+FMA from rank: 0  bytes :256  time delta(microsec) = 2 FMA bandwidth: 128000000.00 
+FMA from rank: 0  bytes :256  time delta(microsec) = 2 FMA bandwidth: 128000000.00 
+FMA from rank: 0  bytes :256  time delta(microsec) = 2 FMA bandwidth: 128000000.00 
+FMA from rank: 0  bytes :256  time delta(microsec) = 2 FMA bandwidth: 128000000.00 
+
+
+# ./fma_bi_bw -s 512 -n 10
+FMA from rank: 0  bytes :512  time delta(microsec) = 47193 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :512  time delta(microsec) = 3 FMA bandwidth: 170000000.00 
+FMA from rank: 0  bytes :512  time delta(microsec) = 3 FMA bandwidth: 170000000.00 
+FMA from rank: 0  bytes :512  time delta(microsec) = 2 FMA bandwidth: 256000000.00 
+FMA from rank: 0  bytes :512  time delta(microsec) = 3 FMA bandwidth: 170000000.00 
+FMA from rank: 0  bytes :512  time delta(microsec) = 2 FMA bandwidth: 256000000.00 
+FMA from rank: 0  bytes :512  time delta(microsec) = 3 FMA bandwidth: 170000000.00 
+FMA from rank: 0  bytes :512  time delta(microsec) = 3 FMA bandwidth: 170000000.00 
+FMA from rank: 0  bytes :512  time delta(microsec) = 2 FMA bandwidth: 256000000.00 
+FMA from rank: 0  bytes :512  time delta(microsec) = 2 FMA bandwidth: 256000000.00 
+
+
+# ./fma_bi_bw -s 1024 -n 10
+FMA from rank: 0  bytes :1024  time delta(microsec) = 47156 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :1024  time delta(microsec) = 4 FMA bandwidth: 256000000.00 
+FMA from rank: 0  bytes :1024  time delta(microsec) = 3 FMA bandwidth: 341000000.00 
+FMA from rank: 0  bytes :1024  time delta(microsec) = 3 FMA bandwidth: 341000000.00 
+FMA from rank: 0  bytes :1024  time delta(microsec) = 2 FMA bandwidth: 512000000.00 
+FMA from rank: 0  bytes :1024  time delta(microsec) = 3 FMA bandwidth: 341000000.00 
+FMA from rank: 0  bytes :1024  time delta(microsec) = 3 FMA bandwidth: 341000000.00 
+FMA from rank: 0  bytes :1024  time delta(microsec) = 3 FMA bandwidth: 341000000.00 
+FMA from rank: 0  bytes :1024  time delta(microsec) = 3 FMA bandwidth: 341000000.00 
+FMA from rank: 0  bytes :1024  time delta(microsec) = 2 FMA bandwidth: 512000000.00 
+
+
+# ./fma_bi_bw -s 2048 -n 10
+FMA from rank: 0  bytes :2048  time delta(microsec) = 47161 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :2048  time delta(microsec) = 4 FMA bandwidth: 512000000.00 
+FMA from rank: 0  bytes :2048  time delta(microsec) = 3 FMA bandwidth: 682000000.00 
+FMA from rank: 0  bytes :2048  time delta(microsec) = 4 FMA bandwidth: 512000000.00 
+FMA from rank: 0  bytes :2048  time delta(microsec) = 4 FMA bandwidth: 512000000.00 
+FMA from rank: 0  bytes :2048  time delta(microsec) = 3 FMA bandwidth: 682000000.00 
+FMA from rank: 0  bytes :2048  time delta(microsec) = 3 FMA bandwidth: 682000000.00 
+FMA from rank: 0  bytes :2048  time delta(microsec) = 3 FMA bandwidth: 682000000.00 
+FMA from rank: 0  bytes :2048  time delta(microsec) = 3 FMA bandwidth: 682000000.00 
+FMA from rank: 0  bytes :2048  time delta(microsec) = 3 FMA bandwidth: 682000000.00 
+
+
+# ./fma_bi_bw -s 4096 -n 10
+FMA from rank: 0  bytes :4096  time delta(microsec) = 47163 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :4096  time delta(microsec) = 5 FMA bandwidth: 819000000.00 
+FMA from rank: 0  bytes :4096  time delta(microsec) = 5 FMA bandwidth: 819000000.00 
+FMA from rank: 0  bytes :4096  time delta(microsec) = 5 FMA bandwidth: 819000000.00 
+FMA from rank: 0  bytes :4096  time delta(microsec) = 5 FMA bandwidth: 819000000.00 
+FMA from rank: 0  bytes :4096  time delta(microsec) = 4 FMA bandwidth: 1024000000.00 
+FMA from rank: 0  bytes :4096  time delta(microsec) = 5 FMA bandwidth: 819000000.00 
+FMA from rank: 0  bytes :4096  time delta(microsec) = 5 FMA bandwidth: 819000000.00 
+FMA from rank: 0  bytes :4096  time delta(microsec) = 4 FMA bandwidth: 1024000000.00 
+FMA from rank: 0  bytes :4096  time delta(microsec) = 4 FMA bandwidth: 1024000000.00 
+
+
+# ./fma_bi_bw -s 8192 -n 10
+FMA from rank: 0  bytes :8192  time delta(microsec) = 58903 FMA bandwidth:   0.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 4 FMA bandwidth: 2048000000.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 5 FMA bandwidth: 1638000000.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 4 FMA bandwidth: 2048000000.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 4 FMA bandwidth: 2048000000.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 4 FMA bandwidth: 2048000000.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 4 FMA bandwidth: 2048000000.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 4 FMA bandwidth: 2048000000.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 4 FMA bandwidth: 2048000000.00 
+FMA from rank: 0  bytes :8192  time delta(microsec) = 5 FMA bandwidth: 1638000000.00 
 
