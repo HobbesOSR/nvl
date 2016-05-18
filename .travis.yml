@@ -23,4 +23,6 @@ notifications:
             - hobbes-virt@elist.ornl.gov
             - noah.evans@gmail.com
             - ktpedre@sandia.gov
+git:
+    submodules: false
 
