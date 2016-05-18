@@ -31,4 +31,7 @@ set style line 10 lt 1 linecolor rgb "#7F7F7F" lw 5
 set style line 11 lt 1 linecolor rgb "gray"    lw 5
 
 plot "native_linux_rdma.txt" using 1:2     title  "Native Linux RDMA" with linespoints ls 1, \
-     "client_linux_rdma.txt" using 1:2     title  "Proxy Client Linux RDMA" with linespoints ls 2
+     "client_linux_rdma.txt" using 1:2     title  "Proxy Client Linux RDMA" with linespoints ls 2,\
+     "native_linux_fma.txt" using 1:2     title  "Native Linux FMA" with linespoints ls 5,\
+     "proxy_linux_fma.txt" using 1:2     title  "PROXY Linux FMA" with linespoints ls 7
+
