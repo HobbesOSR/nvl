@@ -125,7 +125,7 @@ $hdf5{package_type}	= "tarball";
 $hdf5{version}		= "1.8.16";
 $hdf5{basename}		= "hdf5-$hdf5{version}";
 $hdf5{tarball}		= "$hdf5{basename}.tar.bz2";
-$hdf5{url}		= "https://www.hdfgroup.org/ftp/HDF5/current/src/$hdf5{tarball}";
+$hdf5{url}		= "https://www.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8.16/src/$hdf5{tarball}";
 push(@packages, \%hdf5);
 
 my %netcdf;
