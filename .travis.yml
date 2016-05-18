@@ -18,7 +18,9 @@ addons:
     - live-image-rescue
     - libdevel-trace-perl
 notifications:
-    - hobbes-virt@elist.ornl.gov
-    - noah.evans@gmail.com
-    - ktpedre@sandia.gov
+    email:
+        recipients:
+            - hobbes-virt@elist.ornl.gov
+            - noah.evans@gmail.com
+            - ktpedre@sandia.gov
 
