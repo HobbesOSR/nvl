@@ -1,6 +1,150 @@
 
 /**** RDMA bi-directional */
 
+./ping_pong_bw -s 8
+rank: 0  bytes :8 time delta(microsec) =56 bandwidth : 142857.14
+rank: 0  bytes :8 time delta(microsec) =41 bandwidth : 195121.95
+rank: 0  bytes :8 time delta(microsec) =35 bandwidth : 228571.43
+rank: 0  bytes :8 time delta(microsec) =32 bandwidth : 250000.00
+rank: 0  bytes :8 time delta(microsec) =37 bandwidth : 216216.22
+rank: 0  bytes :8 time delta(microsec) =35 bandwidth : 228571.43
+rank: 0  bytes :8 time delta(microsec) =34 bandwidth : 235294.12
+rank: 0  bytes :8 time delta(microsec) =34 bandwidth : 235294.12
+rank: 0  bytes :8 time delta(microsec) =34 bandwidth : 235294.12
+rank: 0  bytes :8 time delta(microsec) =35 bandwidth : 228571.43
+
+# ./ping_pong_bw -s 16
+rank: 0  bytes :16 time delta(microsec) =50 bandwidth : 320000.00
+rank: 0  bytes :16 time delta(microsec) =33 bandwidth : 484848.48
+rank: 0  bytes :16 time delta(microsec) =38 bandwidth : 421052.63
+rank: 0  bytes :16 time delta(microsec) =35 bandwidth : 457142.86
+rank: 0  bytes :16 time delta(microsec) =36 bandwidth : 444444.44
+rank: 0  bytes :16 time delta(microsec) =36 bandwidth : 444444.44
+rank: 0  bytes :16 time delta(microsec) =36 bandwidth : 444444.44
+rank: 0  bytes :16 time delta(microsec) =35 bandwidth : 457142.86
+rank: 0  bytes :16 time delta(microsec) =35 bandwidth : 457142.86
+rank: 0  bytes :16 time delta(microsec) =36 bandwidth : 444444.44
+
+# ./ping_pong_bw -s 32
+rank: 0  bytes :32 time delta(microsec) =57 bandwidth : 561403.51
+rank: 0  bytes :32 time delta(microsec) =38 bandwidth : 842105.26
+rank: 0  bytes :32 time delta(microsec) =35 bandwidth : 914285.71
+rank: 0  bytes :32 time delta(microsec) =39 bandwidth : 820512.82
+rank: 0  bytes :32 time delta(microsec) =34 bandwidth : 941176.47
+rank: 0  bytes :32 time delta(microsec) =35 bandwidth : 914285.71
+rank: 0  bytes :32 time delta(microsec) =36 bandwidth : 888888.89
+rank: 0  bytes :32 time delta(microsec) =36 bandwidth : 888888.89
+rank: 0  bytes :32 time delta(microsec) =36 bandwidth : 888888.89
+rank: 0  bytes :32 time delta(microsec) =37 bandwidth : 864864.86
+Clean up later exit now for rank 0
+
+
+# ./ping_pong_bw -s 64
+rank: 0  bytes :64 time delta(microsec) =48 bandwidth : 1333333.33
+rank: 0  bytes :64 time delta(microsec) =37 bandwidth : 1729729.73
+rank: 0  bytes :64 time delta(microsec) =34 bandwidth : 1882352.94
+rank: 0  bytes :64 time delta(microsec) =35 bandwidth : 1828571.43
+rank: 0  bytes :64 time delta(microsec) =31 bandwidth : 2064516.13
+rank: 0  bytes :64 time delta(microsec) =33 bandwidth : 1939393.94
+rank: 0  bytes :64 time delta(microsec) =32 bandwidth : 2000000.00
+rank: 0  bytes :64 time delta(microsec) =35 bandwidth : 1828571.43
+rank: 0  bytes :64 time delta(microsec) =35 bandwidth : 1828571.43
+rank: 0  bytes :64 time delta(microsec) =35 bandwidth : 1828571.43
+Clean up later exit now for rank 0
+
+# ./ping_pong_bw -s 128
+rank: 0  bytes :128 time delta(microsec) =53 bandwidth : 2415094.34
+rank: 0  bytes :128 time delta(microsec) =38 bandwidth : 3368421.05
+rank: 0  bytes :128 time delta(microsec) =39 bandwidth : 3282051.28
+rank: 0  bytes :128 time delta(microsec) =38 bandwidth : 3368421.05
+rank: 0  bytes :128 time delta(microsec) =38 bandwidth : 3368421.05
+rank: 0  bytes :128 time delta(microsec) =38 bandwidth : 3368421.05
+rank: 0  bytes :128 time delta(microsec) =36 bandwidth : 3555555.56
+rank: 0  bytes :128 time delta(microsec) =35 bandwidth : 3657142.86
+rank: 0  bytes :128 time delta(microsec) =37 bandwidth : 3459459.46
+rank: 0  bytes :128 time delta(microsec) =36 bandwidth : 3555555.56
+Clean up later exit now for rank 0
+
+# ./ping_pong_bw -s 256
+rank: 0  bytes :256 time delta(microsec) =56 bandwidth : 4571428.57
+rank: 0  bytes :256 time delta(microsec) =31 bandwidth : 8258064.52
+rank: 0  bytes :256 time delta(microsec) =35 bandwidth : 7314285.71
+rank: 0  bytes :256 time delta(microsec) =35 bandwidth : 7314285.71
+rank: 0  bytes :256 time delta(microsec) =36 bandwidth : 7111111.11
+rank: 0  bytes :256 time delta(microsec) =31 bandwidth : 8258064.52
+rank: 0  bytes :256 time delta(microsec) =35 bandwidth : 7314285.71
+rank: 0  bytes :256 time delta(microsec) =32 bandwidth : 8000000.00
+rank: 0  bytes :256 time delta(microsec) =35 bandwidth : 7314285.71
+rank: 0  bytes :256 time delta(microsec) =32 bandwidth : 8000000.00
+
+# ./ping_pong_bw -s 512
+rank: 0  bytes :512 time delta(microsec) =51 bandwidth : 10039215.69
+rank: 0  bytes :512 time delta(microsec) =34 bandwidth : 15058823.53
+rank: 0  bytes :512 time delta(microsec) =36 bandwidth : 14222222.22
+rank: 0  bytes :512 time delta(microsec) =35 bandwidth : 14628571.43
+rank: 0  bytes :512 time delta(microsec) =38 bandwidth : 13473684.21
+rank: 0  bytes :512 time delta(microsec) =37 bandwidth : 13837837.84
+rank: 0  bytes :512 time delta(microsec) =36 bandwidth : 14222222.22
+rank: 0  bytes :512 time delta(microsec) =33 bandwidth : 15515151.52
+rank: 0  bytes :512 time delta(microsec) =30 bandwidth : 17066666.67
+rank: 0  bytes :512 time delta(microsec) =33 bandwidth : 15515151.52
+Clean up later exit now for rank 0
+
+# ./ping_pong_bw -s 1024
+rank: 0  bytes :1024 time delta(microsec) =49 bandwidth : 20897959.18
+rank: 0  bytes :1024 time delta(microsec) =39 bandwidth : 26256410.26
+rank: 0  bytes :1024 time delta(microsec) =34 bandwidth : 30117647.06
+rank: 0  bytes :1024 time delta(microsec) =37 bandwidth : 27675675.68
+rank: 0  bytes :1024 time delta(microsec) =35 bandwidth : 29257142.86
+rank: 0  bytes :1024 time delta(microsec) =36 bandwidth : 28444444.44
+rank: 0  bytes :1024 time delta(microsec) =36 bandwidth : 28444444.44
+rank: 0  bytes :1024 time delta(microsec) =37 bandwidth : 27675675.68
+rank: 0  bytes :1024 time delta(microsec) =33 bandwidth : 31030303.03
+rank: 0  bytes :1024 time delta(microsec) =31 bandwidth : 33032258.06
+Clean up later exit now for rank 0
+
+# ./ping_pong_bw -s 2048
+rank: 0  bytes :2048 time delta(microsec) =49 bandwidth : 41795918.37
+rank: 0  bytes :2048 time delta(microsec) =30 bandwidth : 68266666.67
+rank: 0  bytes :2048 time delta(microsec) =39 bandwidth : 52512820.51
+rank: 0  bytes :2048 time delta(microsec) =38 bandwidth : 53894736.84
+rank: 0  bytes :2048 time delta(microsec) =38 bandwidth : 53894736.84
+rank: 0  bytes :2048 time delta(microsec) =37 bandwidth : 55351351.35
+rank: 0  bytes :2048 time delta(microsec) =37 bandwidth : 55351351.35
+rank: 0  bytes :2048 time delta(microsec) =34 bandwidth : 60235294.12
+rank: 0  bytes :2048 time delta(microsec) =37 bandwidth : 55351351.35
+rank: 0  bytes :2048 time delta(microsec) =33 bandwidth : 62060606.06
+Clean up later exit now for rank 0
+
+
+# ./ping_pong_bw -s 4096
+rank: 0  bytes :4096 time delta(microsec) =57 bandwidth : 71859649.12
+rank: 0  bytes :4096 time delta(microsec) =35 bandwidth : 117028571.43
+rank: 0  bytes :4096 time delta(microsec) =35 bandwidth : 117028571.43
+rank: 0  bytes :4096 time delta(microsec) =33 bandwidth : 124121212.12
+rank: 0  bytes :4096 time delta(microsec) =36 bandwidth : 113777777.78
+rank: 0  bytes :4096 time delta(microsec) =33 bandwidth : 124121212.12
+rank: 0  bytes :4096 time delta(microsec) =36 bandwidth : 113777777.78
+rank: 0  bytes :4096 time delta(microsec) =35 bandwidth : 117028571.43
+rank: 0  bytes :4096 time delta(microsec) =36 bandwidth : 113777777.78
+rank: 0  bytes :4096 time delta(microsec) =36 bandwidth : 113777777.78
+Clean up later exit now for rank 0
+
+
+# ./ping_pong_bw -s 8192
+rank: 0  bytes :8192 time delta(microsec) =57 bandwidth : 143719298.25
+rank: 0  bytes :8192 time delta(microsec) =42 bandwidth : 195047619.05
+rank: 0  bytes :8192 time delta(microsec) =39 bandwidth : 210051282.05
+rank: 0  bytes :8192 time delta(microsec) =38 bandwidth : 215578947.37
+rank: 0  bytes :8192 time delta(microsec) =40 bandwidth : 204800000.00
+rank: 0  bytes :8192 time delta(microsec) =39 bandwidth : 210051282.05
+rank: 0  bytes :8192 time delta(microsec) =39 bandwidth : 210051282.05
+rank: 0  bytes :8192 time delta(microsec) =38 bandwidth : 215578947.37
+rank: 0  bytes :8192 time delta(microsec) =39 bandwidth : 210051282.05
+rank: 0  bytes :8192 time delta(microsec) =35 bandwidth : 234057142.86
+Clean up later exit now for rank 0
+
+
 # pwd
 /home/smukher/nvl/src/nvl/pisces/cray/static-link/examples/ping-pong/RDMA
 

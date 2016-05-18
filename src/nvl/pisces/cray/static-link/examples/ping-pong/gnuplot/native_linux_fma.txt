@@ -1,0 +1,13 @@
+# Code located at LANL Cray hobbesxt:/home/smukher/gni-pmi-examples/examples/bw_raw_ugni_fma.c
+#size (bytes) latency(microsec) bandwidth(Bytes/sec)
+8      1     5755395.68
+16     1     11510791.37 
+32     1     23021582.73 
+64     1     45390070.92 
+128    1     92086330.94  
+256    1     181560283.69  
+512    1     350684931.51  
+1024   1     669281045.75   
+2048   1     1163636363.64   
+4096   2     1804405286.34   
+8192   2     3718003025.73
