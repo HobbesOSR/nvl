@@ -36,7 +36,7 @@
 #define CDM_ID_MULTIPLIER        1000
 #define FLAG_DATA                0xffff000000000000
 #define LOCAL_EVENT_ID_BASE      10000000
-#define NUMBER_OF_TRANSFERS      10
+#define NUMBER_OF_TRANSFERS      2
 #define POST_ID_MULTIPLIER       1000
 #define REMOTE_EVENT_ID_BASE     11000000
 #define SEND_DATA                0xdddd000000000000
@@ -148,8 +148,8 @@ main (int argc, char **argv)
   uint32_t transfer_size = 0;
   uint32_t size = 0;
   int use_event_id = 0;
-  uint64_t t0, t1, elapsed;
-  double speed;
+  uint64_t t0, t1;
+  double speed, elapsed;
 
   if ((i = uname (&uts_info)) != 0)
     {
@@ -512,8 +512,6 @@ main (int argc, char **argv)
   expected_local_event_id = send_to;
   expected_remote_event_id = receive_from;
 
-  if (transfer_size == 0)
-    transfer_size = 4096;
 
 
   for (i = 0; i < transfers; i++)
@@ -534,7 +532,9 @@ main (int argc, char **argv)
       rdma_data_desc[i].post_id = send_post_id;
       rdma_data_desc[i].length = transfer_size;
     }
-
+     for (size = 8192; size < 8388608; size*=2){
+      	rdma_data_desc[0].length = size;
+      	transfer_size = size;
       if (my_rank == 0)
 	{
 
@@ -544,7 +544,7 @@ main (int argc, char **argv)
 	  	t0 = now ();
 	      status =
 		GNI_PostRdma (endpoint_handles_array[send_to],
-			      &rdma_data_desc[i]);
+			      &rdma_data_desc[0]);
 	      if (status != GNI_RC_SUCCESS)
 		{
 		  fprintf (stdout,
@@ -566,18 +566,19 @@ main (int argc, char **argv)
 
 	      if (rc == 0)
 		{
-
+ 	         if(i == 1){
 		  t1 = now ();
-		  elapsed = t1 - t0;
+		  elapsed = (double)(t1 - t0);
 		  speed =
 		    (transfer_size) * 1e6 / elapsed;
 		  fprintf (stdout,
-			   "rank: %d  bytes :%llu time delta(microsec) =%llu bandwidth : %6.2lf  \n",
-			   my_rank, transfer_size,
+			   "%llu 	%6.2lf 		 %6.2lf  \n",
+			   transfer_size,
 			   elapsed , speed);
 		  fflush (stdout);
 
 		}
+	      }
 	    }
 	}
 
@@ -616,6 +617,7 @@ main (int argc, char **argv)
 
 	    }
 	}
+  }
   fprintf (stdout, "Clean up later exit now for rank 0\n");
   fflush (stdout);
   PMI_Finalize ();

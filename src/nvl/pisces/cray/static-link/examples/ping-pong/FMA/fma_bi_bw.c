@@ -36,7 +36,7 @@
 #define CDM_ID_MULTIPLIER        1000
 #define FLAG_DATA                0xffff000000000000
 #define LOCAL_EVENT_ID_BASE      10000000
-#define NUMBER_OF_TRANSFERS      10
+#define NUMBER_OF_TRANSFERS      2
 #define POST_ID_MULTIPLIER       1000
 #define REMOTE_EVENT_ID_BASE     11000000
 #define SEND_DATA                0xdddd000000000000
@@ -146,10 +146,10 @@ main (int argc, char **argv)
   gni_return_t status = GNI_RC_SUCCESS;
   char *text_pointer;
   uint32_t transfers = NUMBER_OF_TRANSFERS;
-  uint32_t transfer_size;
+  uint32_t transfer_size, size;
   int use_event_id = 0;
-  uint64_t t0, t1, elapsed;
-  double speed;
+  uint64_t t0, t1;
+  double speed, elapsed;
 
   if ((i = uname (&uts_info)) != 0)
     {
@@ -559,11 +559,13 @@ main (int argc, char **argv)
           fma_data_desc[i].length = transfer_size;
           fma_data_desc[i].post_id = send_post_id;
    }
-
+  for (size=8; size <= 8192; size*=2) {
   if (my_rank == 0)
     {
       for (i = 0; i < transfers; i++)
 	{
+          fma_data_desc[i].length = size;
+	  transfer_size = size;
 
 	  cltime[i][0] = now ();
 	  status =
@@ -609,9 +611,9 @@ main (int argc, char **argv)
 	      if (rc == 0)
 		{
 		  cltime[i][1] = now ();
-		  elapsed = cltime[i][1] - cltime[i][0];
+		  elapsed = (double)(cltime[i][1] - cltime[i][0]);
 		  speed = (transfer_size / elapsed) * 1000000;
-		  fprintf (stdout, "FMA from rank: %d  bytes :%ld  time delta(microsec) = %llu FMA bandwidth: %6.2lf \n", my_rank, transfer_size, elapsed, speed);	/* make microsec to sec, bytes to MB */
+		  fprintf (stdout, "%ld  	%6.2lf  	%6.2lf \n", transfer_size, elapsed, speed);	/* make microsec to sec, bytes to MB */
 		  fflush (stdout);
 
 		}
@@ -663,9 +665,10 @@ main (int argc, char **argv)
 	      fflush (stdout);
 	    }
 	}
+    }
+  }
       PMI_Finalize ();
       return 0;
-    }
   if (my_rank == 0)
     {
       fprintf (stdout, "Clean up later exit now for rank 0\n");
