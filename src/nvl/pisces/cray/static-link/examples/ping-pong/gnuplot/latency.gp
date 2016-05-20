@@ -18,6 +18,8 @@ set key top left
 
 #set xtics ( "1" 1, "4" 4, "16" 16, "64" 64, "256" 256, "1K" 1024, "4K" 4096)
 
+set xtics ( "1" 1, "32" 32, "1K" 1024, "32K" 32768, "1M" 1048576, "4M" 4194304)
+
 set style line  1 lt 1 linecolor rgb "black"   lw 5
 set style line  2 lt 1 linecolor rgb "red"     lw 5
 set style line  3 lt 1 linecolor rgb "orange"  lw 5
@@ -33,5 +35,7 @@ set style line 11 lt 1 linecolor rgb "gray"    lw 5
 plot "native_linux_rdma.txt" using 1:2     title  "Native Linux RDMA" with linespoints ls 1, \
      "client_linux_rdma.txt" using 1:2     title  "Proxy Client Linux RDMA" with linespoints ls 2,\
      "native_linux_fma.txt" using 1:2     title  "Native Linux FMA" with linespoints ls 5,\
-     "proxy_linux_fma.txt" using 1:2     title  "PROXY Linux FMA" with linespoints ls 7
+     "proxy_linux_fma.txt" using 1:2     title  "PROXY Linux FMA" with linespoints ls 7,\
+     "cray_mpi_pingpong.txt" using 1:3 title "Cray MPI" with linespoints ls 8,\
+     "mc.txt" using 1:3 title "McKernel" with linespoints ls 9
 
