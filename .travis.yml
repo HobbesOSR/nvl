@@ -20,7 +20,6 @@ addons:
 notifications:
     email:
         recipients:
-            - hobbes-virt@elist.ornl.gov
             - noah.evans@gmail.com
             - ktpedre@sandia.gov
 git:
