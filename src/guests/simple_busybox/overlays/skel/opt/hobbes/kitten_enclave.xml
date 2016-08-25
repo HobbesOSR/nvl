@@ -9,8 +9,4 @@
 
     <memory size="512" numa="-1" />
 
-    <devices>
-      <vpci name="nic_1" bus="0" dev="1" fn="0" />
-    </devices>
-
 </pisces>
