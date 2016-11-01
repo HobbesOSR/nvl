@@ -536,14 +536,6 @@ if ($program_args{build_pisces}) {
 	chdir "$BASEDIR" or die;
 	print "CNL: Done building pisces/leviathan/hio/lib\n";
 
-	# Build Leviathan HIO io-daemon client
-	print "CNL: Building pisces/leviathan/hio/io-daemon\n";
-	chdir "$SRCDIR/$pisces{src_subdir}/leviathan/hio/io-daemon" or die;
-	system ("PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/leviathan/hio/io-daemon make clean") == 0 or die "failed to clean";
-	system ("PWD=$BASEDIR/$SRCDIR/$pisces{src_subdir}/leviathan/hio/io-daemon make") == 0 or die "failed to make";
-	chdir "$BASEDIR" or die;
-	print "CNL: Done building pisces/leviathan/hio/io-daemon\n";
-
 	# Build Leviathan HIO generic-io-stub
 	print "CNL: Building pisces/leviathan/hio/generic-io-stub\n";
 	chdir "$SRCDIR/$pisces{src_subdir}/leviathan/hio/generic-io-stub" or die;
@@ -575,14 +567,6 @@ if ($program_args{build_pisces}) {
 	system ("make") == 0 or die;
 	chdir "$BASEDIR" or die;
 	print "CNL: Done building pisces/leviathan/shell\n";
-
-	# Build Leviathan PMI Hello Example App
-	#print "CNL: STEP 12: Building pisces/hobbes/examples/apps/pmi/test_pmi_hello\n";
-	#chdir "$SRCDIR/$pisces{src_subdir}/hobbes/examples/apps/pmi" or die;
-	#system ("make clean") == 0 or die "failed to clean";
-	#system ("make") == 0 or die "failed to make";
-	#chdir "$BASEDIR" or die;
-	#print "CNL: Done building pisces/hobbes/examples/apps/pmi/test_pmi_hello\n";
 
 	# Build NULL test app
 	print "CNL: Building pisces/test/null\n";
@@ -773,8 +757,6 @@ if ($program_args{build_image}) {
 	system("cp -R $SRCDIR/test/null/null $IMAGEDIR/opt/hobbes") == 0
 		or die "error 12";
 	system("cp -R $SRCDIR/pisces/leviathan/hio/generic-io-stub/stub $IMAGEDIR/opt/hobbes") == 0
-		or die "error 13";
-	system("cp -R $SRCDIR/pisces/leviathan/hio/io-daemon/io-daemon $IMAGEDIR/opt/hobbes") == 0
 		or die "error 13";
 
 	# Install Hobbes Enclave DTK demo files
