@@ -1,0 +1,12 @@
+<pisces>
+    <kernel>/tmp/hobbes_install/vmlwk.bin</kernel>
+    <init_task>/tmp/hobbes_install/lwk_init</init_task>
+    <cmd_line>console=pisces</cmd_line>
+
+    <cpus>
+        <cores>1</cores>
+    </cpus>
+
+    <memory size="512" numa="-1" />
+
+</pisces>
