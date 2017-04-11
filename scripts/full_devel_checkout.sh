@@ -9,11 +9,6 @@ git checkout master
 cd ../../../
 
 # Change from free-floating branch to devel branch
-cd src/nvl/palacios
-git checkout devel
-cd ../../../
-
-# Change from free-floating branch to devel branch
 cd src/nvl/pisces/palacios
 git checkout -f devel
 cd ../../../../
